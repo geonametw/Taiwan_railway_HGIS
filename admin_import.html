@@ -8,7 +8,8 @@
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 40px; color: #333; }
         .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
         h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
-        .upload-area { border: 2px dashed #3949ab; padding: 40px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+        /* 👇 補上 display: block; 解決行內元素邊框崩潰問題 */
+        .upload-area { display: block; border: 2px dashed #3949ab; padding: 40px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
         .upload-area:hover { background: #e8eaf6; }
         input[type="file"] { display: none; }
         .btn { background: #2e7d32; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); }
@@ -65,7 +66,6 @@
             fileInput.disabled = false;
         })
         .catch(err => {
-            // 本地直接打開 HTML 可能會遇到跨網域阻擋，改為提示空白匯入
             document.getElementById('upload-text').innerHTML = "⚠️ 無法自動讀取現有 data.json<br><span style='font-size:14px; color:#666;'>將以全新空白屬性匯入，請點擊選擇檔案</span>";
             document.getElementById('kmlFile').disabled = false;
             console.error("讀取現有 JSON 失敗:", err);
@@ -132,11 +132,10 @@
             }
 
             if (geom) {
-                // 核心邏輯：判斷是否存在舊屬性
                 let props = {};
                 if (oldPropsMap[name]) {
-                    props = JSON.parse(JSON.stringify(oldPropsMap[name])); // 複製舊屬性
-                    props.last_updated = new Date().toISOString().split('T')[0]; // 更新修改日期
+                    props = JSON.parse(JSON.stringify(oldPropsMap[name]));
+                    props.last_updated = new Date().toISOString().split('T')[0];
                     updateLines++;
                 } else {
                     props = {
@@ -163,7 +162,6 @@
 
         if (existingData && existingData.data && existingData.data.features) {
             existingData.data.features.forEach(f => {
-                // 如果這條舊路線的名稱，沒有出現在這次上傳的 KML 中，就原封不動保留
                 if (f.properties && f.properties.name && !kmlNames.has(f.properties.name)) {
                     finalFeatures.push(f);
                     keepLines++;
@@ -171,12 +169,9 @@
             });
         }
 
-        // 把 KML 轉出來的新/更新路線加進去
         finalFeatures = finalFeatures.concat(kmlFeatures);
-
         finalGeoJson = { data: { type: "FeatureCollection", features: finalFeatures } };
 
-        // 顯示結果
         const statusDiv = document.getElementById('status');
         statusDiv.style.display = 'block';
         statusDiv.className = 'status success';
