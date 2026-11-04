@@ -6,17 +6,29 @@
     <title>KML 智慧合併神器 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 40px; color: #333; }
-        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+        .container { max-width: 750px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
         h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
-        /* 👇 補上 display: block; 解決行內元素邊框崩潰問題 */
-        .upload-area { display: block; border: 2px dashed #3949ab; padding: 40px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+        
+        /* 現有資料庫清冊面板 */
+        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left; display: none; }
+        .inventory-header { font-size: 15px; font-weight: bold; color: #1a237e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 200px; overflow-y: auto; padding: 4px 2px; }
+        .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 4px 10px; border-radius: 15px; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .tag.station { border-color: #4dd0e1; color: #006064; background: #e0f7fa; }
+        .tag-sec { font-size: 11px; color: #777; font-weight: normal; margin-left: 5px; }
+
+        /* 上傳區塊 */
+        .upload-area { display: block; border: 2px dashed #3949ab; padding: 35px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
         .upload-area:hover { background: #e8eaf6; }
         input[type="file"] { display: none; }
+        
         .btn { background: #2e7d32; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); }
         .btn:hover { background: #1b5e20; transform: translateY(-2px); }
+        
         .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; text-align: left; line-height: 1.6; }
         .success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px;}
+        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px; }
+        .error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -25,8 +37,14 @@
     <h2>🗺️ KML 智慧合併更新器</h2>
     <div class="status warning" style="display:block;">
         <b>💡 運作原理：</b><br>
-        本工具會自動讀取您目前的 <code>data.json</code>。<br>
+        本工具會先讀取並列出您目前的 <code>data.json</code> 清冊。<br>
         匯入 KML 時，若路線名稱已存在，將<b>保留舊有的屬性文字，僅更新座標</b>；未出現在 KML 的舊路線也會安全保留。
+    </div>
+
+    <!-- 👇 新增：現有資料庫清冊顯示區 -->
+    <div id="inventoryBox" class="inventory-box">
+        <div class="inventory-header" id="inventoryTitle"></div>
+        <div class="tag-container" id="inventoryList"></div>
     </div>
     
     <label class="upload-area" id="drop-zone" for="kmlFile">
@@ -44,29 +62,69 @@
     let oldPropsMap = {};
     let finalGeoJson = null;
 
-    // 1. 自動讀取伺服器上現有的 data.json
-    fetch('data.json')
-        .then(res => res.json())
+    // 1. 自動讀取伺服器上現有的 data.json 並窮舉內容
+    fetch('data.json?t=' + new Date().getTime()) // 加上時間戳記避免瀏覽器快取舊檔
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
         .then(data => {
             existingData = data;
+            const features = (data.data && data.data.features) ? data.data.features : (data.features || []);
             
-            // 建立舊屬性字典表 (以 name 為 key)
-            if (data.data && data.data.features) {
-                data.data.features.forEach(f => {
-                    if (f.properties && f.properties.name && !oldPropsMap[f.properties.name]) {
-                        oldPropsMap[f.properties.name] = f.properties; 
-                    }
-                });
-            }
+            let routeCount = 0;
+            let stationCount = 0;
+            const listContainer = document.getElementById('inventoryList');
+            listContainer.innerHTML = '';
+
+            features.forEach((f, idx) => {
+                const p = f.properties || {};
+                const name = p.name || `未命名_${idx + 1}`;
+                const section = p.section ? `<span class="tag-sec">(${p.section})</span>` : '';
+                const isPoint = f.geometry && f.geometry.type === "Point";
+
+                if (isPoint) {
+                    stationCount++;
+                } else {
+                    routeCount++;
+                }
+
+                // 建立舊屬性字典表 (以 name 為 key)
+                if (p.name && !oldPropsMap[p.name]) {
+                    oldPropsMap[p.name] = p; 
+                }
+
+                // 建立視覺化標籤
+                const tag = document.createElement('span');
+                tag.className = isPoint ? 'tag station' : 'tag';
+                tag.innerHTML = `${isPoint ? '🚉' : '🛤️'} ${name}${section}`;
+                listContainer.appendChild(tag);
+            });
+
+            // 顯示清冊面板
+            const invBox = document.getElementById('inventoryBox');
+            const invTitle = document.getElementById('inventoryTitle');
+            invBox.style.display = 'block';
+            invTitle.innerHTML = `
+                <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
+                <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
+                    共 ${features.length} 筆（路線 ${routeCount} / 車站 ${stationCount}）
+                </span>
+            `;
 
             const uploadText = document.getElementById('upload-text');
             const fileInput = document.getElementById('kmlFile');
-            uploadText.innerText = "資料庫讀取完畢！點擊此處選擇 KML 檔案";
+            uploadText.innerText = "確認上方清冊無誤後，點擊此處選擇要合併的 KML 檔案";
             uploadText.style.color = "#2e7d32";
             fileInput.disabled = false;
         })
         .catch(err => {
-            document.getElementById('upload-text').innerHTML = "⚠️ 無法自動讀取現有 data.json<br><span style='font-size:14px; color:#666;'>將以全新空白屬性匯入，請點擊選擇檔案</span>";
+            const invBox = document.getElementById('inventoryBox');
+            invBox.style.display = 'block';
+            invBox.className = 'status error';
+            invBox.innerHTML = `<b>⚠️ 無法讀取現有的 <code>data.json</code></b><br>原因：找不到檔案或處於本地端離線開啟。若現在上傳 KML，將會生成全新的資料庫檔案。`;
+
+            document.getElementById('upload-text').innerHTML = "點擊此處選擇 KML 檔案（將以全新狀態建立）";
             document.getElementById('kmlFile').disabled = false;
             console.error("讀取現有 JSON 失敗:", err);
         });
@@ -90,9 +148,8 @@
         
         let kmlFeatures = [];
         let kmlNames = new Set();
-        let newLines = 0, updateLines = 0;
+        let newLines = [], updateLines = [];
 
-        // 解析 KML
         for (let i = 0; i < placemarks.length; i++) {
             let p = placemarks[i];
             
@@ -136,7 +193,7 @@
                 if (oldPropsMap[name]) {
                     props = JSON.parse(JSON.stringify(oldPropsMap[name]));
                     props.last_updated = new Date().toISOString().split('T')[0];
-                    updateLines++;
+                    updateLines.push(`${name} (${folderName})`);
                 } else {
                     props = {
                         name: name,
@@ -149,7 +206,7 @@
                         period: "未知",
                         comment: ""
                     };
-                    newLines++;
+                    newLines.push(`${name} (${folderName})`);
                 }
 
                 kmlFeatures.push({ type: "Feature", properties: props, geometry: geom });
@@ -158,16 +215,18 @@
 
         // 3. 執行合併 (保留未在 KML 中的舊有路線)
         let finalFeatures = [];
-        let keepLines = 0;
+        let keepLines = [];
 
-        if (existingData && existingData.data && existingData.data.features) {
-            existingData.data.features.forEach(f => {
-                if (f.properties && f.properties.name && !kmlNames.has(f.properties.name)) {
-                    finalFeatures.push(f);
-                    keepLines++;
-                }
-            });
-        }
+        const oldFeatures = (existingData && existingData.data && existingData.data.features) 
+            ? existingData.data.features 
+            : ((existingData && existingData.features) ? existingData.features : []);
+
+        oldFeatures.forEach(f => {
+            if (f.properties && f.properties.name && !kmlNames.has(f.properties.name)) {
+                finalFeatures.push(f);
+                keepLines.push(f.properties.name + (f.properties.section ? ` (${f.properties.section})` : ''));
+            }
+        });
 
         finalFeatures = finalFeatures.concat(kmlFeatures);
         finalGeoJson = { data: { type: "FeatureCollection", features: finalFeatures } };
@@ -176,11 +235,13 @@
         statusDiv.style.display = 'block';
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
-            ✅ <b>智慧合併完成！</b><br><br>
-            📌 從 KML 更新舊路線/車站：<b>${updateLines}</b> 筆<br>
-            🆕 從 KML 新增全新路線/車站：<b>${newLines}</b> 筆<br>
-            🛡️ 安全保留未上傳的舊資料：<b>${keepLines}</b> 筆<br><br>
-            總計目前資料庫共有 <b>${finalFeatures.length}</b> 筆資料。
+            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">🎉 智慧合併完成！總計 ${finalFeatures.length} 筆資料：</div>
+            📌 <b>從 KML 更新座標（保留舊文字，共 ${updateLines.length} 筆）：</b><br>
+            <span style="color:#555; font-size:13px;">${updateLines.length > 0 ? updateLines.join('、') : '無'}</span><br><br>
+            🆕 <b>從 KML 新增項目（共 ${newLines.length} 筆）：</b><br>
+            <span style="color:#555; font-size:13px;">${newLines.length > 0 ? newLines.join('、') : '無'}</span><br><br>
+            🛡️ <b>安全保留未異動的舊資料（共 ${keepLines.length} 筆）：</b><br>
+            <span style="color:#555; font-size:13px;">${keepLines.length > 0 ? keepLines.join('、') : '無'}</span>
         `;
 
         document.getElementById('downloadBtn').style.display = 'inline-block';
