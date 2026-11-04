@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KML 智慧合併神器 - 古今鐵道 HGIS</title>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 40px; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+        h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
+        .upload-area { border: 2px dashed #3949ab; padding: 40px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+        .upload-area:hover { background: #e8eaf6; }
+        input[type="file"] { display: none; }
+        .btn { background: #2e7d32; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); }
+        .btn:hover { background: #1b5e20; transform: translateY(-2px); }
+        .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; text-align: left; line-height: 1.6; }
+        .success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🗺️ KML 智慧合併更新器</h2>
+    <div class="status warning" style="display:block;">
+        <b>💡 運作原理：</b><br>
+        本工具會自動讀取您目前的 <code>data.json</code>。<br>
+        匯入 KML 時，若路線名稱已存在，將<b>保留舊有的屬性文字，僅更新座標</b>；未出現在 KML 的舊路線也會安全保留。
+    </div>
+    
+    <label class="upload-area" id="drop-zone" for="kmlFile">
+        <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
+        <div id="upload-text" style="font-size: 18px; font-weight: bold; color: #3949ab;">正在讀取現有資料庫，請稍候...</div>
+    </label>
+    <input type="file" id="kmlFile" accept=".kml" disabled />
+
+    <div id="status" class="status"></div>
+    <button id="downloadBtn" class="btn" style="display:none;" onclick="downloadJSON()">📥 下載合併後的 data.json</button>
+</div>
+
+<script>
+    let existingData = null;
+    let oldPropsMap = {};
+    let finalGeoJson = null;
+
+    // 1. 自動讀取伺服器上現有的 data.json
+    fetch('data.json')
+        .then(res => res.json())
+        .then(data => {
+            existingData = data;
+            
+            // 建立舊屬性字典表 (以 name 為 key)
+            if (data.data && data.data.features) {
+                data.data.features.forEach(f => {
+                    if (f.properties && f.properties.name && !oldPropsMap[f.properties.name]) {
+                        oldPropsMap[f.properties.name] = f.properties; 
+                    }
+                });
+            }
+
+            const uploadText = document.getElementById('upload-text');
+            const fileInput = document.getElementById('kmlFile');
+            uploadText.innerText = "資料庫讀取完畢！點擊此處選擇 KML 檔案";
+            uploadText.style.color = "#2e7d32";
+            fileInput.disabled = false;
+        })
+        .catch(err => {
+            // 本地直接打開 HTML 可能會遇到跨網域阻擋，改為提示空白匯入
+            document.getElementById('upload-text').innerHTML = "⚠️ 無法自動讀取現有 data.json<br><span style='font-size:14px; color:#666;'>將以全新空白屬性匯入，請點擊選擇檔案</span>";
+            document.getElementById('kmlFile').disabled = false;
+            console.error("讀取現有 JSON 失敗:", err);
+        });
+
+    // 2. 處理上傳的 KML
+    document.getElementById('kmlFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            processKML(event.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    function processKML(xmlText) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        const placemarks = xmlDoc.getElementsByTagName("Placemark");
+        
+        let kmlFeatures = [];
+        let kmlNames = new Set();
+        let newLines = 0, updateLines = 0;
+
+        // 解析 KML
+        for (let i = 0; i < placemarks.length; i++) {
+            let p = placemarks[i];
+            
+            let nameNode = p.getElementsByTagName("name")[0];
+            let name = (nameNode && nameNode.textContent) ? nameNode.textContent.trim() : "未命名路線";
+            kmlNames.add(name);
+
+            let parent = p.parentNode;
+            let folderName = "未分類";
+            while(parent && parent.nodeName !== "#document") {
+                if(parent.nodeName === "Folder") {
+                    let fnNode = parent.getElementsByTagName("name")[0];
+                    if(fnNode) folderName = fnNode.textContent.trim();
+                    break;
+                }
+                parent = parent.parentNode;
+            }
+
+            let geom = null;
+            let pointNode = p.getElementsByTagName("Point")[0];
+            let lineNode = p.getElementsByTagName("LineString")[0];
+
+            if (pointNode) {
+                let coords = pointNode.getElementsByTagName("coordinates")[0].textContent.trim().split(',');
+                if (coords.length >= 2) {
+                    geom = { type: "Point", coordinates: [parseFloat(coords[0]), parseFloat(coords[1])] };
+                }
+            } else if (lineNode) {
+                let coordArray = lineNode.getElementsByTagName("coordinates")[0].textContent.trim().split(/\s+/);
+                let lineCoords = [];
+                for (let c of coordArray) {
+                    if(!c) continue;
+                    let pts = c.split(',');
+                    if(pts.length >= 2) lineCoords.push([parseFloat(pts[0]), parseFloat(pts[1])]);
+                }
+                if (lineCoords.length > 1) geom = { type: "LineString", coordinates: lineCoords };
+            }
+
+            if (geom) {
+                // 核心邏輯：判斷是否存在舊屬性
+                let props = {};
+                if (oldPropsMap[name]) {
+                    props = JSON.parse(JSON.stringify(oldPropsMap[name])); // 複製舊屬性
+                    props.last_updated = new Date().toISOString().split('T')[0]; // 更新修改日期
+                    updateLines++;
+                } else {
+                    props = {
+                        name: name,
+                        section: "",
+                        tailo: "",
+                        description: { zh: `【${folderName}】在此輸入中文歷史描述` },
+                        source: "KML Import",
+                        last_updated: new Date().toISOString().split('T')[0],
+                        status: folderName === "車站" ? "車站" : "考據中",
+                        period: "未知",
+                        comment: ""
+                    };
+                    newLines++;
+                }
+
+                kmlFeatures.push({ type: "Feature", properties: props, geometry: geom });
+            }
+        }
+
+        // 3. 執行合併 (保留未在 KML 中的舊有路線)
+        let finalFeatures = [];
+        let keepLines = 0;
+
+        if (existingData && existingData.data && existingData.data.features) {
+            existingData.data.features.forEach(f => {
+                // 如果這條舊路線的名稱，沒有出現在這次上傳的 KML 中，就原封不動保留
+                if (f.properties && f.properties.name && !kmlNames.has(f.properties.name)) {
+                    finalFeatures.push(f);
+                    keepLines++;
+                }
+            });
+        }
+
+        // 把 KML 轉出來的新/更新路線加進去
+        finalFeatures = finalFeatures.concat(kmlFeatures);
+
+        finalGeoJson = { data: { type: "FeatureCollection", features: finalFeatures } };
+
+        // 顯示結果
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = `
+            ✅ <b>智慧合併完成！</b><br><br>
+            📌 從 KML 更新舊路線/車站：<b>${updateLines}</b> 筆<br>
+            🆕 從 KML 新增全新路線/車站：<b>${newLines}</b> 筆<br>
+            🛡️ 安全保留未上傳的舊資料：<b>${keepLines}</b> 筆<br><br>
+            總計目前資料庫共有 <b>${finalFeatures.length}</b> 筆資料。
+        `;
+
+        document.getElementById('downloadBtn').style.display = 'inline-block';
+    }
+
+    function downloadJSON() {
+        if (!finalGeoJson) return;
+        const dataStr = JSON.stringify(finalGeoJson, null, 4);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "data.json";
+        a.click();
+    }
+</script>
+</body>
+</html>
