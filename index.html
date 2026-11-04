@@ -122,7 +122,23 @@
                 allFeatures = geoData.features;
 
                 geojsonLayer = L.geoJSON(geoData, {
-                    style: { color: "#ff7800", weight: 4, opacity: 0.8 },
+                    style: function (feature) {
+                        const type = feature.properties.line_type || "";
+                        if (type === "舊線") {
+                            // 舊線設定為黑色、較細、帶有虛線
+                            return { color: "#000000", weight: 3, opacity: 0.85, dashArray: '5, 5' };
+                        } else if (type === "副線") {
+                            // 副線可以設定為深藍色或其他顏色
+                            return { color: "#3949ab", weight: 3, opacity: 0.8 };
+                        } else {
+                            // 預設主線維持原本的橘色
+                            return { color: "#ff7800", weight: 4, opacity: 0.8 };
+                        }
+                    },
+                    onEachFeature: function (feature, layer) {
+                        // ... 原有的彈出視窗與點擊互動程式碼 ...
+                    }
+                }).addTo(map);
                     onEachFeature: function (feature, layer) {
                         if (feature.properties) {
                             let content = `<b>${feature.properties.name || '未命名'}</b>`;
