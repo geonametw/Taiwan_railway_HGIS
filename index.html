@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v8.14</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v8.15</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -112,8 +112,19 @@
         let activeRouteName = '';
         let activeRouteSection = '';
         
-        // 🎯 v8.14 新增：幽靈滾動的防護鎖
         let isRenderingList = false;
+
+        // 🎯 統一樣式取得函數：依據線路屬性自動切換（主線橘、舊線黑虛線、副線深藍）
+        function getLineStyle(feature) {
+            const type = feature.properties.line_type || "";
+            if (type === "舊線") {
+                return { color: "#000000", weight: 3, opacity: 0.85, dashArray: '5, 5' };
+            } else if (type === "副線") {
+                return { color: "#3949ab", weight: 3, opacity: 0.8 };
+            } else {
+                return { color: "#ff7800", weight: 4, opacity: 0.8, dashArray: null };
+            }
+        }
 
         fetch('data.json')
             .then(response => response.json())
@@ -122,28 +133,15 @@
                 allFeatures = geoData.features;
 
                 geojsonLayer = L.geoJSON(geoData, {
-                    style: function (feature) {
-                        const type = feature.properties.line_type || "";
-                        if (type === "舊線") {
-                            // 舊線設定為黑色、較細、帶有虛線
-                            return { color: "#000000", weight: 3, opacity: 0.85, dashArray: '5, 5' };
-                        } else if (type === "副線") {
-                            // 副線可以設定為深藍色或其他顏色
-                            return { color: "#3949ab", weight: 3, opacity: 0.8 };
-                        } else {
-                            // 預設主線維持原本的橘色
-                            return { color: "#ff7800", weight: 4, opacity: 0.8 };
-                        }
-                    },
-                    onEachFeature: function (feature, layer) {
-                        // ... 原有的彈出視窗與點擊互動程式碼 ...
-                    }
-                }).addTo(map);
+                    style: getLineStyle,
                     onEachFeature: function (feature, layer) {
                         if (feature.properties) {
                             let content = `<b>${feature.properties.name || '未命名'}</b>`;
-                            if (feature.properties.open_time) content += `<br>通車: ${feature.properties.open_time}`;
-                            layer.bindPopup(content);
+                            if (feature.properties.section) content += `<br>區間: ${feature.properties.section}`;
+                            if (feature.properties.description && feature.properties.description.zh) {
+                                content += `<br>${feature.properties.description.zh}`;
+                            }
+                            layer.bindPopup(content, { className: 'custom-popup' });
 
                             layer.on('click', function(e) {
                                 searchBox.classList.add('expanded');
@@ -154,17 +152,20 @@
                                 clearBtn.style.display = 'block';
 
                                 geojsonLayer.eachLayer(l => {
-                                    if (l === layer) {
+                                    if (l.feature.properties.name === activeRouteName) {
                                         l.setStyle({ color: "red", weight: 8, opacity: 1 });
                                         if (l.bringToFront) l.bringToFront(); 
                                     } else {
-                                        l.setStyle({ color: "#ff7800", opacity: 0.8, weight: 4 });
+                                        // 非選中的線條還原回各自原本的身分樣式
+                                        const originalStyle = getLineStyle(l.feature);
+                                        l.setStyle(originalStyle);
                                     }
                                 });
                             });
                         }
                     }
                 }).addTo(map);
+
                 if (geojsonLayer.getBounds().isValid()) map.fitBounds(geojsonLayer.getBounds());
             });
 
@@ -198,11 +199,7 @@
                 clearBtn.style.display = 'block';
             }
             syncDisplay(); 
-            
-            // 給予 100ms 讓鍵盤安心彈出，再執行會產生 DOM 變動的 renderList
-            setTimeout(() => {
-                renderList(input.value);
-            }, 100);
+            setTimeout(() => { renderList(input.value); }, 100);
         });
 
         searchBox.addEventListener('click', function(e) {
@@ -214,12 +211,9 @@
             }
         });
 
-        input.addEventListener('blur', function() {
-            syncDisplay(); 
-        });
+        input.addEventListener('blur', function() { syncDisplay(); });
 
         function renderList(val) {
-            // 🎯 v8.14 核心：鎖上號誌，宣告「我正在動工，滾動事件請忽略我」
             isRenderingList = true;
             syncDisplay(); 
             
@@ -230,6 +224,7 @@
             const normalize = str => str ? str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
             const cleanKeyword = normalize(keyword);
 
+            // 🎯 修正：搜尋時只嚴格比對路線名稱 (name) 與台羅拼音 (tailo)，絕不比對區間 (section)
             let matched = (keyword === '') ? [...allFeatures] : allFeatures.filter(f => {
                 const nameMatch = normalize(f.properties.name || "").includes(cleanKeyword);
                 const tailoMatch = normalize(f.properties.tailo || "").includes(cleanKeyword);
@@ -256,16 +251,22 @@
                         input.value = activeRouteName;
                         
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                        
                         clearBtn.style.display = 'block';
+
+                        let groupBounds = L.latLngBounds();
                         geojsonLayer.eachLayer(layer => {
-                            if (layer.feature === f) {
+                            if (layer.feature.properties.name === activeRouteName) {
                                 layer.setStyle({ color: "red", weight: 8, opacity: 1 });
                                 if (layer.bringToFront) layer.bringToFront();
-                                if (layer.getBounds) map.flyToBounds(layer.getBounds(), { padding: [50, 50], duration: 1.5 });
+                                if (layer.getBounds) groupBounds.extend(layer.getBounds());
                                 layer.openPopup();
-                            } else { layer.setStyle({ color: "#ff7800", opacity: 0.8, weight: 4 }); }
+                            } else { 
+                                layer.setStyle(getLineStyle(layer.feature)); 
+                            }
                         });
+                        if (groupBounds.isValid()) {
+                            map.fitBounds(groupBounds, { padding: [50, 50] });
+                        }
                     };
                     dropdown.appendChild(randomItem);
                 }
@@ -295,21 +296,33 @@
                         input.value = activeRouteName;
                         
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                        
                         clearBtn.style.display = 'block'; 
+                        
+                        let groupBounds = L.latLngBounds();
+                        let firstMatchLayer = null;
+
                         geojsonLayer.eachLayer(layer => {
-                            if (layer.feature === f) {
+                            if (layer.feature.properties.name === lineName) {
                                 layer.setStyle({ color: "red", weight: 8, opacity: 1 }); 
-                                if (layer.getBounds) map.fitBounds(layer.getBounds(), { padding: [50, 50] });
-                                layer.openPopup();
-                            } else { layer.setStyle({ color: "#ff7800", opacity: 0.8, weight: 4 }); }
+                                if (layer.bringToFront) layer.bringToFront();
+                                if (layer.getBounds) groupBounds.extend(layer.getBounds());
+                                if (!firstMatchLayer) firstMatchLayer = layer;
+                            } else { 
+                                layer.setStyle(getLineStyle(layer.feature)); 
+                            }
                         });
+
+                        if (groupBounds.isValid()) {
+                            map.fitBounds(groupBounds, { padding: [50, 50] });
+                        }
+                        if (firstMatchLayer) {
+                            firstMatchLayer.openPopup();
+                        }
                     };
                     dropdown.appendChild(item);
                 });
             } else { dropdown.style.display = 'none'; }
             
-            // 🎯 畫完清單後，給予 50 毫秒緩衝，等待瀏覽器消耗掉幽靈滾動事件，然後再解鎖
             setTimeout(() => { isRenderingList = false; }, 50);
         }
 
@@ -326,7 +339,10 @@
                 activeRouteName = ''; activeRouteSection = '';
                 syncDisplay(); 
                 renderList('');
-                if(geojsonLayer) geojsonLayer.setStyle({ color: "#ff7800", weight: 4, opacity: 0.8 }); 
+                // 清空搜尋時，將所有線條重置回各自原本的屬性色彩
+                if(geojsonLayer) {
+                    geojsonLayer.eachLayer(l => l.setStyle(getLineStyle(l.feature)));
+                }
                 if (window.innerWidth > 768) input.focus(); 
             } else {
                 searchBox.classList.remove('expanded');
@@ -344,11 +360,8 @@
         
         map.on('click', () => dropdown.style.display = 'none');
         
-        // 🎯 只有在非重繪期間的「真正人為滾動」，才允許收起鍵盤 (失焦)
         dropdown.addEventListener('scroll', function() { 
-            if (!isRenderingList) {
-                input.blur(); 
-            }
+            if (!isRenderingList) { input.blur(); }
         }, { passive: true });
     </script>
 </body>
