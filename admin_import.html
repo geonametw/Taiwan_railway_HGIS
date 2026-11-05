@@ -3,67 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML 智慧合併神器 - 古今鐵道 HGIS</title>
+    <title>KML + CSV 智慧縫合神器 - 古今鐵道 HGIS</title>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 40px; color: #333; }
-        .container { max-width: 750px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
-        h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 30px; color: #333; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-top: 0; text-align: center; }
         
         /* 現有資料庫清冊面板 */
-        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left; display: none; }
+        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none; }
         .inventory-header { font-size: 15px; font-weight: bold; color: #1a237e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 200px; overflow-y: auto; padding: 4px 2px; }
-        .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 4px 10px; border-radius: 15px; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; max-height: 160px; overflow-y: auto; padding: 4px 2px; }
+        .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 3px 9px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; }
         .tag.station { border-color: #4dd0e1; color: #006064; background: #e0f7fa; }
-        .tag-sec { font-size: 11px; color: #777; font-weight: normal; margin-left: 5px; }
+        .tag-sec { font-size: 11px; color: #777; font-weight: normal; margin-left: 4px; }
 
-        /* 上傳區塊 */
-        .upload-area { display: block; border: 2px dashed #3949ab; padding: 35px; border-radius: 10px; background: #f8f9fa; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+        /* 雙上傳區塊 */
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .upload-area { display: block; border: 2px dashed #3949ab; padding: 25px 15px; border-radius: 10px; background: #f8f9fa; text-align: center; cursor: pointer; transition: 0.2s; }
         .upload-area:hover { background: #e8eaf6; }
+        .upload-area.loaded { border-color: #2e7d32; background: #e8f5e9; }
         input[type="file"] { display: none; }
+
+        .options-bar { background: #fafafa; border: 1px solid #e0e0e0; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; }
         
-        .btn { background: #2e7d32; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); }
+        .btn { background: #2e7d32; color: white; border: none; padding: 14px 35px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: inline-block; }
         .btn:hover { background: #1b5e20; transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; transform: none; }
         
-        .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; text-align: left; line-height: 1.6; }
-        .success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px; }
-        .error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; margin-bottom: 20px; }
+        .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; line-height: 1.6; }
+        .success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px; display: block; }
+        .error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; margin-bottom: 20px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🗺️ KML 智慧合併更新器</h2>
-    <div class="status warning" style="display:block;">
-        <b>💡 運作原理：</b><br>
-        本工具會先讀取並列出您目前的 <code>data.json</code> 清冊。<br>
-        匯入 KML 時，若路線名稱已存在，將<b>保留舊有的屬性文字，僅更新座標</b>；未出現在 KML 的舊路線也會安全保留。
+    <h2>🗺️ KML 圖資 + CSV 台車線名表 智慧縫合器</h2>
+    <div class="status warning">
+        <b>💡 雙軌自動縫合邏輯：</b><br>
+        1. 自動讀取現有 <code>data.json</code> 並列出清冊，未重疊的舊路線（如糖鐵）將 100% 安全保留。<br>
+        2. 透過路線編號（如 <code>A1</code>、<code>A3</code>）自動將 KML 座標與 CSV 的 1895–1945 歷年經營者、路線名、區間、里程縫合，並將無獨立線段的複線子編號（如 <code>A1-1</code>）自動附掛至母線沿革表中。
     </div>
 
-    <!-- 👇 新增：現有資料庫清冊顯示區 -->
+    <!-- 現有資料庫清冊 -->
     <div id="inventoryBox" class="inventory-box">
         <div class="inventory-header" id="inventoryTitle"></div>
         <div class="tag-container" id="inventoryList"></div>
     </div>
+
+    <!-- 命名規則選項 -->
+    <div class="options-bar">
+        <b>路線主名稱 (name) 命名方式：</b>
+        <label><input type="radio" name="nameMode" value="ref_line" checked> 參考名＋線（例：<code>三爪子線</code>）</label>
+        <label><input type="radio" name="nameMode" value="code_ref"> 編號＋參考名（例：<code>A1 三爪子</code>）</label>
+        <label><input type="radio" name="nameMode" value="last_official"> 最終年官方路線名（例：<code>三爪子線</code>）</label>
+    </div>
     
-    <label class="upload-area" id="drop-zone" for="kmlFile">
-        <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
-        <div id="upload-text" style="font-size: 18px; font-weight: bold; color: #3949ab;">正在讀取現有資料庫，請稍候...</div>
-    </label>
-    <input type="file" id="kmlFile" accept=".kml" disabled />
+    <!-- 雙檔案上傳區 -->
+    <div class="upload-grid">
+        <label class="upload-area" id="csvDrop" for="csvFile">
+            <div style="font-size: 34px; margin-bottom: 8px;">📊</div>
+            <div id="csvText" style="font-size: 16px; font-weight: bold; color: #3949ab;">步驟 1：選擇 CSV 屬性資料表<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車線名資料表活頁簿107版.csv)</span></div>
+        </label>
+        <input type="file" id="csvFile" accept=".csv" />
+
+        <label class="upload-area" id="kmlDrop" for="kmlFile">
+            <div style="font-size: 34px; margin-bottom: 8px;">📂</div>
+            <div id="kmlText" style="font-size: 16px; font-weight: bold; color: #3949ab;">步驟 2：選擇 KML 路線圖資<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車地圖A.kml)</span></div>
+        </label>
+        <input type="file" id="kmlFile" accept=".kml" />
+    </div>
+
+    <div style="text-align: center;">
+        <button id="mergeBtn" class="btn" disabled onclick="runMerge()">⚙️ 開始智慧縫合並預覽結果</button>
+        <button id="downloadBtn" class="btn" style="display:none; background:#1565c0;" onclick="downloadJSON()">📥 下載合併後的 data.json</button>
+    </div>
 
     <div id="status" class="status"></div>
-    <button id="downloadBtn" class="btn" style="display:none;" onclick="downloadJSON()">📥 下載合併後的 data.json</button>
 </div>
 
 <script>
     let existingData = null;
     let oldPropsMap = {};
+    let csvRoutesMap = {}; // 儲存解析後的 CSV 各編號資料
+    let rawKmlText = null;
     let finalGeoJson = null;
 
-    // 1. 自動讀取伺服器上現有的 data.json 並窮舉內容
-    fetch('data.json?t=' + new Date().getTime()) // 加上時間戳記避免瀏覽器快取舊檔
+    // 1. 讀取現有 data.json 並窮舉
+    fetch('data.json?t=' + new Date().getTime())
         .then(res => {
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();
@@ -71,9 +99,7 @@
         .then(data => {
             existingData = data;
             const features = (data.data && data.data.features) ? data.data.features : (data.features || []);
-            
-            let routeCount = 0;
-            let stationCount = 0;
+            let routeCount = 0, stationCount = 0;
             const listContainer = document.getElementById('inventoryList');
             listContainer.innerHTML = '';
 
@@ -82,166 +108,385 @@
                 const name = p.name || `未命名_${idx + 1}`;
                 const section = p.section ? `<span class="tag-sec">(${p.section})</span>` : '';
                 const isPoint = f.geometry && f.geometry.type === "Point";
+                if (isPoint) stationCount++; else routeCount++;
 
-                if (isPoint) {
-                    stationCount++;
-                } else {
-                    routeCount++;
-                }
+                const key = p.route_id || p.name;
+                if (key && !oldPropsMap[key]) oldPropsMap[key] = p;
 
-                // 建立舊屬性字典表 (以 name 為 key)
-                if (p.name && !oldPropsMap[p.name]) {
-                    oldPropsMap[p.name] = p; 
-                }
-
-                // 建立視覺化標籤
                 const tag = document.createElement('span');
                 tag.className = isPoint ? 'tag station' : 'tag';
                 tag.innerHTML = `${isPoint ? '🚉' : '🛤️'} ${name}${section}`;
                 listContainer.appendChild(tag);
             });
 
-            // 顯示清冊面板
             const invBox = document.getElementById('inventoryBox');
-            const invTitle = document.getElementById('inventoryTitle');
             invBox.style.display = 'block';
-            invTitle.innerHTML = `
+            document.getElementById('inventoryTitle').innerHTML = `
                 <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
                 <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
                     共 ${features.length} 筆（路線 ${routeCount} / 車站 ${stationCount}）
                 </span>
             `;
-
-            const uploadText = document.getElementById('upload-text');
-            const fileInput = document.getElementById('kmlFile');
-            uploadText.innerText = "確認上方清冊無誤後，點擊此處選擇要合併的 KML 檔案";
-            uploadText.style.color = "#2e7d32";
-            fileInput.disabled = false;
         })
         .catch(err => {
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             invBox.className = 'status error';
-            invBox.innerHTML = `<b>⚠️ 無法讀取現有的 <code>data.json</code></b><br>原因：找不到檔案或處於本地端離線開啟。若現在上傳 KML，將會生成全新的資料庫檔案。`;
-
-            document.getElementById('upload-text').innerHTML = "點擊此處選擇 KML 檔案（將以全新狀態建立）";
-            document.getElementById('kmlFile').disabled = false;
-            console.error("讀取現有 JSON 失敗:", err);
+            invBox.innerHTML = `<b>⚠️ 無法自動讀取現有 <code>data.json</code></b>（將以全新狀態建立資料庫）。`;
         });
 
-    // 2. 處理上傳的 KML
+    // 2. CSV 解析器 (支援引號與逗號)
+    function parseCSVLine(text) {
+        const result = [];
+        let cur = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (ch === '"') {
+                inQuotes = !inQuotes;
+            } else if (ch === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            parseCSVData(evt.target.result);
+            document.getElementById('csvDrop').classList.add('loaded');
+            document.getElementById('csvText').innerHTML = `✅ CSV 已載入：<b>${file.name}</b><br><span style="font-size:12px; color:#1b5e20;">共解析出 ${Object.keys(csvRoutesMap).length} 組路線編號</span>`;
+            checkReady();
+        };
+        reader.readAsText(file, 'UTF-8');
+    });
+
+    function parseCSVData(csvText) {
+        csvRoutesMap = {};
+        const lines = csvText.split(/\r?\n/);
+        let yearsHeader = [];
+        for (let y = 1895; y <= 1945; y++) yearsHeader.push(String(y));
+
+        const rawMatrix = {}; // code -> { refName, rows: { 經營者:{}, 路線名:{}, 區間:{}, 里程:{} } }
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const cols = parseCSVLine(line);
+            const code = cols[0];
+            const refName = cols[1];
+            const attrType = cols[2];
+
+            if (!code || code === '編號' || !['經營者', '路線名', '區間', '里程'].includes(attrType)) return;
+
+            if (!rawMatrix[code]) {
+                rawMatrix[code] = { code: code, refName: refName || code, rows: { '經營者': {}, '路線名': {}, '區間': {}, '里程': {} } };
+            }
+            for (let i = 0; i < yearsHeader.length; i++) {
+                const yr = yearsHeader[i];
+                const val = cols[i + 3] ? cols[i + 3].trim() : '';
+                if (val) rawMatrix[code].rows[attrType][yr] = val;
+            }
+        });
+
+        // 壓縮每條編號的沿革 (Run-Length Encoding)
+        Object.keys(rawMatrix).forEach(code => {
+            const item = rawMatrix[code];
+            const history = [];
+            const allOperators = new Set();
+            const allRouteNames = new Set();
+            const allSections = new Set();
+
+            for (let y = 1895; y <= 1945; y++) {
+                const yr = String(y);
+                const op = item.rows['經營者'][yr] || '';
+                const rn = item.rows['路線名'][yr] || '';
+                const sec = item.rows['區間'][yr] || '';
+                const mi = item.rows['里程'][yr] || '';
+
+                if (op) allOperators.add(op);
+                if (rn) allRouteNames.add(rn);
+                if (sec) allSections.add(sec);
+
+                if (op || rn || sec || mi) {
+                    const stateKey = `${op}|${rn}|${sec}|${mi}`;
+                    if (history.length > 0 && history[history.length - 1].stateKey === stateKey && history[history.length - 1].endYear === y - 1) {
+                        history[history.length - 1].endYear = y;
+                    } else {
+                        history.push({ startYear: y, endYear: y, op, rn, sec, mi, stateKey });
+                    }
+                }
+            }
+
+            const startYr = history.length > 0 ? history[0].startYear : null;
+            const endYr = history.length > 0 ? history[history.length - 1].endYear : null;
+            const secsArr = Array.from(allSections);
+            const rnsArr = Array.from(allRouteNames);
+            const lastSec = secsArr.length > 0 ? secsArr[secsArr.length - 1].replace(/-/g, '＝').replace(/—/g, '＝') : '';
+            const lastRn = rnsArr.length > 0 ? rnsArr[rnsArr.length - 1] : '';
+
+            csvRoutesMap[code] = {
+                code: code,
+                refName: item.refName,
+                lastOfficialName: lastRn,
+                section: lastSec,
+                period: (startYr && endYr) ? `${startYr}–${endYr}` : '未知',
+                operators: Array.from(allOperators),
+                routeNames: rnsArr,
+                history: history
+            };
+        });
+    }
+
+    // 3. 讀取 KML
     document.getElementById('kmlFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
-        reader.onload = function(event) {
-            processKML(event.target.result);
+        reader.onload = function(evt) {
+            rawKmlText = evt.target.result;
+            document.getElementById('kmlDrop').classList.add('loaded');
+            document.getElementById('kmlText').innerHTML = `✅ KML 已載入：<b>${file.name}</b>`;
+            checkReady();
         };
-        reader.readAsText(file);
+        reader.readAsText(file, 'UTF-8');
     });
 
-    function processKML(xmlText) {
+    function checkReady() {
+        if (rawKmlText && Object.keys(csvRoutesMap).length > 0) {
+            document.getElementById('mergeBtn').disabled = false;
+        }
+    }
+
+    // 生成 HTML 沿革表格 (供 Popup 直接顯示)
+    function buildHistoryHTML(mainCsv, subCsvList, folderName) {
+        let html = `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${mainCsv.code} ${folderName}</span>`;
+        if (mainCsv.operators.length > 0) {
+            html += ` <span style="font-size:12px;color:#555;">經營者：${mainCsv.operators.join('、')}</span>`;
+        }
+        html += `</div>`;
+
+        const renderTable = (title, histArr) => {
+            if (!histArr || histArr.length === 0) return '';
+            let t = title ? `<div style="font-weight:bold;font-size:12px;color:#3949ab;margin-top:8px;">▸ ${title}</div>` : '';
+            t += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;">
+                <thead><tr style="background:#e8eaf6;color:#1a237e;text-align:left;">
+                    <th style="padding:4px;border:1px solid #ccc;">年份</th>
+                    <th style="padding:4px;border:1px solid #ccc;">經營者</th>
+                    <th style="padding:4px;border:1px solid #ccc;">路線名</th>
+                    <th style="padding:4px;border:1px solid #ccc;">區間</th>
+                    <th style="padding:4px;border:1px solid #ccc;">里程</th>
+                </tr></thead><tbody>`;
+            histArr.forEach(h => {
+                const yrStr = h.startYear === h.endYear ? `${h.startYear}` : `${h.startYear}–${h.endYear}`;
+                t += `<tr>
+                    <td style="padding:3px 4px;border:1px solid #ddd;white-space:nowrap;">${yrStr}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.op || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.rn || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.sec || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;text-align:right;">${h.mi || '—'}</td>
+                </tr>`;
+            });
+            t += `</tbody></table>`;
+            return t;
+        };
+
+        if (mainCsv.history.length > 0) {
+            html += renderTable('', mainCsv.history);
+        } else {
+            html += `<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`;
+        }
+
+        // 若有未獨立畫線的子編號 (例如 A1-1 三爪子複線)，一併附掛於下方
+        subCsvList.forEach(sub => {
+            if (sub.history.length > 0) {
+                html += renderTable(`附屬統計：${sub.code} ${sub.refName}`, sub.history);
+            }
+        });
+
+        return html;
+    }
+
+    // 4. 執行縫合
+    function runMerge() {
+        const nameMode = document.querySelector('input[name="nameMode"]:checked').value;
         const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        const xmlDoc = parser.parseFromString(rawKmlText, "text/xml");
         const placemarks = xmlDoc.getElementsByTagName("Placemark");
-        
-        let kmlFeatures = [];
-        let kmlNames = new Set();
-        let newLines = [], updateLines = [];
+
+        // 找出 KML 中所有出現過的路線編號
+        const kmlCodesSet = new Set();
+        const groupedLines = {}; // key: code + "_" + folderName -> { code, folderName, coordsList: [] }
+        const stationFeatures = [];
 
         for (let i = 0; i < placemarks.length; i++) {
-            let p = placemarks[i];
-            
-            let nameNode = p.getElementsByTagName("name")[0];
-            let name = (nameNode && nameNode.textContent) ? nameNode.textContent.trim() : "未命名路線";
-            kmlNames.add(name);
+            const p = placemarks[i];
+            const nameNode = p.getElementsByTagName("name")[0];
+            let rawCode = (nameNode && nameNode.textContent) ? nameNode.textContent.trim() : "";
 
             let parent = p.parentNode;
             let folderName = "未分類";
-            while(parent && parent.nodeName !== "#document") {
-                if(parent.nodeName === "Folder") {
-                    let fnNode = parent.getElementsByTagName("name")[0];
-                    if(fnNode) folderName = fnNode.textContent.trim();
+            while (parent && parent.nodeName !== "#document") {
+                if (parent.nodeName === "Folder") {
+                    const fnNode = parent.getElementsByTagName("name")[0];
+                    if (fnNode) folderName = fnNode.textContent.trim();
                     break;
                 }
                 parent = parent.parentNode;
             }
 
-            let geom = null;
-            let pointNode = p.getElementsByTagName("Point")[0];
-            let lineNode = p.getElementsByTagName("LineString")[0];
+            const pointNode = p.getElementsByTagName("Point")[0];
+            const lineNode = p.getElementsByTagName("LineString")[0];
 
             if (pointNode) {
-                let coords = pointNode.getElementsByTagName("coordinates")[0].textContent.trim().split(',');
+                const coords = pointNode.getElementsByTagName("coordinates")[0].textContent.trim().split(',');
                 if (coords.length >= 2) {
-                    geom = { type: "Point", coordinates: [parseFloat(coords[0]), parseFloat(coords[1])] };
+                    const stName = rawCode || "未命名車站";
+                    stationFeatures.push({
+                        type: "Feature",
+                        properties: {
+                            name: stName,
+                            line_type: "車站",
+                            status: "車站",
+                            description: { zh: `【車站】${stName}` },
+                            source: "KML Import",
+                            last_updated: new Date().toISOString().split('T')[0]
+                        },
+                        geometry: { type: "Point", coordinates: [parseFloat(coords[0]), parseFloat(coords[1])] }
+                    });
                 }
             } else if (lineNode) {
-                let coordArray = lineNode.getElementsByTagName("coordinates")[0].textContent.trim().split(/\s+/);
-                let lineCoords = [];
+                if (!rawCode) rawCode = "A22-支線"; // 處理支線(自用)中未命名之烏來林道支線
+                kmlCodesSet.add(rawCode);
+
+                const coordArray = lineNode.getElementsByTagName("coordinates")[0].textContent.trim().split(/\s+/);
+                const lineCoords = [];
                 for (let c of coordArray) {
-                    if(!c) continue;
-                    let pts = c.split(',');
-                    if(pts.length >= 2) lineCoords.push([parseFloat(pts[0]), parseFloat(pts[1])]);
-                }
-                if (lineCoords.length > 1) geom = { type: "LineString", coordinates: lineCoords };
-            }
-
-            if (geom) {
-                let props = {};
-                if (oldPropsMap[name]) {
-                    props = JSON.parse(JSON.stringify(oldPropsMap[name]));
-                    props.last_updated = new Date().toISOString().split('T')[0];
-                    updateLines.push(`${name} (${folderName})`);
-                } else {
-                    props = {
-                        name: name,
-                        section: "",
-                        tailo: "",
-                        description: { zh: `【${folderName}】在此輸入中文歷史描述` },
-                        source: "KML Import",
-                        last_updated: new Date().toISOString().split('T')[0],
-                        status: folderName === "車站" ? "車站" : "考據中",
-                        period: "未知",
-                        comment: ""
-                    };
-                    newLines.push(`${name} (${folderName})`);
+                    if (!c) continue;
+                    const pts = c.split(',');
+                    if (pts.length >= 2) lineCoords.push([parseFloat(pts[0]), parseFloat(pts[1])]);
                 }
 
-                kmlFeatures.push({ type: "Feature", properties: props, geometry: geom });
+                if (lineCoords.length > 1) {
+                    const groupKey = `${rawCode}__${folderName}`;
+                    if (!groupedLines[groupKey]) {
+                        groupedLines[groupKey] = { code: rawCode, folderName: folderName, coordsList: [] };
+                    }
+                    groupedLines[groupKey].coordsList.push(lineCoords);
+                }
             }
         }
 
-        // 3. 執行合併 (保留未在 KML 中的舊有路線)
-        let finalFeatures = [];
-        let keepLines = [];
+        // 建立「無獨立幾何之子編號」對應母編號的字典 (如 A1-1 歸入 A1)
+        const orphanSubMap = {};
+        Object.keys(csvRoutesMap).forEach(csvCode => {
+            if (!kmlCodesSet.has(csvCode) && csvCode.includes('-')) {
+                const parentCode = csvCode.split('-')[0];
+                if (!orphanSubMap[parentCode]) orphanSubMap[parentCode] = [];
+                orphanSubMap[parentCode].push(csvRoutesMap[csvCode]);
+            }
+        });
 
+        // 產生縫合後的路線 Features
+        const mergedRouteFeatures = [];
+        const matchedReport = [];
+
+        Object.values(groupedLines).forEach(grp => {
+            const code = grp.code;
+            const parentCode = code.split('-')[0];
+            const csvInfo = csvRoutesMap[code] || csvRoutesMap[parentCode] || {
+                code: code, refName: code, lastOfficialName: '', section: '', period: '未知', operators: [], routeNames: [], history: []
+            };
+
+            // 決定顯示的主名稱 (若為副線/舊線，與母線共用主名稱以便群組連動，或依子編號顯示)
+            const baseCsv = csvRoutesMap[parentCode] || csvInfo;
+            let displayName = baseCsv.refName;
+            if (nameMode === 'ref_line') {
+                displayName = baseCsv.refName.endsWith('線') ? baseCsv.refName : (baseCsv.refName + '線');
+            } else if (nameMode === 'code_ref') {
+                displayName = `${parentCode} ${baseCsv.refName}`;
+            } else if (nameMode === 'last_official') {
+                displayName = baseCsv.lastOfficialName || (baseCsv.refName + '線');
+            }
+
+            // 區間顯示：主線顯示主區間；舊線/副線可在區間標註型態以利辨識
+            let displaySection = csvInfo.section || baseCsv.section || '';
+            if (grp.folderName !== '主線') {
+                displaySection = displaySection ? `${displaySection} (${grp.folderName})` : grp.folderName;
+            }
+
+            const orphanSubs = (grp.folderName === '主線' && orphanSubMap[code]) ? orphanSubMap[code] : [];
+            const htmlTable = buildHistoryHTML(csvInfo, orphanSubs, grp.folderName);
+
+            const geom = grp.coordsList.length === 1
+                ? { type: "LineString", coordinates: grp.coordsList[0] }
+                : { type: "MultiLineString", coordinates: grp.coordsList };
+
+            // 繼承舊檔可能已填寫的 tailo
+            const oldProp = oldPropsMap[code] || oldPropsMap[displayName] || {};
+
+            mergedRouteFeatures.push({
+                type: "Feature",
+                properties: {
+                    route_id: code,
+                    parent_id: parentCode,
+                    line_type: grp.folderName,
+                    name: displayName,
+                    section: displaySection,
+                    tailo: oldProp.tailo || "",
+                    operators: csvInfo.operators.join('、'),
+                    alt_names: csvInfo.routeNames.join('、'),
+                    period: csvInfo.period,
+                    status: "廢止",
+                    description: { zh: htmlTable },
+                    history: csvInfo.history,
+                    source: "KML + CSV 107版",
+                    last_updated: new Date().toISOString().split('T')[0]
+                },
+                geometry: geom
+            });
+
+            matchedReport.push(`${code} [${grp.folderName}] ➔ <b>${displayName}</b> <span style="color:#666;">(${displaySection || '無區間'})</span>`);
+        });
+
+        // 保留現有 data.json 中未衝突的舊路線 (如糖鐵)
+        const preservedFeatures = [];
+        const preservedNames = [];
         const oldFeatures = (existingData && existingData.data && existingData.data.features) 
             ? existingData.data.features 
             : ((existingData && existingData.features) ? existingData.features : []);
 
+        const newRouteNames = new Set(mergedRouteFeatures.map(f => f.properties.name));
         oldFeatures.forEach(f => {
-            if (f.properties && f.properties.name && !kmlNames.has(f.properties.name)) {
-                finalFeatures.push(f);
-                keepLines.push(f.properties.name + (f.properties.section ? ` (${f.properties.section})` : ''));
+            const p = f.properties || {};
+            if (!kmlCodesSet.has(p.route_id) && !newRouteNames.has(p.name)) {
+                preservedFeatures.push(f);
+                preservedNames.push(p.name);
             }
         });
 
-        finalFeatures = finalFeatures.concat(kmlFeatures);
-        finalGeoJson = { data: { type: "FeatureCollection", features: finalFeatures } };
+        const allFeatures = preservedFeatures.concat(mergedRouteFeatures, stationFeatures);
+        finalGeoJson = { data: { type: "FeatureCollection", features: allFeatures } };
 
         const statusDiv = document.getElementById('status');
         statusDiv.style.display = 'block';
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
-            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">🎉 智慧合併完成！總計 ${finalFeatures.length} 筆資料：</div>
-            📌 <b>從 KML 更新座標（保留舊文字，共 ${updateLines.length} 筆）：</b><br>
-            <span style="color:#555; font-size:13px;">${updateLines.length > 0 ? updateLines.join('、') : '無'}</span><br><br>
-            🆕 <b>從 KML 新增項目（共 ${newLines.length} 筆）：</b><br>
-            <span style="color:#555; font-size:13px;">${newLines.length > 0 ? newLines.join('、') : '無'}</span><br><br>
-            🛡️ <b>安全保留未異動的舊資料（共 ${keepLines.length} 筆）：</b><br>
-            <span style="color:#555; font-size:13px;">${keepLines.length > 0 ? keepLines.join('、') : '無'}</span>
+            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">
+                🎉 縫合成功！共產出 ${allFeatures.length} 筆圖資（含新縫合路線 ${mergedRouteFeatures.length} 筆、車站 ${stationFeatures.length} 座、保留既有路線 ${preservedFeatures.length} 筆）
+            </div>
+            <b>📌 本次縫合之台車路線清冊（同編號多段已自動合併為 MultiLineString）：</b><br>
+            <div style="max-height:220px; overflow-y:auto; background:white; padding:10px; border-radius:6px; border:1px solid #c8e6c9; margin-top:6px; font-size:13px;">
+                ${matchedReport.join('<br>')}
+            </div>
+            <div style="margin-top:10px; font-size:13px; color:#2e7d32;">
+                🛡️ <b>安全保留既有路線（共 ${preservedNames.length} 筆）：</b> ${preservedNames.join('、') || '無'}
+            </div>
         `;
 
         document.getElementById('downloadBtn').style.display = 'inline-block';
@@ -249,7 +494,7 @@
 
     function downloadJSON() {
         if (!finalGeoJson) return;
-        const dataStr = JSON.stringify(finalGeoJson, null, 4);
+        const dataStr = JSON.stringify(finalGeoJson, null, 2);
         const blob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
