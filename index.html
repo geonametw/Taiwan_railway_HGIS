@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v8.16</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v8.17</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -15,6 +15,7 @@
         }
         #map { width: 100vw; height: 100%; }
 
+        /* 右上角系統標題 */
         #system-title {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background-color: rgba(26, 35, 126, 0.9); color: white;
@@ -23,6 +24,45 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); pointer-events: none;
         }
 
+        /* 📅 年代篩選膠囊面板 */
+        #year-filter-bar {
+            position: absolute; top: 62px; right: 15px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 6px 12px; border-radius: 22px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; color: #333;
+            border: 1px solid #c5cae9;
+        }
+        .yf-btn {
+            background: #e8eaf6; color: #1a237e; border: none;
+            width: 26px; height: 26px; border-radius: 50%;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: 0.15s; padding: 0;
+        }
+        .yf-btn:hover { background: #3949ab; color: white; }
+        .yf-btn:disabled { opacity: 0.35; cursor: not-allowed; background: #eee; color: #999; }
+        #yearSelect {
+            border: 1px solid #9fa8da; border-radius: 14px;
+            padding: 3px 8px; font-size: 13px; font-weight: bold;
+            color: #1a237e; background: #fff; outline: none; cursor: pointer;
+            font-family: inherit;
+        }
+        #yearModeSelect {
+            border: 1px solid #ddd; border-radius: 12px;
+            padding: 3px 6px; font-size: 12px; color: #555;
+            background: #f8f9fa; outline: none; cursor: pointer;
+            font-family: inherit; display: none;
+        }
+        #yearResetBtn {
+            background: #ef5350; color: white; border: none;
+            padding: 3px 8px; border-radius: 12px; font-size: 12px;
+            font-weight: bold; cursor: pointer; display: none;
+        }
+        #yearResetBtn:hover { background: #c62828; }
+
+        /* 左上角動態伸縮搜尋列（完全獨立，不受年代面板影響） */
         #custom-search-box {
             position: absolute; top: 15px; left: 15px; z-index: 1000;
             background-color: white;
@@ -76,7 +116,7 @@
         .random-item { background-color: #e8eaf6; color: #1a237e; font-weight: bold; text-align: center; border-bottom: 2px solid #c5cae9; }
         .search-letter-header { padding: 4px 15px; background-color: #e0e0e0; color: #555; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 10; }
 
-        /* 👇 1. 彈出資訊視窗 (Popup) 尺寸限制與捲軸美化 */
+        /* 彈出資訊視窗 (Popup) 尺寸限制與捲軸美化 */
         .custom-popup .leaflet-popup-content-wrapper {
             border-radius: 10px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.2);
@@ -90,7 +130,6 @@
             line-height: 1.5;
             padding-right: 4px;
         }
-        /* 讓長表格的表頭在滑動時吸附置頂 */
         .custom-popup table th {
             position: sticky;
             top: 0;
@@ -98,7 +137,6 @@
             z-index: 2;
             box-shadow: 0 1px 0 #ccc;
         }
-        /* 統一藍底白字標籤樣式 */
         .route-badge {
             background: #1a237e;
             color: white;
@@ -108,8 +146,13 @@
             font-weight: bold;
             display: inline-block;
         }
+        /* 當下選中年份的表格列高亮 */
+        .active-year-row {
+            background-color: #fff59d !important;
+            font-weight: bold;
+            color: #b71c1c;
+        }
 
-        /* 圖層面板美化 */
         .leaflet-control-layers {
             font-family: '微軟正黑體', 'PingFang TC', Arial, sans-serif;
             border-radius: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px;
@@ -117,15 +160,31 @@
 
         @media (max-width: 768px) {
             #custom-search-box.expanded { width: calc(100% - 30px) !important; left: 15px !important; }
-            #system-title { top: auto !important; bottom: 40px !important; left: 50% !important; transform: translateX(-50%); font-size: 14px !important; padding: 8px 15px; white-space: nowrap; }
+            #system-title { top: auto !important; bottom: 32px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); font-size: 13px !important; padding: 6px 14px; white-space: nowrap; }
+            #year-filter-bar { top: auto !important; bottom: 72px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; }
             .leaflet-control-zoom { display: none !important; }
-            .custom-popup .leaflet-popup-content { max-height: 38dvh; }
+            .custom-popup .leaflet-popup-content { max-height: 36dvh; }
         }
     </style>
 </head>
 <body>
 
     <div id="system-title">古今鐵道營業線 HGIS 查詢</div>
+
+    <!-- 📅 年代篩選膠囊面板 -->
+    <div id="year-filter-bar">
+        <span>📅</span>
+        <button class="yf-btn" id="prevYearBtn" title="上一年" disabled>&#9664;</button>
+        <select id="yearSelect" title="選擇歷史年份">
+            <option value="all">全部年代 (不限)</option>
+        </select>
+        <button class="yf-btn" id="nextYearBtn" title="下一年" disabled>&#9654;</button>
+        <select id="yearModeSelect" title="非當年路線顯示方式">
+            <option value="hide">僅保留當年</option>
+            <option value="dim">淡化其他</option>
+        </select>
+        <button id="yearResetBtn" title="顯示全部年代">重置</button>
+    </div>
 
     <div id="custom-search-box">
         <div id="input-display-layer"></div>
@@ -139,6 +198,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
+        // 避免點擊年代控制列時觸發地圖拖曳或縮放
+        const yfBar = document.getElementById('year-filter-bar');
+        L.DomEvent.disableClickPropagation(yfBar);
+        L.DomEvent.disableScrollPropagation(yfBar);
+
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
         const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85 });
         const myRenderer = L.canvas({ tolerance: 15 }); 
@@ -148,16 +212,72 @@
         L.control.layers({ "現代地圖 (OSM)": osm }, { "1904 臺灣堡圖": sinica1904 }, { position: 'bottomright', collapsed: true }).addTo(map);
 
         let geojsonLayer;
-        let searchableRoutes = []; // 僅收納去重後的路線供搜尋列使用
-        let masterRouteDescMap = {}; // 儲存每條母路線的完整沿革 HTML，讓舊線也能共享顯示
+        let allRouteLayers = []; // 儲存所有路線 Layer，方便依年份隱藏/顯示
+        let searchableRoutes = [];
+        let masterRouteDescMap = {};
+        let masterRouteHistoryMap = {};
         let activeRouteName = '';
         let activeRouteSection = '';
+        let selectedGroupKey = null;
         let isRenderingList = false;
 
-        // 依據路線屬性回傳預設樣式（主線橘、舊線黑虛線、副線深藍）
+        // 年代篩選狀態
+        let currentFilterYear = 'all';
+        let yearFilterMode = 'hide'; // 'hide' 或 'dim'
+
+        // 轉換西元年為日治年號字串
+        function getEraName(y) {
+            if (y < 1912) return `明治${y - 1867}年`;
+            if (y === 1912) return `明治45/大正元年`;
+            if (y < 1926) return `大正${y - 1911}年`;
+            if (y === 1926) return `大正15/昭和元年`;
+            return `昭和${y - 1925}年`;
+        }
+
+        // 初始化年份下拉選單 (1895 - 1945)
+        const yearSelect = document.getElementById('yearSelect');
+        const prevYearBtn = document.getElementById('prevYearBtn');
+        const nextYearBtn = document.getElementById('nextYearBtn');
+        const yearModeSelect = document.getElementById('yearModeSelect');
+        const yearResetBtn = document.getElementById('yearResetBtn');
+
+        for (let y = 1909; y <= 1945; y++) {
+            const opt = document.createElement('option');
+            opt.value = String(y);
+            opt.textContent = `${y} (${getEraName(y)})`;
+            yearSelect.appendChild(opt);
+        }
+
+        // 判斷某條路線在指定年份 y 是否存在
+        function isFeatureActiveInYear(feature, yearStr) {
+            if (yearStr === 'all') return true;
+            const yr = parseInt(yearStr, 10);
+            const p = feature.properties || {};
+            const groupKey = p.parent_id || p.route_id || p.name;
+
+            // 1. 優先檢查結構化 history 陣列 (若舊線本身無 history，則參照母線 history)
+            const hist = (p.history && p.history.length > 0) ? p.history : (masterRouteHistoryMap[groupKey] || []);
+            if (hist.length > 0) {
+                return hist.some(h => yr >= parseInt(h.startYear, 10) && yr <= parseInt(h.endYear, 10));
+            }
+
+            // 2. 次要檢查 period 字串 (例如 "1912–1941")
+            if (p.period) {
+                const m = p.period.match(/(\d{4})\D+(\d{4})/);
+                if (m) return yr >= parseInt(m[1], 10) && yr <= parseInt(m[2], 10);
+                const mSingle = p.period.match(/(\d{4})/);
+                if (mSingle) return yr === parseInt(mSingle[1], 10);
+            }
+
+            return false;
+        }
+
+        // 依據路線屬性與年代狀態回傳樣式
         function getLineStyle(feature, isSelected = false) {
             const p = feature.properties || {};
             const type = p.line_type || "";
+            const isActiveYear = isFeatureActiveInYear(feature, currentFilterYear);
+
             if (isSelected) {
                 return {
                     color: "#e53935",
@@ -166,6 +286,12 @@
                     dashArray: type === "舊線" ? '6, 6' : null
                 };
             }
+
+            // 若處於「淡化其他」模式且該路線非當年存在
+            if (!isActiveYear && yearFilterMode === 'dim') {
+                return { color: "#9e9e9e", weight: 2, opacity: 0.22, dashArray: null };
+            }
+
             if (type === "舊線") {
                 return { color: "#222222", weight: 3, opacity: 0.85, dashArray: '5, 5' };
             } else if (type === "副線" || type.includes("支線")) {
@@ -175,7 +301,7 @@
             }
         }
 
-        // 2 & 5. 格式化 Popup 內容（將附屬統計也轉為藍底白字，並讓舊線共享主線的完整沿革表）
+        // 格式化 Popup 內容（含附屬統計藍底白字標籤 ＆ 當年表格列螢光高亮）
         function buildPopupContent(feature) {
             const p = feature.properties || {};
             const isStation = (feature.geometry && feature.geometry.type === "Point") || p.status === "車站";
@@ -187,7 +313,6 @@
             const groupKey = p.parent_id || p.route_id || p.name;
             let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
 
-            // 若點到的是舊線/副線且本身無年報表格，自動調用母線的完整沿革表，並替換上方藍底白字標籤為當前線型
             if ((rawDesc.includes("年報無統計") || rawDesc.includes("在此輸入中文歷史描述") || !rawDesc.includes("<table")) && masterRouteDescMap[groupKey]) {
                 rawDesc = masterRouteDescMap[groupKey];
                 const badgeText = `${p.route_id || groupKey} ${p.line_type || ''}`.trim();
@@ -197,11 +322,24 @@
                 );
             }
 
-            // 將「▸ 附屬統計：A1-1 三爪子複線」中的代號與名稱也轉為藍底白字標籤
             rawDesc = rawDesc.replace(
                 /▸\s*附屬統計：\s*([^<]+)<\/div>/g,
                 '▸ 附屬統計：<span class="route-badge" style="margin-left:4px;">$1</span></div>'
             );
+
+            // 若目前有選定年份，將表格中符合該年份的那一列加上黃底高亮
+            if (currentFilterYear !== 'all') {
+                const yr = parseInt(currentFilterYear, 10);
+                rawDesc = rawDesc.replace(/<tr>\s*<td([^>]*)>(\d{4})(?:[–~-](\d{4}))?<\/td>/g, (match, tdAttr, y1, y2) => {
+                    const start = parseInt(y1, 10);
+                    const end = y2 ? parseInt(y2, 10) : start;
+                    if (yr >= start && yr <= end) {
+                        const rangeText = y2 ? `${y1}–${y2}` : `${y1}`;
+                        return `<tr class="active-year-row"><td${tdAttr}>★ ${rangeText}</td>`;
+                    }
+                    return match;
+                });
+            }
 
             let cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
             let content = `<div style="font-size:16px;font-weight:bold;color:#1a237e;margin-bottom:2px;">${p.name || '未命名'}</div>`;
@@ -217,39 +355,114 @@
             return content;
         }
 
+        // 套用年代篩選至地圖圖層
+        function applyYearFilter() {
+            const isAll = (currentFilterYear === 'all');
+            prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= 1909;
+            nextYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) >= 1945;
+            yearModeSelect.style.display = isAll ? 'none' : 'inline-block';
+            yearResetBtn.style.display = isAll ? 'none' : 'inline-block';
+
+            allRouteLayers.forEach(l => {
+                const f = l.feature;
+                const p = f.properties || {};
+                const lKey = p.parent_id || p.route_id || p.name;
+                const isActive = isFeatureActiveInYear(f, currentFilterYear);
+                const isSelected = (selectedGroupKey && lKey === selectedGroupKey);
+
+                if (!isActive && yearFilterMode === 'hide') {
+                    // 從地圖畫布移除，徹底避免隱形線段攔截點擊
+                    if (map.hasLayer(l)) map.removeLayer(l);
+                } else {
+                    if (!map.hasLayer(l)) l.addTo(map);
+                    l.setStyle(getLineStyle(f, isSelected));
+                    if (isSelected && l.bringToFront) l.bringToFront();
+                }
+            });
+
+            // 確保車站圓點維持在最上層
+            if (geojsonLayer) {
+                geojsonLayer.eachLayer(l => {
+                    if (l.feature && l.feature.geometry && l.feature.geometry.type === "Point" && l.bringToFront) {
+                        l.bringToFront();
+                    }
+                });
+            }
+
+            // 若搜尋清單正打開著，同步更新清單內容
+            if (dropdown.style.display === 'block') {
+                renderList(input.value);
+            }
+        }
+
+        yearSelect.addEventListener('change', function() {
+            currentFilterYear = this.value;
+            map.closePopup();
+            applyYearFilter();
+        });
+
+        prevYearBtn.addEventListener('click', function() {
+            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) > 1909) {
+                yearSelect.value = String(parseInt(currentFilterYear, 10) - 1);
+                yearSelect.dispatchEvent(new Event('change'));
+            }
+        });
+
+        nextYearBtn.addEventListener('click', function() {
+            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) < 1945) {
+                yearSelect.value = String(parseInt(currentFilterYear, 10) + 1);
+                yearSelect.dispatchEvent(new Event('change'));
+            }
+        });
+
+        yearModeSelect.addEventListener('change', function() {
+            yearFilterMode = this.value;
+            applyYearFilter();
+        });
+
+        yearResetBtn.addEventListener('click', function() {
+            yearSelect.value = 'all';
+            yearSelect.dispatchEvent(new Event('change'));
+        });
+
         // 統一全線家族高亮與縮放函數
         function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
             const targetProps = targetFeature.properties || {};
-            const targetKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
+            selectedGroupKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
             let groupBounds = L.latLngBounds();
             let popupLayer = triggerLayer;
 
-            geojsonLayer.eachLayer(l => {
-                if (!l.feature) return;
-                const isPoint = l.feature.geometry && l.feature.geometry.type === "Point";
-                if (isPoint) return; // 車站圓點維持原狀，不參與路線變色
-
-                const lp = l.feature.properties || {};
+            allRouteLayers.forEach(l => {
+                const f = l.feature;
+                const lp = f.properties || {};
                 const lKey = lp.parent_id || lp.route_id || lp.name;
+                const isActive = isFeatureActiveInYear(f, currentFilterYear);
 
-                if (lKey === targetKey) {
-                    l.setStyle(getLineStyle(l.feature, true));
+                if (lKey === selectedGroupKey) {
+                    if (!map.hasLayer(l)) l.addTo(map);
+                    l.setStyle(getLineStyle(f, true));
                     if (l.bringToFront) l.bringToFront();
                     if (l.getBounds) groupBounds.extend(l.getBounds());
                     if (!popupLayer || (lp.line_type === "主線" && !triggerLayer)) {
                         popupLayer = l;
                     }
                 } else {
-                    l.setStyle(getLineStyle(l.feature, false));
+                    if (!isActive && yearFilterMode === 'hide') {
+                        if (map.hasLayer(l)) map.removeLayer(l);
+                    } else {
+                        if (!map.hasLayer(l)) l.addTo(map);
+                        l.setStyle(getLineStyle(f, false));
+                    }
                 }
             });
 
-            // 確保車站圓點浮在路線上方，不被粗紅線蓋住
-            geojsonLayer.eachLayer(l => {
-                if (l.feature && l.feature.geometry && l.feature.geometry.type === "Point" && l.bringToFront) {
-                    l.bringToFront();
-                }
-            });
+            if (geojsonLayer) {
+                geojsonLayer.eachLayer(l => {
+                    if (l.feature && l.feature.geometry && l.feature.geometry.type === "Point" && l.bringToFront) {
+                        l.bringToFront();
+                    }
+                });
+            }
 
             if (shouldFitBounds && groupBounds.isValid()) {
                 map.fitBounds(groupBounds, { padding: [60, 60] });
@@ -265,7 +478,6 @@
                 const geoData = rawData.data || rawData; 
                 const rawFeatures = geoData.features || [];
 
-                // 5. 自動濾除第一次單純匯入 KML 殘留的未縫合舊測試圖層與重複車站
                 const seenStations = new Set();
                 const cleanFeatures = rawFeatures.filter(f => {
                     const p = f.properties || {};
@@ -278,7 +490,6 @@
                         return true;
                     }
 
-                    // 若無 route_id 但名稱卻是 A1、A3 等純代號（第一次測試匯入的殘留物），自動剔除
                     const descText = (p.description && p.description.zh) ? p.description.zh : "";
                     if (!p.route_id && /^(A\d+(-\d+)?|未命名路線|Line\s+)/i.test(p.name || "") && descText.includes("在此輸入中文歷史描述")) {
                         return false;
@@ -286,7 +497,6 @@
                     return true;
                 });
 
-                // 建立母路線沿革字典 & 搜尋清單去重（每條路線在搜尋列只出現一次）
                 const routeGroupSeen = new Set();
                 cleanFeatures.forEach(f => {
                     const p = f.properties || {};
@@ -296,6 +506,9 @@
                         if (descText.includes("<table") && (!masterRouteDescMap[groupKey] || p.line_type === "主線")) {
                             masterRouteDescMap[groupKey] = descText;
                         }
+                        if (p.history && p.history.length > 0 && (!masterRouteHistoryMap[groupKey] || p.line_type === "主線")) {
+                            masterRouteHistoryMap[groupKey] = p.history;
+                        }
                     }
                 });
 
@@ -303,14 +516,12 @@
                     const p = f.properties || {};
                     if (f.geometry && f.geometry.type !== "Point") {
                         const groupKey = p.parent_id || p.route_id || p.name;
-                        // 優先挑主線代表該路線放入搜尋清單
                         if (!routeGroupSeen.has(groupKey) && (p.line_type === "主線" || !p.line_type)) {
                             routeGroupSeen.add(groupKey);
                             searchableRoutes.push(f);
                         }
                     }
                 });
-                // 若有只有副線/舊線而無主線的獨立編號，也補進搜尋清單
                 cleanFeatures.forEach(f => {
                     const p = f.properties || {};
                     if (f.geometry && f.geometry.type !== "Point") {
@@ -326,7 +537,6 @@
                     style: function (feature) {
                         return getLineStyle(feature, false);
                     },
-                    // 👇 4. 將車站改為精巧的白底深藍框小圓點
                     pointToLayer: function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 4.5,
@@ -338,6 +548,11 @@
                         });
                     },
                     onEachFeature: function (feature, layer) {
+                        const isPoint = feature.geometry && feature.geometry.type === "Point";
+                        if (!isPoint) {
+                            allRouteLayers.push(layer);
+                        }
+
                         if (feature.properties) {
                             layer.bindPopup(() => buildPopupContent(feature), {
                                 className: 'custom-popup',
@@ -347,8 +562,7 @@
                             });
 
                             layer.on('click', function(e) {
-                                const isPoint = feature.geometry && feature.geometry.type === "Point";
-                                if (isPoint) return; // 點擊車站僅彈出站名，不干擾搜尋列
+                                if (isPoint) return;
 
                                 searchBox.classList.add('expanded');
                                 activeRouteName = feature.properties.name || '未命名';
@@ -421,7 +635,10 @@
             const normalize = str => str ? str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
             const cleanKeyword = normalize(keyword);
 
-            let matched = (keyword === '') ? [...searchableRoutes] : searchableRoutes.filter(f => {
+            // 先依目前選定的年份過濾路線
+            const yearFilteredPool = searchableRoutes.filter(f => isFeatureActiveInYear(f, currentFilterYear));
+
+            let matched = (keyword === '') ? [...yearFilteredPool] : yearFilteredPool.filter(f => {
                 const nameMatch = normalize(f.properties.name || "").includes(cleanKeyword);
                 const tailoMatch = normalize(f.properties.tailo || "").includes(cleanKeyword);
                 return nameMatch || tailoMatch;
@@ -434,14 +651,15 @@
                 if (keyword === '') {
                     const randomItem = document.createElement('div');
                     randomItem.className = 'search-item random-item';
-                    randomItem.innerHTML = '🎲 隨機探索一條路線';
+                    const yearLabel = currentFilterYear === 'all' ? '' : ` (${currentFilterYear}年・共${matched.length}條)`;
+                    randomItem.innerHTML = `🎲 隨機探索一條路線${yearLabel}`;
                     
                     randomItem.onclick = (e) => {
                         e.stopPropagation(); 
                         dropdown.style.display = 'none';
                         searchBox.classList.add('expanded');
                         
-                        const f = searchableRoutes[Math.floor(Math.random() * searchableRoutes.length)];
+                        const f = matched[Math.floor(Math.random() * matched.length)];
                         activeRouteName = f.properties.name || '未命名';
                         activeRouteSection = (f.properties.section || '').replace(/\s*\([^)]*\)$/, '');
                         input.value = activeRouteName;
@@ -482,7 +700,6 @@
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                         clearBtn.style.display = 'block'; 
                         
-                        // 👇 3. 點擊搜尋項目後，自動縮放平移至該路線全線位置並展開沿革表
                         highlightRouteGroup(f, true, null);
                     };
                     dropdown.appendChild(item);
@@ -503,15 +720,10 @@
             if (input.value.length > 0) {
                 input.value = '';
                 activeRouteName = ''; activeRouteSection = '';
+                selectedGroupKey = null;
                 syncDisplay(); 
                 renderList('');
-                if (geojsonLayer) {
-                    geojsonLayer.eachLayer(l => {
-                        if (l.feature && l.feature.geometry && l.feature.geometry.type !== "Point") {
-                            l.setStyle(getLineStyle(l.feature, false));
-                        }
-                    });
-                }
+                applyYearFilter();
                 map.closePopup();
                 if (window.innerWidth > 768) input.focus(); 
             } else {
