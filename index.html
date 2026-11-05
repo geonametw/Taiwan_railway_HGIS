@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v8.15</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v8.16</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -76,10 +76,50 @@
         .random-item { background-color: #e8eaf6; color: #1a237e; font-weight: bold; text-align: center; border-bottom: 2px solid #c5cae9; }
         .search-letter-header { padding: 4px 15px; background-color: #e0e0e0; color: #555; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 10; }
 
+        /* 👇 1. 彈出資訊視窗 (Popup) 尺寸限制與捲軸美化 */
+        .custom-popup .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            padding: 2px;
+        }
+        .custom-popup .leaflet-popup-content {
+            margin: 12px 14px;
+            width: min(350px, 78vw) !important;
+            max-height: 42dvh;
+            overflow-y: auto;
+            line-height: 1.5;
+            padding-right: 4px;
+        }
+        /* 讓長表格的表頭在滑動時吸附置頂 */
+        .custom-popup table th {
+            position: sticky;
+            top: 0;
+            background: #e8eaf6;
+            z-index: 2;
+            box-shadow: 0 1px 0 #ccc;
+        }
+        /* 統一藍底白字標籤樣式 */
+        .route-badge {
+            background: #1a237e;
+            color: white;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        /* 圖層面板美化 */
+        .leaflet-control-layers {
+            font-family: '微軟正黑體', 'PingFang TC', Arial, sans-serif;
+            border-radius: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px;
+        }
+
         @media (max-width: 768px) {
             #custom-search-box.expanded { width: calc(100% - 30px) !important; left: 15px !important; }
             #system-title { top: auto !important; bottom: 40px !important; left: 50% !important; transform: translateX(-50%); font-size: 14px !important; padding: 8px 15px; white-space: nowrap; }
             .leaflet-control-zoom { display: none !important; }
+            .custom-popup .leaflet-popup-content { max-height: 38dvh; }
         }
     </style>
 </head>
@@ -108,59 +148,216 @@
         L.control.layers({ "現代地圖 (OSM)": osm }, { "1904 臺灣堡圖": sinica1904 }, { position: 'bottomright', collapsed: true }).addTo(map);
 
         let geojsonLayer;
-        let allFeatures = [];
+        let searchableRoutes = []; // 僅收納去重後的路線供搜尋列使用
+        let masterRouteDescMap = {}; // 儲存每條母路線的完整沿革 HTML，讓舊線也能共享顯示
         let activeRouteName = '';
         let activeRouteSection = '';
-        
         let isRenderingList = false;
 
-        // 🎯 統一樣式取得函數：依據線路屬性自動切換（主線橘、舊線黑虛線、副線深藍）
-        function getLineStyle(feature) {
-            const type = feature.properties.line_type || "";
+        // 依據路線屬性回傳預設樣式（主線橘、舊線黑虛線、副線深藍）
+        function getLineStyle(feature, isSelected = false) {
+            const p = feature.properties || {};
+            const type = p.line_type || "";
+            if (isSelected) {
+                return {
+                    color: "#e53935",
+                    weight: type === "主線" || !type ? 7 : 5,
+                    opacity: 1,
+                    dashArray: type === "舊線" ? '6, 6' : null
+                };
+            }
             if (type === "舊線") {
-                return { color: "#000000", weight: 3, opacity: 0.85, dashArray: '5, 5' };
-            } else if (type === "副線") {
-                return { color: "#3949ab", weight: 3, opacity: 0.8 };
+                return { color: "#222222", weight: 3, opacity: 0.85, dashArray: '5, 5' };
+            } else if (type === "副線" || type.includes("支線")) {
+                return { color: "#3949ab", weight: 3.5, opacity: 0.85, dashArray: null };
             } else {
-                return { color: "#ff7800", weight: 4, opacity: 0.8, dashArray: null };
+                return { color: "#ff7800", weight: 4, opacity: 0.85, dashArray: null };
             }
         }
 
-        fetch('data.json')
+        // 2 & 5. 格式化 Popup 內容（將附屬統計也轉為藍底白字，並讓舊線共享主線的完整沿革表）
+        function buildPopupContent(feature) {
+            const p = feature.properties || {};
+            const isStation = (feature.geometry && feature.geometry.type === "Point") || p.status === "車站";
+
+            if (isStation) {
+                return `<div style="font-size:15px;font-weight:bold;color:#1a237e;">🚉 ${p.name || '未命名車站'}</div>`;
+            }
+
+            const groupKey = p.parent_id || p.route_id || p.name;
+            let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
+
+            // 若點到的是舊線/副線且本身無年報表格，自動調用母線的完整沿革表，並替換上方藍底白字標籤為當前線型
+            if ((rawDesc.includes("年報無統計") || rawDesc.includes("在此輸入中文歷史描述") || !rawDesc.includes("<table")) && masterRouteDescMap[groupKey]) {
+                rawDesc = masterRouteDescMap[groupKey];
+                const badgeText = `${p.route_id || groupKey} ${p.line_type || ''}`.trim();
+                rawDesc = rawDesc.replace(
+                    /<span style="background:#1a237e;[^"]*">[^<]+<\/span>/,
+                    `<span class="route-badge">${badgeText}</span>`
+                );
+            }
+
+            // 將「▸ 附屬統計：A1-1 三爪子複線」中的代號與名稱也轉為藍底白字標籤
+            rawDesc = rawDesc.replace(
+                /▸\s*附屬統計：\s*([^<]+)<\/div>/g,
+                '▸ 附屬統計：<span class="route-badge" style="margin-left:4px;">$1</span></div>'
+            );
+
+            let cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+            let content = `<div style="font-size:16px;font-weight:bold;color:#1a237e;margin-bottom:2px;">${p.name || '未命名'}</div>`;
+            if (cleanSec) {
+                content += `<div style="font-size:12px;color:#666;margin-bottom:6px;">區間：${cleanSec}</div>`;
+            }
+            if (p.open_time) {
+                content += `<div style="font-size:12px;color:#666;margin-bottom:6px;">通車：${p.open_time}</div>`;
+            }
+            if (rawDesc) {
+                content += rawDesc;
+            }
+            return content;
+        }
+
+        // 統一全線家族高亮與縮放函數
+        function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
+            const targetProps = targetFeature.properties || {};
+            const targetKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
+            let groupBounds = L.latLngBounds();
+            let popupLayer = triggerLayer;
+
+            geojsonLayer.eachLayer(l => {
+                if (!l.feature) return;
+                const isPoint = l.feature.geometry && l.feature.geometry.type === "Point";
+                if (isPoint) return; // 車站圓點維持原狀，不參與路線變色
+
+                const lp = l.feature.properties || {};
+                const lKey = lp.parent_id || lp.route_id || lp.name;
+
+                if (lKey === targetKey) {
+                    l.setStyle(getLineStyle(l.feature, true));
+                    if (l.bringToFront) l.bringToFront();
+                    if (l.getBounds) groupBounds.extend(l.getBounds());
+                    if (!popupLayer || (lp.line_type === "主線" && !triggerLayer)) {
+                        popupLayer = l;
+                    }
+                } else {
+                    l.setStyle(getLineStyle(l.feature, false));
+                }
+            });
+
+            // 確保車站圓點浮在路線上方，不被粗紅線蓋住
+            geojsonLayer.eachLayer(l => {
+                if (l.feature && l.feature.geometry && l.feature.geometry.type === "Point" && l.bringToFront) {
+                    l.bringToFront();
+                }
+            });
+
+            if (shouldFitBounds && groupBounds.isValid()) {
+                map.fitBounds(groupBounds, { padding: [60, 60] });
+            }
+            if (popupLayer) {
+                popupLayer.openPopup();
+            }
+        }
+
+        fetch('data.json?t=' + new Date().getTime())
             .then(response => response.json())
             .then(rawData => {
                 const geoData = rawData.data || rawData; 
-                allFeatures = geoData.features;
+                const rawFeatures = geoData.features || [];
 
-                geojsonLayer = L.geoJSON(geoData, {
-                    style: getLineStyle,
+                // 5. 自動濾除第一次單純匯入 KML 殘留的未縫合舊測試圖層與重複車站
+                const seenStations = new Set();
+                const cleanFeatures = rawFeatures.filter(f => {
+                    const p = f.properties || {};
+                    const isPoint = f.geometry && f.geometry.type === "Point";
+
+                    if (isPoint) {
+                        const coordKey = `${p.name}_${f.geometry.coordinates.join(',')}`;
+                        if (seenStations.has(coordKey)) return false;
+                        seenStations.add(coordKey);
+                        return true;
+                    }
+
+                    // 若無 route_id 但名稱卻是 A1、A3 等純代號（第一次測試匯入的殘留物），自動剔除
+                    const descText = (p.description && p.description.zh) ? p.description.zh : "";
+                    if (!p.route_id && /^(A\d+(-\d+)?|未命名路線|Line\s+)/i.test(p.name || "") && descText.includes("在此輸入中文歷史描述")) {
+                        return false;
+                    }
+                    return true;
+                });
+
+                // 建立母路線沿革字典 & 搜尋清單去重（每條路線在搜尋列只出現一次）
+                const routeGroupSeen = new Set();
+                cleanFeatures.forEach(f => {
+                    const p = f.properties || {};
+                    if (f.geometry && f.geometry.type !== "Point") {
+                        const groupKey = p.parent_id || p.route_id || p.name;
+                        const descText = (p.description && p.description.zh) ? p.description.zh : "";
+                        if (descText.includes("<table") && (!masterRouteDescMap[groupKey] || p.line_type === "主線")) {
+                            masterRouteDescMap[groupKey] = descText;
+                        }
+                    }
+                });
+
+                cleanFeatures.forEach(f => {
+                    const p = f.properties || {};
+                    if (f.geometry && f.geometry.type !== "Point") {
+                        const groupKey = p.parent_id || p.route_id || p.name;
+                        // 優先挑主線代表該路線放入搜尋清單
+                        if (!routeGroupSeen.has(groupKey) && (p.line_type === "主線" || !p.line_type)) {
+                            routeGroupSeen.add(groupKey);
+                            searchableRoutes.push(f);
+                        }
+                    }
+                });
+                // 若有只有副線/舊線而無主線的獨立編號，也補進搜尋清單
+                cleanFeatures.forEach(f => {
+                    const p = f.properties || {};
+                    if (f.geometry && f.geometry.type !== "Point") {
+                        const groupKey = p.parent_id || p.route_id || p.name;
+                        if (!routeGroupSeen.has(groupKey)) {
+                            routeGroupSeen.add(groupKey);
+                            searchableRoutes.push(f);
+                        }
+                    }
+                });
+
+                geojsonLayer = L.geoJSON({ type: "FeatureCollection", features: cleanFeatures }, {
+                    style: function (feature) {
+                        return getLineStyle(feature, false);
+                    },
+                    // 👇 4. 將車站改為精巧的白底深藍框小圓點
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 4.5,
+                            fillColor: "#ffffff",
+                            color: "#1a237e",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 1
+                        });
+                    },
                     onEachFeature: function (feature, layer) {
                         if (feature.properties) {
-                            let content = `<b>${feature.properties.name || '未命名'}</b>`;
-                            if (feature.properties.section) content += `<br>區間: ${feature.properties.section}`;
-                            if (feature.properties.description && feature.properties.description.zh) {
-                                content += `<br>${feature.properties.description.zh}`;
-                            }
-                            layer.bindPopup(content, { className: 'custom-popup' });
+                            layer.bindPopup(() => buildPopupContent(feature), {
+                                className: 'custom-popup',
+                                maxWidth: 360,
+                                autoPanPaddingTopLeft: [15, 75],
+                                autoPanPaddingBottomRight: [15, 50]
+                            });
 
                             layer.on('click', function(e) {
+                                const isPoint = feature.geometry && feature.geometry.type === "Point";
+                                if (isPoint) return; // 點擊車站僅彈出站名，不干擾搜尋列
+
                                 searchBox.classList.add('expanded');
                                 activeRouteName = feature.properties.name || '未命名';
-                                activeRouteSection = feature.properties.section || '';
+                                activeRouteSection = (feature.properties.section || '').replace(/\s*\([^)]*\)$/, '');
                                 input.value = activeRouteName;
                                 setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                                 clearBtn.style.display = 'block';
 
-                                geojsonLayer.eachLayer(l => {
-                                    if (l.feature.properties.name === activeRouteName) {
-                                        l.setStyle({ color: "red", weight: 8, opacity: 1 });
-                                        if (l.bringToFront) l.bringToFront(); 
-                                    } else {
-                                        // 非選中的線條還原回各自原本的身分樣式
-                                        const originalStyle = getLineStyle(l.feature);
-                                        l.setStyle(originalStyle);
-                                    }
-                                });
+                                highlightRouteGroup(feature, false, layer);
                             });
                         }
                     }
@@ -224,14 +421,13 @@
             const normalize = str => str ? str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
             const cleanKeyword = normalize(keyword);
 
-            // 🎯 修正：搜尋時只嚴格比對路線名稱 (name) 與台羅拼音 (tailo)，絕不比對區間 (section)
-            let matched = (keyword === '') ? [...allFeatures] : allFeatures.filter(f => {
+            let matched = (keyword === '') ? [...searchableRoutes] : searchableRoutes.filter(f => {
                 const nameMatch = normalize(f.properties.name || "").includes(cleanKeyword);
                 const tailoMatch = normalize(f.properties.tailo || "").includes(cleanKeyword);
                 return nameMatch || tailoMatch;
             });
 
-            matched.sort((a, b) => (a.properties.tailo || "").localeCompare(b.properties.tailo || "", 'en'));
+            matched.sort((a, b) => (a.properties.tailo || a.properties.name || "").localeCompare(b.properties.tailo || b.properties.name || "", 'zh-Hant'));
 
             if (matched.length > 0) {
                 dropdown.style.display = 'block';
@@ -245,35 +441,23 @@
                         dropdown.style.display = 'none';
                         searchBox.classList.add('expanded');
                         
-                        const f = allFeatures[Math.floor(Math.random() * allFeatures.length)];
+                        const f = searchableRoutes[Math.floor(Math.random() * searchableRoutes.length)];
                         activeRouteName = f.properties.name || '未命名';
-                        activeRouteSection = f.properties.section || '';
+                        activeRouteSection = (f.properties.section || '').replace(/\s*\([^)]*\)$/, '');
                         input.value = activeRouteName;
                         
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                         clearBtn.style.display = 'block';
 
-                        let groupBounds = L.latLngBounds();
-                        geojsonLayer.eachLayer(layer => {
-                            if (layer.feature.properties.name === activeRouteName) {
-                                layer.setStyle({ color: "red", weight: 8, opacity: 1 });
-                                if (layer.bringToFront) layer.bringToFront();
-                                if (layer.getBounds) groupBounds.extend(layer.getBounds());
-                                layer.openPopup();
-                            } else { 
-                                layer.setStyle(getLineStyle(layer.feature)); 
-                            }
-                        });
-                        if (groupBounds.isValid()) {
-                            map.fitBounds(groupBounds, { padding: [50, 50] });
-                        }
+                        highlightRouteGroup(f, true, null);
                     };
                     dropdown.appendChild(randomItem);
                 }
                 
                 let currentLetter = ''; 
                 matched.forEach(f => {
-                    const firstChar = (f.properties.tailo || "#").charAt(0).toUpperCase();
+                    const tailoStr = f.properties.tailo || "";
+                    const firstChar = tailoStr ? tailoStr.charAt(0).toUpperCase() : "#";
                     if (firstChar !== currentLetter) {
                         currentLetter = firstChar;
                         const header = document.createElement('div');
@@ -284,7 +468,7 @@
                     const item = document.createElement('div');
                     item.className = 'search-item';
                     const lineName = f.properties.name || '未命名';
-                    const sectionName = f.properties.section || '';
+                    const sectionName = (f.properties.section || '').replace(/\s*\([^)]*\)$/, '');
                     item.innerHTML = sectionName ? `${lineName}<span style="font-size:12px; color:#999; margin-left:10px;">${sectionName}</span>` : lineName;
                     
                     item.onclick = (e) => {
@@ -298,26 +482,8 @@
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                         clearBtn.style.display = 'block'; 
                         
-                        let groupBounds = L.latLngBounds();
-                        let firstMatchLayer = null;
-
-                        geojsonLayer.eachLayer(layer => {
-                            if (layer.feature.properties.name === lineName) {
-                                layer.setStyle({ color: "red", weight: 8, opacity: 1 }); 
-                                if (layer.bringToFront) layer.bringToFront();
-                                if (layer.getBounds) groupBounds.extend(layer.getBounds());
-                                if (!firstMatchLayer) firstMatchLayer = layer;
-                            } else { 
-                                layer.setStyle(getLineStyle(layer.feature)); 
-                            }
-                        });
-
-                        if (groupBounds.isValid()) {
-                            map.fitBounds(groupBounds, { padding: [50, 50] });
-                        }
-                        if (firstMatchLayer) {
-                            firstMatchLayer.openPopup();
-                        }
+                        // 👇 3. 點擊搜尋項目後，自動縮放平移至該路線全線位置並展開沿革表
+                        highlightRouteGroup(f, true, null);
                     };
                     dropdown.appendChild(item);
                 });
@@ -339,10 +505,14 @@
                 activeRouteName = ''; activeRouteSection = '';
                 syncDisplay(); 
                 renderList('');
-                // 清空搜尋時，將所有線條重置回各自原本的屬性色彩
-                if(geojsonLayer) {
-                    geojsonLayer.eachLayer(l => l.setStyle(getLineStyle(l.feature)));
+                if (geojsonLayer) {
+                    geojsonLayer.eachLayer(l => {
+                        if (l.feature && l.feature.geometry && l.feature.geometry.type !== "Point") {
+                            l.setStyle(getLineStyle(l.feature, false));
+                        }
+                    });
                 }
+                map.closePopup();
                 if (window.innerWidth > 768) input.focus(); 
             } else {
                 searchBox.classList.remove('expanded');
