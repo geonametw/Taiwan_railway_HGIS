@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.2</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.2.1</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -695,7 +695,17 @@
             return false;
         }
 
-        // 🎯 修正重點：把 isOperatorMatch 移到最前方優先判斷，避免被 activeOperatorFilter 的灰線覆蓋
+        // 單一匹配規則：路線的經營者若無記載，沿用同組主線的經營者。
+        // 各種重繪途徑（含 zoomend、年代篩選）都必須使用相同的判斷。
+        function isOperatorRouteMatch(feature, opName = activeOperatorFilter) {
+            if (!opName) return false;
+            const p = feature.properties || {};
+            const groupKey = p.parent_id || p.route_id || p.name;
+            const master = masterRouteFeatureMap[groupKey] || feature;
+            const operators = p.operators || (master.properties && master.properties.operators) || '';
+            return operators.split('、').some(name => name.trim() === opName);
+        }
+
         function getLineStyle(feature, isSelected = false, isOperatorMatch = false) {
             const p = feature.properties || {};
             const type = p.line_type || "";
@@ -710,7 +720,8 @@
                     dashArray: type === "舊線" ? '6, 6' : null
                 };
             }
-            if (isOperatorMatch) {
+            // 保留會社高亮狀態，即使此函式由縮放事件重新呼叫亦然。
+            if (isOperatorMatch || isOperatorRouteMatch(feature)) {
                 return {
                     color: "#7b1fa2",
                     weight: (type === "主線" || !type) ? 6 : 4.5,
@@ -949,39 +960,22 @@
         function filterByOperator(opName) {
             activeOperatorFilter = opName;
             selectedGroupKey = null;
-            let opBounds = L.latLngBounds();
-            let matchGroupSet = new Set();
+            const opBounds = L.latLngBounds();
+            const matchGroupSet = new Set();
 
-            allRouteLayers.forEach(l => {
-                const f = l.feature;
-                const p = f.properties || {};
-                const groupKey = p.parent_id || p.route_id || p.name;
-                const masterF = masterRouteFeatureMap[groupKey] || f;
-                const opsStr = p.operators || (masterF.properties && masterF.properties.operators) || '';
-                const isMatch = opsStr.split('、').map(s => s.trim()).includes(opName);
-
-                if (isMatch) {
-                    matchGroupSet.add(groupKey);
-                    if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, false, true)); // 觸發紫線高亮
-                    if (l.bringToFront) l.bringToFront();
-                    if (l.getBounds) opBounds.extend(l.getBounds());
-                } else {
-                    l.setStyle(getLineStyle(f, false, false));
-                }
-            });
-
-            allStationLayers.forEach(stLayer => {
-                if (!showStations) return;
-                const boundKeys = stLayer.feature.properties._boundGroupKeys || [];
-                const isMatchSt = boundKeys.some(k => matchGroupSet.has(k));
-                stLayer.setStyle(getStationStyle(stLayer.feature, isMatchSt));
-                if (isMatchSt && stLayer.bringToFront) stLayer.bringToFront();
+            allRouteLayers.forEach(layer => {
+                if (!isOperatorRouteMatch(layer.feature, opName)) return;
+                const p = layer.feature.properties || {};
+                matchGroupSet.add(p.parent_id || p.route_id || p.name);
+                if (layer.getBounds) opBounds.extend(layer.getBounds());
             });
 
             document.getElementById('operator-banner-text').textContent = `🏢 ${opName}（共經營 ${matchGroupSet.size} 條路線）`;
             opBanner.style.display = 'flex';
 
+            // 由同一套重繪邏輯處理年代、路線類型、會社高亮及車站點位。
+            // map.fitBounds() 可能引發 zoomend，再次重繪也不會抹掉高亮狀態。
+            applyYearFilter();
             if (opBounds.isValid()) {
                 map.fitBounds(opBounds, { padding: [60, 60] });
             }
@@ -1019,6 +1013,14 @@
             updateUrlHash();
 
             const isLowZoom = map.getZoom() <= 10;
+            const operatorGroupKeys = new Set();
+            if (activeOperatorFilter) {
+                allRouteLayers.forEach(layer => {
+                    if (!isOperatorRouteMatch(layer.feature)) return;
+                    const p = layer.feature.properties || {};
+                    operatorGroupKeys.add(p.parent_id || p.route_id || p.name);
+                });
+            }
 
             allRouteLayers.forEach(l => {
                 const f = l.feature;
@@ -1049,18 +1051,20 @@
                 const stFeat = stLayer.feature;
                 const boundKeys = stFeat.properties._boundGroupKeys || [];
                 const isSelectedSt = Boolean(selectedGroupKey && boundKeys.includes(selectedGroupKey));
+                const isOperatorSt = Boolean(activeOperatorFilter && boundKeys.some(k => operatorGroupKeys.has(k)));
+                const isHighlightedSt = isSelectedSt || isOperatorSt;
 
-                if (isLowZoom && !isSelectedSt) {
+                if (isLowZoom && !isHighlightedSt) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                     return;
                 }
 
                 const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
-                if (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt) {
+                if (!isActiveSt && yearFilterMode === 'hide' && !isHighlightedSt) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                 } else {
                     if (!map.hasLayer(stLayer)) stLayer.addTo(map);
-                    stLayer.setStyle(getStationStyle(stFeat, isSelectedSt));
+                    stLayer.setStyle(getStationStyle(stFeat, isHighlightedSt));
                     if (stLayer.bringToFront) stLayer.bringToFront();
                 }
             });
