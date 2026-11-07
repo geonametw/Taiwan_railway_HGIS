@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.0</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.2</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -257,7 +257,6 @@
             color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none;
         }
 
-        /* 抽屜內部區塊標籤 */
         .info-block { margin-bottom: 14px; }
         .info-block-title {
             font-size: 12px; font-weight: bold; color: #5c6bc0; margin-bottom: 6px;
@@ -314,7 +313,6 @@
             font-size: 24px; cursor: pointer;
         }
 
-        /* 吐司通知 (Toast) */
         #toast-msg {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(33,33,33,0.92); color: white; padding: 8px 18px;
@@ -322,7 +320,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        /* 車站動態標籤 (Zoom >= 14 時自動顯示) */
         .station-label {
             background: rgba(255, 255, 255, 0.88); border: 1px solid #7986cb;
             color: #1a237e; font-weight: bold; font-size: 11px; padding: 1px 5px;
@@ -336,7 +333,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px;
         }
 
-        /* 📱 手機版響應式底部抽屜設計 */
         @media (max-width: 768px) {
             #custom-search-box.expanded { width: calc(100% - 30px) !important; left: 15px !important; }
             #system-title {
@@ -345,15 +341,11 @@
             }
             #system-title:active { transform: translateX(-50%) scale(0.97); }
             #year-filter-bar {
-                top: auto !important; bottom: 68px !important; left: 50% !important; right: auto !important;
+                top: auto !important; bottom: 74px !important; left: 50% !important; right: auto !important;
                 transform: translateX(-50%); white-space: nowrap; padding: 5px 10px;
             }
-            #map-legend {
-                bottom: auto; top: 70px; left: 15px; padding: 6px 10px;
-            }
-            #operator-banner {
-                top: 68px; font-size: 12px; padding: 6px 12px; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
-            }
+            #map-legend { bottom: auto; top: 70px; left: 15px; padding: 6px 10px; }
+            #operator-banner { top: 68px; font-size: 12px; padding: 6px 12px; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
             .leaflet-control-zoom { display: none !important; }
 
             #info-drawer {
@@ -378,7 +370,7 @@
         <button onclick="clearRouteSelection()">✕ 結束檢視</button>
     </div>
 
-    <!-- 📅 年代篩選膠囊面板（預設隱藏，點擊上方標題展開） -->
+    <!-- 📅 年代篩選膠囊面板 -->
     <div id="year-filter-bar">
         <span>📅</span>
         <button class="yf-btn" id="prevYearBtn" title="上一年" disabled>&#9664;</button>
@@ -402,7 +394,7 @@
         <div id="searchDropdown"></div>
     </div>
 
-    <!-- 🗺️ 左下角互動式圖例與堡圖透明度滑桿 -->
+    <!-- 🗺️ 左下角互動式圖例與堡圖透明度面板 -->
     <div id="map-legend">
         <div class="legend-row">
             <span class="legend-item" id="lg-main" onclick="toggleLineType('主線')" title="點擊切換顯示/隱藏主線">
@@ -425,7 +417,7 @@
         </div>
     </div>
 
-    <!-- 📑 響應式考據資訊抽屜 (Side Drawer / Bottom Sheet) -->
+    <!-- 📑 響應式考據資訊抽屜 -->
     <div id="info-drawer">
         <div class="drawer-drag-handle" id="drawerHandle" title="點擊切換半開/全開"></div>
         <div class="drawer-header">
@@ -444,7 +436,6 @@
             </div>
         </div>
         <div class="drawer-body">
-            <!-- 歷史照片展板 -->
             <div id="drawer-photo-box">
                 <span class="photo-zoom-hint">🔍 點擊放大檢視</span>
                 <img id="drawer-photo-img" src="" alt="路線歷史照片" onclick="openLightbox()">
@@ -454,7 +445,6 @@
                 </div>
             </div>
 
-            <!-- 經營者互動晶片區 -->
             <div class="info-block" id="drawer-ops-block" style="display:none;">
                 <div class="info-block-title">
                     <span>🏢 歷年經營者（點擊可高亮該會社全線網）</span>
@@ -462,7 +452,6 @@
                 <div class="chip-list" id="drawer-ops-list"></div>
             </div>
 
-            <!-- 沿線車站互動導覽列 -->
             <div class="info-block" id="drawer-stations-block" style="display:none;">
                 <div class="info-block-title">
                     <span id="drawer-stations-title">🚉 沿線車站（點擊飛往定位）</span>
@@ -470,7 +459,6 @@
                 <div class="chip-list" id="drawer-stations-list"></div>
             </div>
 
-            <!-- 歷年統計沿革表 -->
             <div class="info-block">
                 <div class="info-block-title">
                     <span>📜 歷年統計沿革與簡介</span>
@@ -480,16 +468,14 @@
         </div>
     </div>
 
-    <!-- 🔍 全螢幕照片放大鏡 (Lightbox) -->
+    <!-- 🔍 全螢幕照片放大鏡 -->
     <div id="photo-lightbox" onclick="closeLightbox()">
         <button id="lightbox-close">&times;</button>
         <img id="lightbox-img" src="" alt="放大歷史照片" onclick="event.stopPropagation()">
         <div id="lightbox-caption" onclick="event.stopPropagation()"></div>
     </div>
 
-    <!-- 吐司通知 -->
     <div id="toast-msg"></div>
-
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -532,23 +518,22 @@
         let masterRouteDescMap = {};
         let masterRouteHistoryMap = {};
         let masterRouteFeatureMap = {};
-        let groupStationsMap = {}; // groupKey -> [stationLayer, ...]
+        let groupStationsMap = {}; 
         let routeKeyToNameMap = {};
 
         let activeRouteName = '';
         let activeRouteSection = '';
         let selectedGroupKey = null;
-        let activeOperatorFilter = null; // 企業路網高亮模式
+        let activeOperatorFilter = null;
         let currentDrawerFeature = null;
         let isRenderingList = false;
 
         let currentFilterYear = 'all';
         let yearFilterMode = 'hide';
         let showStations = true;
-        let hiddenLineTypes = new Set(); // 可由左下角圖例切換隱藏 '主線', '舊線', '副線'
+        let hiddenLineTypes = new Set();
         let lastFeatureClickTime = 0;
 
-        // 吐司通知輔助函數
         function showToast(text) {
             const t = document.getElementById('toast-msg');
             t.textContent = text;
@@ -557,7 +542,6 @@
             t._timer = setTimeout(() => { t.style.display = 'none'; }, 2600);
         }
 
-        // 點擊「古今鐵道營業線 HGIS 查詢」切換時間軸面板顯示/隱藏
         function updateTitleText() {
             if (currentFilterYear !== 'all' && !yfBar.classList.contains('open')) {
                 sysTitle.textContent = `古今鐵道營業線 HGIS 查詢・${currentFilterYear}年`;
@@ -572,7 +556,6 @@
             updateTitleText();
         });
 
-        // 手機版抽屜頂部拉桿切換半開/全開
         document.getElementById('drawerHandle').addEventListener('click', function() {
             infoDrawer.classList.toggle('full-mobile');
         });
@@ -592,7 +575,6 @@
         const yearResetBtn = document.getElementById('yearResetBtn');
         const toggleStationBtn = document.getElementById('toggleStationBtn');
 
-        // 時間軸上限為 1941 年（昭和16年）
         const MIN_YEAR = 1909;
         const MAX_YEAR = 1941;
         for (let y = MIN_YEAR; y <= MAX_YEAR; y++) {
@@ -602,7 +584,6 @@
             yearSelect.appendChild(opt);
         }
 
-        // 車站點位開關同步邏輯（支援時間軸按鈕、左下角圖例與右下角圖層選單）
         function setStationsVisibility(visible) {
             showStations = visible;
             const lgSt = document.getElementById('lg-st');
@@ -625,30 +606,6 @@
             setStationsVisibility(!showStations);
         });
 
-        // 左下角圖例點擊切換線型顯示/隱藏
-        function toggleLineType(typeKey) {
-            if (hiddenLineTypes.has(typeKey)) {
-                hiddenLineTypes.delete(typeKey);
-            } else {
-                hiddenLineTypes.add(typeKey);
-            }
-            document.getElementById('lg-main').classList.toggle('muted', hiddenLineTypes.has('主線'));
-            document.getElementById('lg-old').classList.toggle('muted', hiddenLineTypes.has('舊線'));
-            document.getElementById('lg-sub').classList.toggle('muted', hiddenLineTypes.has('副線'));
-            applyYearFilter();
-        }
-
-        // 1904 臺灣堡圖透明度滑桿連動
-        const opacityBox = document.getElementById('opacity-box');
-        const opacitySlider = document.getElementById('opacitySlider');
-        const opacityVal = document.getElementById('opacityVal');
-
-        opacitySlider.addEventListener('input', function() {
-            const v = parseInt(this.value, 10);
-            sinica1904.setOpacity(v / 100);
-            opacityVal.textContent = `${v}%`;
-        });
-
         map.on('overlayadd', function(e) {
             if (e.layer === stationOverlayProxy && !showStations) setStationsVisibility(true);
             if (e.layer === sinica1904) opacityBox.style.display = 'flex';
@@ -658,7 +615,6 @@
             if (e.layer === sinica1904) opacityBox.style.display = 'none';
         });
 
-        // Zoom-Based LOD：依縮放層級自動調節車站與站名標籤顯隱
         map.on('zoomend', function() {
             const z = map.getZoom();
             const mapEl = document.getElementById('map');
@@ -670,7 +626,6 @@
             applyYearFilter();
         });
 
-        // 空間幾何距離計算：點到線段的最短距離（公尺）
         function pointToSegmentDistMeters(px, py, x1, y1, x2, y2) {
             const kx = 111320 * Math.cos(py * Math.PI / 180);
             const ky = 110574;
@@ -696,7 +651,6 @@
             return minD;
         }
 
-        // 判斷路線是否屬於被隱藏的線型分類
         function isLineTypeHidden(feature) {
             const t = (feature.properties && feature.properties.line_type) || "主線";
             if (t === "舊線") return hiddenLineTypes.has("舊線");
@@ -704,7 +658,6 @@
             return hiddenLineTypes.has("主線");
         }
 
-        // 判斷某條「路線」在指定年份是否存在
         function isRouteFeatureActiveInYear(feature, yearStr) {
             if (yearStr === 'all') return true;
             const yr = parseInt(yearStr, 10);
@@ -724,7 +677,6 @@
             return false;
         }
 
-        // 判斷某座「車站」在指定年份是否存在
         function isStationFeatureActiveInYear(stFeature, yearStr) {
             if (yearStr === 'all') return true;
             const yr = parseInt(yearStr, 10);
@@ -743,7 +695,7 @@
             return false;
         }
 
-        // 路線樣式（支援一般選取、會社路網高亮、Zoom LOD 與年代淡化）
+        // 🎯 修正重點：把 isOperatorMatch 移到最前方優先判斷，避免被 activeOperatorFilter 的灰線覆蓋
         function getLineStyle(feature, isSelected = false, isOperatorMatch = false) {
             const p = feature.properties || {};
             const type = p.line_type || "";
@@ -783,7 +735,6 @@
             }
         }
 
-        // 車站圓點樣式
         function getStationStyle(stFeature, isSelectedRoute = false) {
             const isActiveYear = isStationFeatureActiveInYear(stFeature, currentFilterYear);
             if (isSelectedRoute) {
@@ -795,7 +746,6 @@
             return { radius: 4.5, fillColor: "#ffffff", color: "#1a237e", weight: 2, opacity: 1, fillOpacity: 1 };
         }
 
-        // 📷 歷史照片自動偵測與載入邏輯
         function loadRoutePhoto(feature) {
             const p = feature.properties || {};
             const photoBox = document.getElementById('drawer-photo-box');
@@ -807,7 +757,6 @@
             photoBox.style.display = 'none';
             demoBtn.style.display = 'inline-flex';
 
-            // 1. 優先檢查 data.json 內是否有設定 photos 陣列或 photo 欄位
             if (p.photos && Array.isArray(p.photos) && p.photos.length > 0) {
                 const item = p.photos[0];
                 photoImg.src = item.url;
@@ -826,20 +775,14 @@
                 return;
             }
 
-            // 2. 免改 JSON 自動探測 photos/ 資料夾下的圖片 (如 photos/A1.jpg, photos/B4.jpg)
             const candidates = [];
-            if (p.route_id) {
-                candidates.push(`photos/${p.route_id}.jpg`, `photos/${p.route_id}.png`);
-            }
-            if (p.parent_id && p.parent_id !== p.route_id) {
-                candidates.push(`photos/${p.parent_id}.jpg`, `photos/${p.parent_id}.png`);
-            }
+            if (p.route_id) candidates.push(`photos/${p.route_id}.jpg`, `photos/${p.route_id}.png`);
+            if (p.parent_id && p.parent_id !== p.route_id) candidates.push(`photos/${p.parent_id}.jpg`, `photos/${p.parent_id}.png`);
 
             function tryNext(idx) {
                 if (idx >= candidates.length) return;
                 const testImg = new Image();
                 testImg.onload = function() {
-                    // 確認目前抽屜仍是同一條路線才顯示
                     if (currentDrawerFeature !== feature) return;
                     photoImg.src = candidates[idx];
                     photoCap.textContent = `${p.name} 歷史影像`;
@@ -847,15 +790,12 @@
                     photoBox.style.display = 'block';
                     demoBtn.style.display = 'none';
                 };
-                testImg.onerror = function() {
-                    tryNext(idx + 1);
-                };
+                testImg.onerror = () => tryNext(idx + 1);
                 testImg.src = candidates[idx];
             }
             tryNext(0);
         }
 
-        // 內建老照片展板預覽功能（動態繪製復古台車老照片明信片，供立即測試展板與放大鏡）
         function triggerDemoPhoto() {
             if (!currentDrawerFeature) return;
             const p = currentDrawerFeature.properties || {};
@@ -863,23 +803,16 @@
             canvas.width = 800; canvas.height = 500;
             const ctx = canvas.getContext('2d');
 
-            // 復古棕褐色底圖
             const grad = ctx.createLinearGradient(0, 0, 0, 500);
-            grad.addColorStop(0, '#d7ccc8');
-            grad.addColorStop(0.6, '#bcaaa4');
-            grad.addColorStop(1, '#8d6e63');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 800, 500);
+            grad.addColorStop(0, '#d7ccc8'); grad.addColorStop(0.6, '#bcaaa4'); grad.addColorStop(1, '#8d6e63');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 800, 500);
 
-            // 遠山與軌道透視線
             ctx.fillStyle = '#6d4c41';
             ctx.beginPath();
             ctx.moveTo(0, 310); ctx.lineTo(220, 170); ctx.lineTo(480, 290); ctx.lineTo(680, 190); ctx.lineTo(800, 280); ctx.lineTo(800, 310);
             ctx.fill();
 
-            // 輕便軌道枕木與鐵軌
-            ctx.strokeStyle = '#3e2723';
-            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 5;
             ctx.beginPath();
             ctx.moveTo(360, 310); ctx.lineTo(140, 500);
             ctx.moveTo(440, 310); ctx.lineTo(660, 500);
@@ -887,18 +820,11 @@
 
             ctx.lineWidth = 4;
             for (let i = 0; i <= 10; i++) {
-                const y = 320 + i * 18;
-                const spread = 45 + i * 22;
-                ctx.beginPath();
-                ctx.moveTo(400 - spread, y);
-                ctx.lineTo(400 + spread, y);
-                ctx.stroke();
+                const y = 320 + i * 18, spread = 45 + i * 22;
+                ctx.beginPath(); ctx.moveTo(400 - spread, y); ctx.lineTo(400 + spread, y); ctx.stroke();
             }
 
-            // 復古相框邊線與文字水印
-            ctx.strokeStyle = '#4e342e';
-            ctx.lineWidth = 12;
-            ctx.strokeRect(18, 18, 764, 464);
+            ctx.strokeStyle = '#4e342e'; ctx.lineWidth = 12; ctx.strokeRect(18, 18, 764, 464);
 
             ctx.fillStyle = '#3e2723';
             ctx.font = 'bold 34px "Microsoft JhengHei", serif';
@@ -931,7 +857,6 @@
             document.getElementById('photo-lightbox').classList.remove('open');
         }
 
-        // 開啟並渲染右側／底部考據抽屜
         function openRouteDrawer(feature) {
             currentDrawerFeature = feature;
             const p = feature.properties || {};
@@ -945,10 +870,8 @@
             const cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
             document.getElementById('drawer-section').textContent = cleanSec ? `區間：${cleanSec}` : '';
 
-            // 載入歷史照片
             loadRoutePhoto(feature);
 
-            // 1. 渲染可點擊的經營者晶片
             const opsBlock = document.getElementById('drawer-ops-block');
             const opsList = document.getElementById('drawer-ops-list');
             opsList.innerHTML = '';
@@ -969,7 +892,6 @@
                 opsBlock.style.display = 'none';
             }
 
-            // 2. 渲染沿線車站導覽晶片
             const stBlock = document.getElementById('drawer-stations-block');
             const stList = document.getElementById('drawer-stations-list');
             stList.innerHTML = '';
@@ -995,21 +917,17 @@
                 stBlock.style.display = 'none';
             }
 
-            // 3. 渲染歷年統計沿革表與簡介
             let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
             if ((rawDesc.includes("年報無統計") || rawDesc.includes("在此輸入中文歷史描述") || !rawDesc.includes("<table")) && masterRouteDescMap[groupKey]) {
                 rawDesc = masterRouteDescMap[groupKey];
             }
-            // 移除舊版重複的頂部 badge 與經營者文字列，因為抽屜頂部已經有更美觀的專屬區塊
-            rawDesc = rawDesc.replace(/<div style="margin-bottom:6px;"><span style="background:#1a237e;[\s\S]*?<\/div>/, '');
+            rawDesc = rawDesc.replace(/<div style=\"margin-bottom:6px;\"><span style=\"background:#1a237e;[\s\S]*?<\/div>/, '');
 
-            // 將「▸ 附屬統計：A1-1 三爪子複線」轉為藍底白字標籤
             rawDesc = rawDesc.replace(
                 /▸\s*附屬統計：\s*([^<]+)<\/div>/g,
                 '▸ 附屬統計：<span class="route-badge" style="margin-left:4px;">$1</span></div>'
             );
 
-            // 若目前有選定年份，將表格中符合該年份的那一列加上黃底高亮
             if (currentFilterYear !== 'all') {
                 const yr = parseInt(currentFilterYear, 10);
                 rawDesc = rawDesc.replace(/<tr>\s*<td([^>]*)>(\d{4})(?:[–~-](\d{4}))?<\/td>/g, (match, tdAttr, y1, y2) => {
@@ -1028,7 +946,6 @@
             updateUrlHash();
         }
 
-        // 🏢 會社勢力範圍高亮模式
         function filterByOperator(opName) {
             activeOperatorFilter = opName;
             selectedGroupKey = null;
@@ -1046,7 +963,7 @@
                 if (isMatch) {
                     matchGroupSet.add(groupKey);
                     if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, false, true));
+                    l.setStyle(getLineStyle(f, false, true)); // 觸發紫線高亮
                     if (l.bringToFront) l.bringToFront();
                     if (l.getBounds) opBounds.extend(l.getBounds());
                 } else {
@@ -1071,7 +988,6 @@
             showToast(`已高亮「${opName}」旗下所有台車路線`);
         }
 
-        // 車站彈出視窗內容
         function buildStationPopupContent(feature) {
             const p = feature.properties || {};
             const boundKeys = p._boundGroupKeys || [];
@@ -1093,7 +1009,6 @@
             }
         };
 
-        // 套用年代篩選與圖例開關至所有路線與車站
         function applyYearFilter() {
             const isAll = (currentFilterYear === 'all');
             prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= MIN_YEAR;
@@ -1105,7 +1020,6 @@
 
             const isLowZoom = map.getZoom() <= 10;
 
-            // 1. 更新路線顯隱與樣式
             allRouteLayers.forEach(l => {
                 const f = l.feature;
                 const p = f.properties || {};
@@ -1127,7 +1041,6 @@
                 }
             });
 
-            // 2. 更新車站顯隱與樣式（支援 Zoom LOD：全島遠景時僅顯示選中路線之車站）
             allStationLayers.forEach(stLayer => {
                 if (!showStations) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
@@ -1152,7 +1065,6 @@
                 }
             });
 
-            // 若抽屜正打開著，同步刷新抽屜內的年份黃底高亮列
             if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
                 openRouteDrawer(currentDrawerFeature);
             }
@@ -1192,23 +1104,14 @@
             yearSelect.dispatchEvent(new Event('change'));
         });
 
-        // 統一全線家族＆沿線車站高亮與開啟考據抽屜
         function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
             activeOperatorFilter = null;
             opBanner.style.display = 'none';
 
             const targetProps = targetFeature.properties || {};
             selectedGroupKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
-
-            searchBox.classList.add('expanded');
-            activeRouteName = targetProps.name || '未命名';
-            activeRouteSection = (targetProps.section || '').replace(/\s*\([^)]*\)$/, '');
-            input.value = activeRouteName;
-            clearBtn.style.display = 'block';
-            syncDisplay();
-
             let groupBounds = L.latLngBounds();
-            const isLowZoom = map.getZoom() <= 10;
+            let popupLayer = triggerLayer;
 
             allRouteLayers.forEach(l => {
                 const f = l.feature;
@@ -1221,6 +1124,9 @@
                     l.setStyle(getLineStyle(f, true, false));
                     if (l.bringToFront) l.bringToFront();
                     if (l.getBounds) groupBounds.extend(l.getBounds());
+                    if (!popupLayer || (lp.line_type === "主線" && !triggerLayer)) {
+                        popupLayer = l;
+                    }
                 } else {
                     if ((!isActive && yearFilterMode === 'hide') || isLineTypeHidden(f)) {
                         if (map.hasLayer(l)) map.removeLayer(l);
@@ -1241,7 +1147,7 @@
                 const isSelectedSt = boundKeys.includes(selectedGroupKey);
                 const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
 
-                if ((isLowZoom && !isSelectedSt) || (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt)) {
+                if ((map.getZoom() <= 10 && !isSelectedSt) || (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt)) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                 } else {
                     if (!map.hasLayer(stLayer)) stLayer.addTo(map);
@@ -1261,7 +1167,6 @@
             }
         }
 
-        // 點擊地圖空白處或關閉按鈕時，取消選取反紅路線並收起抽屜
         function clearRouteSelection() {
             selectedGroupKey = null;
             activeOperatorFilter = null;
@@ -1280,7 +1185,6 @@
             map.closePopup();
         }
 
-        // 🔗 URL Permalink 狀態同步與分享
         function updateUrlHash() {
             const params = new URLSearchParams();
             if (selectedGroupKey) params.set('route', selectedGroupKey);
@@ -1370,7 +1274,6 @@
                     }
                 });
 
-                // 執行「80公尺空間緩衝吸附」，讓每座車站自動認親綁定所屬路線
                 stationFeaturesList.forEach(st => {
                     const [px, py] = st.geometry.coordinates;
                     const boundFeatures = [];
@@ -1401,7 +1304,6 @@
                     st.properties._boundGroupKeys = Array.from(boundGroupKeys);
                 });
 
-                // 建立去重後的搜尋清單
                 routeFeaturesList.forEach(f => {
                     const p = f.properties || {};
                     const groupKey = p.parent_id || p.route_id || p.name;
@@ -1450,12 +1352,10 @@
                                 maxWidth: 280
                             });
 
-                            layer.on('click', function() {
-                                lastFeatureClickTime = Date.now();
-                            });
+                            layer.on('click', () => { lastFeatureClickTime = Date.now(); });
                         } else {
                             allRouteLayers.push(layer);
-                            layer.on('click', function() {
+                            layer.on('click', () => {
                                 lastFeatureClickTime = Date.now();
                                 setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                                 highlightRouteGroup(feature, false, layer);
@@ -1511,9 +1411,8 @@
             }
         });
 
-        input.addEventListener('blur', function() { syncDisplay(); });
+        input.addEventListener('blur', () => syncDisplay());
 
-        // 複合式智慧檢索（支援主線名、台羅、編號 route_id、舊線名 alt_names、經營者 operators 與車站）
         function renderList(val) {
             isRenderingList = true;
             syncDisplay(); 
@@ -1552,7 +1451,6 @@
                 return (pa.tailo || pa.name || "").localeCompare(pb.tailo || pb.name || "", 'zh-Hant');
             });
 
-            // 若有輸入關鍵字，同步檢索車站名稱
             let matchedStations = [];
             if (keyword !== '') {
                 matchedStations = allStationLayers.filter(stLayer => {
@@ -1607,7 +1505,6 @@
                     dropdown.appendChild(item);
                 });
 
-                // 顯示符合的車站結果
                 if (matchedStations.length > 0) {
                     const stHeader = document.createElement('div');
                     stHeader.className = 'search-letter-header';
@@ -1651,7 +1548,7 @@
 
         clearBtn.onclick = function(e) {
             e.stopPropagation();
-            if (input.value.length > 0 || selectedGroupKey !== null) {
+            if (input.value.length > 0 || selectedGroupKey !== null || activeOperatorFilter !== null) {
                 clearRouteSelection();
                 if (window.innerWidth > 768) input.focus(); 
             } else {
@@ -1668,7 +1565,6 @@
             }
         });
         
-        // 點擊地圖空白處（非鐵道、非車站）時，自動取消反紅選取狀態並收起抽屜
         map.on('click', function() {
             dropdown.style.display = 'none';
             if (Date.now() - lastFeatureClickTime < 150) return;
