@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v8.18</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v8.19</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -15,24 +15,35 @@
         }
         #map { width: 100vw; height: 100%; }
 
-        /* 右上角系統標題 */
+        /* 右上角系統標題（點擊可展開/收合時間軸） */
         #system-title {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
-            background-color: rgba(26, 35, 126, 0.9); color: white;
+            background-color: rgba(26, 35, 126, 0.92); color: white;
             padding: 10px 18px; border-radius: 25px;
             font-size: 16px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; user-select: none;
+            transition: background-color 0.2s, transform 0.15s;
+        }
+        #system-title:hover {
+            background-color: rgba(40, 53, 147, 0.98);
+        }
+        #system-title:active {
+            transform: scale(0.97);
         }
 
-        /* 📅 年代篩選膠囊面板 */
+        /* 📅 年代篩選膠囊面板（預設隱藏，點擊標題才出現） */
         #year-filter-bar {
             position: absolute; top: 62px; right: 15px; z-index: 1000;
             background: rgba(255, 255, 255, 0.96);
             padding: 6px 12px; border-radius: 22px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.22);
-            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+            display: none; align-items: center; gap: 6px;
             font-size: 13px; color: #333;
             border: 1px solid #c5cae9;
+        }
+        #year-filter-bar.open {
+            display: flex;
         }
         .yf-btn {
             background: #e8eaf6; color: #1a237e; border: none;
@@ -61,6 +72,17 @@
             font-weight: bold; cursor: pointer; display: none;
         }
         #yearResetBtn:hover { background: #c62828; }
+
+        /* 車站顯隱切換膠囊鈕 */
+        #toggleStationBtn {
+            background: #e8eaf6; color: #1a237e; border: 1px solid #9fa8da;
+            padding: 3px 9px; border-radius: 12px; font-size: 12px;
+            font-weight: bold; cursor: pointer; transition: 0.15s;
+            font-family: inherit;
+        }
+        #toggleStationBtn.off {
+            background: #f5f5f5; color: #888; border-color: #ccc;
+        }
 
         /* 左上角動態伸縮搜尋列 */
         #custom-search-box {
@@ -159,8 +181,9 @@
 
         @media (max-width: 768px) {
             #custom-search-box.expanded { width: calc(100% - 30px) !important; left: 15px !important; }
-            #system-title { top: auto !important; bottom: 32px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); font-size: 13px !important; padding: 6px 14px; white-space: nowrap; }
-            #year-filter-bar { top: auto !important; bottom: 72px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; }
+            #system-title { top: auto !important; bottom: 32px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); font-size: 13px !important; padding: 8px 16px; white-space: nowrap; }
+            #system-title:active { transform: translateX(-50%) scale(0.97); }
+            #year-filter-bar { top: auto !important; bottom: 74px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; }
             .leaflet-control-zoom { display: none !important; }
             .custom-popup .leaflet-popup-content { max-height: 36dvh; }
         }
@@ -168,9 +191,9 @@
 </head>
 <body>
 
-    <div id="system-title">古今鐵道營業線 HGIS 查詢</div>
+    <div id="system-title" title="點擊展開／收合歷史年代篩選器">古今鐵道營業線 HGIS 查詢</div>
 
-    <!-- 📅 年代篩選膠囊面板 -->
+    <!-- 📅 年代篩選膠囊面板（預設隱藏，點擊上方標題展開） -->
     <div id="year-filter-bar">
         <span>📅</span>
         <button class="yf-btn" id="prevYearBtn" title="上一年" disabled>&#9664;</button>
@@ -183,6 +206,7 @@
             <option value="dim">淡化其他</option>
         </select>
         <button id="yearResetBtn" title="顯示全部年代">重置</button>
+        <button id="toggleStationBtn" title="顯示或隱藏所有車站點位">🚉 車站</button>
     </div>
 
     <div id="custom-search-box">
@@ -197,21 +221,35 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
+        const sysTitle = document.getElementById('system-title');
         const yfBar = document.getElementById('year-filter-bar');
+        L.DomEvent.disableClickPropagation(sysTitle);
         L.DomEvent.disableClickPropagation(yfBar);
         L.DomEvent.disableScrollPropagation(yfBar);
 
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
         const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85 });
+        
+        // 建立一個代理圖層群組，讓右下角圖層控制器也能勾選開關「車站點位」
+        const stationOverlayProxy = L.layerGroup();
+
         const myRenderer = L.canvas({ tolerance: 15 }); 
-        const map = L.map('map', { renderer: myRenderer, layers: [osm], zoomControl: false }).setView([23.6978, 120.9605], 7);
+        const map = L.map('map', {
+            renderer: myRenderer,
+            layers: [osm, stationOverlayProxy],
+            zoomControl: false
+        }).setView([23.6978, 120.9605], 7);
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
-        L.control.layers({ "現代地圖 (OSM)": osm }, { "1904 臺灣堡圖": sinica1904 }, { position: 'bottomright', collapsed: true }).addTo(map);
+        L.control.layers(
+            { "現代地圖 (OSM)": osm },
+            { "1904 臺灣堡圖": sinica1904, "🚉 車站點位": stationOverlayProxy },
+            { position: 'bottomright', collapsed: true }
+        ).addTo(map);
 
         let geojsonLayer;
         let allRouteLayers = [];
-        let allStationLayers = []; // 儲存所有車站 Layer，支援隨路線顯隱與高亮
+        let allStationLayers = [];
         let searchableRoutes = [];
         let masterRouteDescMap = {};
         let masterRouteHistoryMap = {};
@@ -223,6 +261,23 @@
 
         let currentFilterYear = 'all';
         let yearFilterMode = 'hide';
+        let showStations = true; // 控制車站點位是否顯示
+        let lastFeatureClickTime = 0; // 紀錄最近一次點擊鐵道或車站的時間戳記
+
+        // 4. 點擊「古今鐵道營業線 HGIS 查詢」切換時間軸面板顯示/隱藏
+        function updateTitleText() {
+            if (currentFilterYear !== 'all' && !yfBar.classList.contains('open')) {
+                sysTitle.textContent = `古今鐵道營業線 HGIS 查詢・${currentFilterYear}年`;
+            } else {
+                sysTitle.textContent = `古今鐵道營業線 HGIS 查詢`;
+            }
+        }
+
+        sysTitle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            yfBar.classList.toggle('open');
+            updateTitleText();
+        });
 
         function getEraName(y) {
             if (y < 1912) return `明治${y - 1867}年`;
@@ -237,13 +292,49 @@
         const nextYearBtn = document.getElementById('nextYearBtn');
         const yearModeSelect = document.getElementById('yearModeSelect');
         const yearResetBtn = document.getElementById('yearResetBtn');
+        const toggleStationBtn = document.getElementById('toggleStationBtn');
 
-        for (let y = 1909; y <= 1945; y++) {
+        // 2. 時間軸提供至 1941 年（昭和16年）
+        const MIN_YEAR = 1909;
+        const MAX_YEAR = 1941;
+        for (let y = MIN_YEAR; y <= MAX_YEAR; y++) {
             const opt = document.createElement('option');
             opt.value = String(y);
             opt.textContent = `${y} (${getEraName(y)})`;
             yearSelect.appendChild(opt);
         }
+
+        // 1. 車站點位開關同步邏輯（支援按鈕與右下角圖層選單）
+        function setStationsVisibility(visible) {
+            showStations = visible;
+            if (showStations) {
+                toggleStationBtn.classList.remove('off');
+                toggleStationBtn.textContent = '🚉 車站';
+                if (!map.hasLayer(stationOverlayProxy)) map.addLayer(stationOverlayProxy);
+            } else {
+                toggleStationBtn.classList.add('off');
+                toggleStationBtn.textContent = '🚉 隱藏';
+                if (map.hasLayer(stationOverlayProxy)) map.removeLayer(stationOverlayProxy);
+                // 若目前打開的 Popup 是車站，順便關閉
+                allStationLayers.forEach(stLayer => stLayer.closePopup());
+            }
+            applyYearFilter();
+        }
+
+        toggleStationBtn.addEventListener('click', function() {
+            setStationsVisibility(!showStations);
+        });
+
+        map.on('overlayadd', function(e) {
+            if (e.layer === stationOverlayProxy && !showStations) {
+                setStationsVisibility(true);
+            }
+        });
+        map.on('overlayremove', function(e) {
+            if (e.layer === stationOverlayProxy && showStations) {
+                setStationsVisibility(false);
+            }
+        });
 
         // 📐 空間幾何距離計算：點 (px, py) 到線段 (x1, y1)-(x2, y2) 的最短距離（公尺）
         function pointToSegmentDistMeters(px, py, x1, y1, x2, y2) {
@@ -285,7 +376,6 @@
             const p = feature.properties || {};
             const groupKey = p.parent_id || p.route_id || p.name;
 
-            // 若該線段本身是獨立編號副線（如 A3-1）且有自己的 history，優先看自己的 history；否則看母線 history
             const hist = (p.history && p.history.length > 0) ? p.history : (masterRouteHistoryMap[groupKey] || []);
             if (hist.length > 0) {
                 return hist.some(h => yr >= parseInt(h.startYear, 10) && yr <= parseInt(h.endYear, 10));
@@ -300,13 +390,12 @@
             return false;
         }
 
-        // 🚉 判斷某座「車站」在指定年份是否存在（優先看車站自有 period，若無則隨空間綁定的路線生滅）
+        // 🚉 判斷某座「車站」在指定年份是否存在
         function isStationFeatureActiveInYear(stFeature, yearStr) {
             if (yearStr === 'all') return true;
             const yr = parseInt(yearStr, 10);
             const p = stFeature.properties || {};
 
-            // 1. 第二層機制：若未來有為車站手動填寫專屬 period (如 "1925-1938")，優先採用
             if (p.period && p.period !== '未知') {
                 const m = p.period.match(/(\d{4})\D+(\d{4})/);
                 if (m) return yr >= parseInt(m[1], 10) && yr <= parseInt(m[2], 10);
@@ -314,7 +403,6 @@
                 if (mSingle) return yr === parseInt(mSingle[1], 10);
             }
 
-            // 2. 第一層機制：只要車站所依附的任一條路線在該年存在，車站即存在
             const boundFeatures = p._boundRouteFeatures || [];
             if (boundFeatures.length > 0) {
                 return boundFeatures.some(rf => isRouteFeatureActiveInYear(rf, yearStr));
@@ -350,7 +438,7 @@
             }
         }
 
-        // 車站圓點樣式（支援選中路線時紅框高亮 ＆ 淡化模式）
+        // 車站圓點樣式
         function getStationStyle(stFeature, isSelectedRoute = false) {
             const isActiveYear = isStationFeatureActiveInYear(stFeature, currentFilterYear);
             if (isSelectedRoute) {
@@ -420,13 +508,14 @@
             return content;
         }
 
-        // 套用年代篩選至所有路線與車站
+        // 套用年代篩選與車站開關至所有路線與車站
         function applyYearFilter() {
             const isAll = (currentFilterYear === 'all');
-            prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= 1909;
-            nextYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) >= 1945;
+            prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= MIN_YEAR;
+            nextYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) >= MAX_YEAR;
             yearModeSelect.style.display = isAll ? 'none' : 'inline-block';
             yearResetBtn.style.display = isAll ? 'none' : 'inline-block';
+            updateTitleText();
 
             // 1. 更新路線顯隱與樣式
             allRouteLayers.forEach(l => {
@@ -445,8 +534,12 @@
                 }
             });
 
-            // 2. 更新車站顯隱與樣式（隨所屬路線連動！）
+            // 2. 更新車站顯隱與樣式（受 showStations 開關與所屬路線年代雙重控制）
             allStationLayers.forEach(stLayer => {
+                if (!showStations) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                    return;
+                }
                 const stFeat = stLayer.feature;
                 const boundKeys = stFeat.properties._boundGroupKeys || [];
                 const isSelectedSt = Boolean(selectedGroupKey && boundKeys.includes(selectedGroupKey));
@@ -473,14 +566,14 @@
         });
 
         prevYearBtn.addEventListener('click', function() {
-            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) > 1909) {
+            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) > MIN_YEAR) {
                 yearSelect.value = String(parseInt(currentFilterYear, 10) - 1);
                 yearSelect.dispatchEvent(new Event('change'));
             }
         });
 
         nextYearBtn.addEventListener('click', function() {
-            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) < 1945) {
+            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) < MAX_YEAR) {
                 yearSelect.value = String(parseInt(currentFilterYear, 10) + 1);
                 yearSelect.dispatchEvent(new Event('change'));
             }
@@ -527,8 +620,12 @@
                 }
             });
 
-            // 同步高亮該路線沿線的所有車站圓點
+            // 同步高亮該路線沿線的所有車站圓點（若車站開關為開啟）
             allStationLayers.forEach(stLayer => {
+                if (!showStations) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                    return;
+                }
                 const stFeat = stLayer.feature;
                 const boundKeys = stFeat.properties._boundGroupKeys || [];
                 const isSelectedSt = boundKeys.includes(selectedGroupKey);
@@ -549,6 +646,20 @@
             if (popupLayer) {
                 popupLayer.openPopup();
             }
+        }
+
+        // 3. 取消選取反紅路線並還原初始狀態
+        function clearRouteSelection() {
+            selectedGroupKey = null;
+            activeRouteName = '';
+            activeRouteSection = '';
+            input.value = '';
+            syncDisplay();
+            dropdown.style.display = 'none';
+            searchBox.classList.remove('expanded');
+            clearBtn.style.display = 'none';
+            applyYearFilter();
+            map.closePopup();
         }
 
         fetch('data.json?t=' + new Date().getTime())
@@ -600,7 +711,7 @@
                     }
                 });
 
-                // 🔗 核心：執行「80公尺空間緩衝吸附」，讓每座車站自動認親綁定所屬路線
+                // 執行「80公尺空間緩衝吸附」，讓每座車站自動認親綁定所屬路線
                 stationFeaturesList.forEach(st => {
                     const [px, py] = st.geometry.coordinates;
                     const boundFeatures = [];
@@ -621,7 +732,6 @@
                         }
                     });
 
-                    // 萬一有車站距離略大於 80m（在 200m 內），自動吸附至最近的一條路線
                     if (boundFeatures.length === 0 && nearestFeature && nearestDist <= 200) {
                         boundFeatures.push(nearestFeature);
                         const gk = nearestFeature.properties.parent_id || nearestFeature.properties.route_id || nearestFeature.properties.name;
@@ -674,6 +784,8 @@
                             });
 
                             layer.on('click', function(e) {
+                                // 標記本次點擊命中了鐵道或車站，避免觸發地圖空白處的取消選取
+                                lastFeatureClickTime = Date.now();
                                 if (isPoint) return;
 
                                 searchBox.classList.add('expanded');
@@ -851,7 +963,16 @@
             }
         });
         
-        map.on('click', () => dropdown.style.display = 'none');
+        // 3. 點擊地圖空白處（非鐵道、非車站）時，自動取消反紅選取狀態
+        map.on('click', function() {
+            dropdown.style.display = 'none';
+            // 若剛剛點擊的是鐵道或車站圖層（150ms 內），則不執行取消選取
+            if (Date.now() - lastFeatureClickTime < 150) return;
+
+            if (selectedGroupKey !== null || activeRouteName !== '') {
+                clearRouteSelection();
+            }
+        });
         
         dropdown.addEventListener('scroll', function() { 
             if (!isRenderingList) { input.blur(); }
