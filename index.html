@@ -3,36 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v8.19</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.0</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
+        :root {
+            --primary: #1a237e;
+            --primary-light: #e8eaf6;
+            --accent: #ff7800;
+            --drawer-width: 390px;
+        }
         body, html {
-            margin: 0; padding: 0; height: 100%;
-            font-family: '微軟正黑體', 'PingFang TC', Arial, sans-serif;
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            font-family: '微軟正黑體', 'PingFang TC', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
             background-color: #f8f9fa;
         }
         #map { width: 100vw; height: 100%; }
 
-        /* 右上角系統標題（點擊可展開/收合時間軸） */
+        /* 右上角系統標題（點擊可展開/收合時間軸，抽屜打開時自動向左平滑讓位） */
         #system-title {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background-color: rgba(26, 35, 126, 0.92); color: white;
             padding: 10px 18px; border-radius: 25px;
-            font-size: 16px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-size: 15px; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             cursor: pointer; user-select: none;
-            transition: background-color 0.2s, transform 0.15s;
+            transition: right 0.32s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.2s, transform 0.15s;
         }
-        #system-title:hover {
-            background-color: rgba(40, 53, 147, 0.98);
-        }
-        #system-title:active {
-            transform: scale(0.97);
-        }
+        #system-title:hover { background-color: rgba(40, 53, 147, 0.98); }
+        #system-title:active { transform: scale(0.97); }
 
-        /* 📅 年代篩選膠囊面板（預設隱藏，點擊標題才出現） */
+        /* 📅 年代篩選膠囊面板（預設隱藏，點擊標題展開） */
         #year-filter-bar {
             position: absolute; top: 62px; right: 15px; z-index: 1000;
             background: rgba(255, 255, 255, 0.96);
@@ -41,12 +43,26 @@
             display: none; align-items: center; gap: 6px;
             font-size: 13px; color: #333;
             border: 1px solid #c5cae9;
+            transition: right 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        #year-filter-bar.open {
-            display: flex;
+        #year-filter-bar.open { display: flex; }
+
+        /* 桌機版抽屜打開時，右側 UI 自動左移讓位 */
+        @media (min-width: 769px) {
+            body.drawer-open #system-title,
+            body.drawer-open #year-filter-bar {
+                right: calc(var(--drawer-width) + 15px);
+            }
+            body.drawer-open .leaflet-right {
+                right: var(--drawer-width);
+            }
         }
+        .leaflet-right {
+            transition: right 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
         .yf-btn {
-            background: #e8eaf6; color: #1a237e; border: none;
+            background: var(--primary-light); color: var(--primary); border: none;
             width: 26px; height: 26px; border-radius: 50%;
             font-size: 12px; font-weight: bold; cursor: pointer;
             display: inline-flex; align-items: center; justify-content: center;
@@ -57,7 +73,7 @@
         #yearSelect {
             border: 1px solid #9fa8da; border-radius: 14px;
             padding: 3px 8px; font-size: 13px; font-weight: bold;
-            color: #1a237e; background: #fff; outline: none; cursor: pointer;
+            color: var(--primary); background: #fff; outline: none; cursor: pointer;
             font-family: inherit;
         }
         #yearModeSelect {
@@ -72,17 +88,26 @@
             font-weight: bold; cursor: pointer; display: none;
         }
         #yearResetBtn:hover { background: #c62828; }
-
-        /* 車站顯隱切換膠囊鈕 */
         #toggleStationBtn {
-            background: #e8eaf6; color: #1a237e; border: 1px solid #9fa8da;
+            background: var(--primary-light); color: var(--primary); border: 1px solid #9fa8da;
             padding: 3px 9px; border-radius: 12px; font-size: 12px;
-            font-weight: bold; cursor: pointer; transition: 0.15s;
-            font-family: inherit;
+            font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit;
         }
-        #toggleStationBtn.off {
-            background: #f5f5f5; color: #888; border-color: #ccc;
+        #toggleStationBtn.off { background: #f5f5f5; color: #888; border-color: #ccc; }
+
+        /* 🏢 會社勢力範圍模式浮動橫幅 */
+        #operator-banner {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 1001; background: #4a148c; color: white;
+            padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(74, 20, 140, 0.45);
+            display: none; align-items: center; gap: 10px; white-space: nowrap;
         }
+        #operator-banner button {
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer;
+        }
+        #operator-banner button:hover { background: rgba(255,255,255,0.35); }
 
         /* 左上角動態伸縮搜尋列 */
         #custom-search-box {
@@ -90,14 +115,12 @@
             background-color: white;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>');
             background-repeat: no-repeat; background-position: 12.5px center; background-size: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.28);
             width: 45px; height: 45px; border-radius: 25px;
-            overflow: visible; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: visible; transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
             cursor: pointer;
         }
-
-        #custom-search-box.expanded { width: 320px; border-radius: 8px; cursor: text; }
-
+        #custom-search-box.expanded { width: 340px; border-radius: 8px; cursor: text; }
         #custom-search-box input {
             width: 100%; height: 45px; border: none; outline: none; background: transparent;
             padding-left: 40px; padding-right: 45px; font-size: 16px; box-sizing: border-box;
@@ -116,7 +139,7 @@
 
         #input-display-layer {
             position: absolute; left: 40px; top: 0; height: 45px; line-height: 45px;
-            width: calc(100% - 85px); font-size: 16px; color: #333;
+            width: calc(100% - 85px); font-size: 15px; color: #333;
             pointer-events: none; white-space: pre; overflow: hidden;
             z-index: 1; opacity: 0; font-family: inherit;
         }
@@ -129,69 +152,231 @@
         }
 
         #searchDropdown {
-            position: absolute; top: 55px; left: 0; width: 100%; background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 5px; display: none;
-            max-height: 50dvh; overflow-y: auto; z-index: 1001;
+            position: absolute; top: 52px; left: 0; width: 100%; background: white;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18); border-radius: 8px; display: none;
+            max-height: 55dvh; overflow-y: auto; z-index: 1001;
         }
-        .search-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 15px; color: #333; }
-        .search-item:hover { background-color: #f0f4ff; color: #1a237e; }
-        .random-item { background-color: #e8eaf6; color: #1a237e; font-weight: bold; text-align: center; border-bottom: 2px solid #c5cae9; }
-        .search-letter-header { padding: 4px 15px; background-color: #e0e0e0; color: #555; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 10; }
+        .search-item {
+            padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+            font-size: 14px; color: #333; display: flex; justify-content: space-between; align-items: center;
+        }
+        .search-item:hover { background-color: #f0f4ff; color: var(--primary); }
+        .random-item { background-color: var(--primary-light); color: var(--primary); font-weight: bold; justify-content: center; border-bottom: 2px solid #c5cae9; }
+        .search-letter-header { padding: 4px 14px; background-color: #e0e0e0; color: #555; font-weight: bold; font-size: 12px; position: sticky; top: 0; z-index: 10; }
+        .match-tag { font-size: 11px; background: #eee; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: 6px; white-space: nowrap; }
+        .match-tag.code { background: #e8eaf6; color: #1a237e; font-weight: bold; }
+        .match-tag.st { background: #e0f7fa; color: #006064; }
 
-        /* 彈出資訊視窗 (Popup) 尺寸限制與捲軸美化 */
-        .custom-popup .leaflet-popup-content-wrapper {
-            border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            padding: 2px;
+        /* 🗺️ 左下角互動式圖例與堡圖透明度面板 */
+        #map-legend {
+            position: absolute; bottom: 20px; left: 58px; z-index: 999;
+            background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 12px; color: #333;
+            display: flex; flex-direction: column; gap: 6px; border: 1px solid #ddd;
         }
-        .custom-popup .leaflet-popup-content {
-            margin: 12px 14px;
-            width: min(350px, 78vw) !important;
-            max-height: 42dvh;
-            overflow-y: auto;
-            line-height: 1.5;
-            padding-right: 4px;
+        .legend-row {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
-        .custom-popup table th {
-            position: sticky;
-            top: 0;
-            background: #e8eaf6;
-            z-index: 2;
-            box-shadow: 0 1px 0 #ccc;
+        .legend-item {
+            display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+            user-select: none; padding: 2px 6px; border-radius: 6px; transition: 0.15s;
         }
+        .legend-item:hover { background: #f0f4ff; }
+        .legend-item.muted { opacity: 0.35; text-decoration: line-through; }
+        .lg-line { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+        .lg-dash { width: 18px; height: 0; border-top: 3px dashed #222; display: inline-block; }
+        .lg-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); display: inline-block; }
+        #opacity-box {
+            display: none; align-items: center; gap: 6px; border-top: 1px solid #eee;
+            padding-top: 5px; font-size: 12px; color: var(--primary); font-weight: bold;
+        }
+        #opacitySlider { width: 90px; cursor: pointer; accent-color: var(--primary); }
+
+        /* 📑 右側／底部響應式考據資訊抽屜 (Side Drawer) */
+        #info-drawer {
+            position: absolute; top: 0; right: 0; width: var(--drawer-width); height: 100dvh;
+            background: white; z-index: 1002; box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+            transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex; flex-direction: column; box-sizing: border-box;
+        }
+        body.drawer-open #info-drawer { transform: translateX(0); }
+
+        .drawer-drag-handle {
+            display: none; width: 42px; height: 5px; background: #ccc;
+            border-radius: 3px; margin: 8px auto 2px; cursor: pointer;
+        }
+        .drawer-header {
+            padding: 16px 18px 12px; border-bottom: 1px solid #e8eaf6;
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white;
+            position: relative; flex-shrink: 0;
+        }
+        .drawer-title-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .drawer-title { font-size: 20px; font-weight: bold; letter-spacing: 0.5px; }
+        .drawer-tailo { font-size: 12px; color: #c5cae9; font-style: italic; margin-top: 2px; }
+        .drawer-section { font-size: 13px; color: #e8eaf6; margin-top: 4px; }
+        .drawer-actions {
+            display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center;
+        }
+        .drawer-btn {
+            background: rgba(255,255,255,0.16); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 4px 10px; border-radius: 14px; font-size: 12px; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 4px; transition: 0.15s;
+            font-family: inherit;
+        }
+        .drawer-btn:hover { background: rgba(255,255,255,0.28); }
+        .drawer-close {
+            background: rgba(255,255,255,0.18); color: white; border: none;
+            width: 30px; height: 30px; border-radius: 50%; font-size: 18px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .drawer-close:hover { background: rgba(255,255,255,0.32); }
+
+        .drawer-body {
+            padding: 14px 16px 24px; overflow-y: auto; flex: 1; line-height: 1.55;
+        }
+
+        /* 📷 歷史照片展板 */
+        #drawer-photo-box {
+            display: none; margin-bottom: 14px; border-radius: 8px; overflow: hidden;
+            border: 1px solid #d1d9ff; background: #111; position: relative;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+        #drawer-photo-img {
+            width: 100%; max-height: 220px; object-fit: cover; display: block;
+            cursor: zoom-in; transition: transform 0.25s;
+        }
+        #drawer-photo-img:hover { transform: scale(1.02); }
+        .photo-caption-bar {
+            background: #f8f9fa; padding: 7px 10px; font-size: 12px; color: #444;
+            border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .photo-zoom-hint {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65);
+            color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none;
+        }
+
+        /* 抽屜內部區塊標籤 */
+        .info-block { margin-bottom: 14px; }
+        .info-block-title {
+            font-size: 12px; font-weight: bold; color: #5c6bc0; margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+        .op-chip {
+            background: #f3e5f5; color: #4a148c; border: 1px solid #ce93d8;
+            padding: 3px 9px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .op-chip:hover { background: #4a148c; color: white; }
+        .st-chip {
+            background: #e0f7fa; color: #006064; border: 1px solid #80deea;
+            padding: 3px 9px; border-radius: 14px; font-size: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.15s;
+        }
+        .st-chip:hover { background: #00838f; color: white; }
+
         .route-badge {
-            background: #1a237e;
-            color: white;
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            display: inline-block;
+            background: var(--primary); color: white; padding: 2px 8px;
+            border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;
         }
         .active-year-row {
-            background-color: #fff59d !important;
-            font-weight: bold;
-            color: #b71c1c;
+            background-color: #fff59d !important; font-weight: bold; color: #b71c1c;
         }
+        #drawer-table-container table {
+            width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px;
+        }
+        #drawer-table-container th {
+            position: sticky; top: -14px; background: #e8eaf6; color: #1a237e;
+            z-index: 2; box-shadow: 0 1px 0 #ccc; padding: 6px 5px;
+        }
+        #drawer-table-container td { padding: 5px 5px; }
+
+        /* 🔍 全螢幕照片放大鏡 (Lightbox) */
+        #photo-lightbox {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box;
+        }
+        #photo-lightbox.open { display: flex; }
+        #lightbox-img {
+            max-width: 92vw; max-height: 80dvh; object-fit: contain;
+            border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            transition: transform 0.2s;
+        }
+        #lightbox-caption {
+            color: #eee; margin-top: 12px; font-size: 14px; text-align: center; max-width: 700px;
+        }
+        #lightbox-close {
+            position: absolute; top: 20px; right: 25px; background: rgba(255,255,255,0.2);
+            color: white; border: none; width: 40px; height: 40px; border-radius: 50%;
+            font-size: 24px; cursor: pointer;
+        }
+
+        /* 吐司通知 (Toast) */
+        #toast-msg {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(33,33,33,0.92); color: white; padding: 8px 18px;
+            border-radius: 20px; font-size: 13px; z-index: 2500; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* 車站動態標籤 (Zoom >= 14 時自動顯示) */
+        .station-label {
+            background: rgba(255, 255, 255, 0.88); border: 1px solid #7986cb;
+            color: #1a237e; font-weight: bold; font-size: 11px; padding: 1px 5px;
+            border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            display: none; pointer-events: none; white-space: nowrap;
+        }
+        #map.zoom-labels .station-label { display: block; }
 
         .leaflet-control-layers {
-            font-family: '微軟正黑體', 'PingFang TC', Arial, sans-serif;
-            border-radius: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px;
+            font-family: inherit; border-radius: 8px !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px;
         }
 
+        /* 📱 手機版響應式底部抽屜設計 */
         @media (max-width: 768px) {
             #custom-search-box.expanded { width: calc(100% - 30px) !important; left: 15px !important; }
-            #system-title { top: auto !important; bottom: 32px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); font-size: 13px !important; padding: 8px 16px; white-space: nowrap; }
+            #system-title {
+                top: auto !important; bottom: 25px !important; left: 50% !important; right: auto !important;
+                transform: translateX(-50%); font-size: 13px !important; padding: 8px 16px; white-space: nowrap;
+            }
             #system-title:active { transform: translateX(-50%) scale(0.97); }
-            #year-filter-bar { top: auto !important; bottom: 74px !important; left: 50% !important; right: auto !important; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; }
+            #year-filter-bar {
+                top: auto !important; bottom: 68px !important; left: 50% !important; right: auto !important;
+                transform: translateX(-50%); white-space: nowrap; padding: 5px 10px;
+            }
+            #map-legend {
+                bottom: auto; top: 70px; left: 15px; padding: 6px 10px;
+            }
+            #operator-banner {
+                top: 68px; font-size: 12px; padding: 6px 12px; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+            }
             .leaflet-control-zoom { display: none !important; }
-            .custom-popup .leaflet-popup-content { max-height: 36dvh; }
+
+            #info-drawer {
+                top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 50dvh;
+                border-radius: 16px 16px 0 0; transform: translateY(105%);
+                transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.25s ease;
+            }
+            body.drawer-open #info-drawer { transform: translateY(0); }
+            #info-drawer.full-mobile { height: 84dvh; }
+            .drawer-drag-handle { display: block; }
+            .drawer-header { padding: 8px 16px 10px; }
         }
     </style>
 </head>
 <body>
 
     <div id="system-title" title="點擊展開／收合歷史年代篩選器">古今鐵道營業線 HGIS 查詢</div>
+
+    <!-- 🏢 會社勢力範圍模式橫幅 -->
+    <div id="operator-banner">
+        <span id="operator-banner-text">🏢 會社路網模式</span>
+        <button onclick="clearRouteSelection()">✕ 結束檢視</button>
+    </div>
 
     <!-- 📅 年代篩選膠囊面板（預設隱藏，點擊上方標題展開） -->
     <div id="year-filter-bar">
@@ -209,12 +394,101 @@
         <button id="toggleStationBtn" title="顯示或隱藏所有車站點位">🚉 車站</button>
     </div>
 
+    <!-- 🔍 左上角複合式智慧搜尋列 -->
     <div id="custom-search-box">
         <div id="input-display-layer"></div>
         <input type="text" id="searchInput" autocomplete="off">
         <span id="clearBtn" title="清除">&times;</span>
         <div id="searchDropdown"></div>
     </div>
+
+    <!-- 🗺️ 左下角互動式圖例與堡圖透明度滑桿 -->
+    <div id="map-legend">
+        <div class="legend-row">
+            <span class="legend-item" id="lg-main" onclick="toggleLineType('主線')" title="點擊切換顯示/隱藏主線">
+                <span class="lg-line" style="background:#ff7800;"></span>主線
+            </span>
+            <span class="legend-item" id="lg-old" onclick="toggleLineType('舊線')" title="點擊切換顯示/隱藏舊線">
+                <span class="lg-dash"></span>舊線
+            </span>
+            <span class="legend-item" id="lg-sub" onclick="toggleLineType('副線')" title="點擊切換顯示/隱藏副線與支線">
+                <span class="lg-line" style="background:#3949ab;"></span>副/支線
+            </span>
+            <span class="legend-item" id="lg-st" onclick="setStationsVisibility(!showStations)" title="點擊切換顯示/隱藏車站">
+                <span class="lg-dot"></span>車站
+            </span>
+        </div>
+        <div id="opacity-box">
+            <span>🗺️ 堡圖透明度</span>
+            <input type="range" id="opacitySlider" min="0" max="100" value="85">
+            <span id="opacityVal">85%</span>
+        </div>
+    </div>
+
+    <!-- 📑 響應式考據資訊抽屜 (Side Drawer / Bottom Sheet) -->
+    <div id="info-drawer">
+        <div class="drawer-drag-handle" id="drawerHandle" title="點擊切換半開/全開"></div>
+        <div class="drawer-header">
+            <div class="drawer-title-row">
+                <div>
+                    <span id="drawer-badge" class="route-badge" style="background:#fff;color:#1a237e;margin-bottom:4px;">A1 主線</span>
+                    <div class="drawer-title" id="drawer-title">路線名稱</div>
+                </div>
+                <button class="drawer-close" onclick="clearRouteSelection()" title="關閉面板">&times;</button>
+            </div>
+            <div class="drawer-tailo" id="drawer-tailo"></div>
+            <div class="drawer-section" id="drawer-section"></div>
+            <div class="drawer-actions">
+                <button class="drawer-btn" onclick="copyPermalink()" title="複製此路線與年代的專屬分享連結">🔗 分享連結</button>
+                <button class="drawer-btn" id="demoPhotoBtn" onclick="triggerDemoPhoto()" title="預覽歷史照片展板與放大鏡效果">📷 預覽照片效果</button>
+            </div>
+        </div>
+        <div class="drawer-body">
+            <!-- 歷史照片展板 -->
+            <div id="drawer-photo-box">
+                <span class="photo-zoom-hint">🔍 點擊放大檢視</span>
+                <img id="drawer-photo-img" src="" alt="路線歷史照片" onclick="openLightbox()">
+                <div class="photo-caption-bar">
+                    <span id="drawer-photo-caption">歷史影像</span>
+                    <span id="drawer-photo-source" style="color:#888;font-size:11px;"></span>
+                </div>
+            </div>
+
+            <!-- 經營者互動晶片區 -->
+            <div class="info-block" id="drawer-ops-block" style="display:none;">
+                <div class="info-block-title">
+                    <span>🏢 歷年經營者（點擊可高亮該會社全線網）</span>
+                </div>
+                <div class="chip-list" id="drawer-ops-list"></div>
+            </div>
+
+            <!-- 沿線車站互動導覽列 -->
+            <div class="info-block" id="drawer-stations-block" style="display:none;">
+                <div class="info-block-title">
+                    <span id="drawer-stations-title">🚉 沿線車站（點擊飛往定位）</span>
+                </div>
+                <div class="chip-list" id="drawer-stations-list"></div>
+            </div>
+
+            <!-- 歷年統計沿革表 -->
+            <div class="info-block">
+                <div class="info-block-title">
+                    <span>📜 歷年統計沿革與簡介</span>
+                </div>
+                <div id="drawer-table-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔍 全螢幕照片放大鏡 (Lightbox) -->
+    <div id="photo-lightbox" onclick="closeLightbox()">
+        <button id="lightbox-close">&times;</button>
+        <img id="lightbox-img" src="" alt="放大歷史照片" onclick="event.stopPropagation()">
+        <div id="lightbox-caption" onclick="event.stopPropagation()"></div>
+    </div>
+
+    <!-- 吐司通知 -->
+    <div id="toast-msg"></div>
 
     <div id="map"></div>
 
@@ -223,14 +497,17 @@
     <script>
         const sysTitle = document.getElementById('system-title');
         const yfBar = document.getElementById('year-filter-bar');
-        L.DomEvent.disableClickPropagation(sysTitle);
-        L.DomEvent.disableClickPropagation(yfBar);
-        L.DomEvent.disableScrollPropagation(yfBar);
+        const infoDrawer = document.getElementById('info-drawer');
+        const mapLegend = document.getElementById('map-legend');
+        const opBanner = document.getElementById('operator-banner');
+
+        [sysTitle, yfBar, infoDrawer, mapLegend, opBanner].forEach(el => {
+            L.DomEvent.disableClickPropagation(el);
+            L.DomEvent.disableScrollPropagation(el);
+        });
 
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
         const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85 });
-        
-        // 建立一個代理圖層群組，讓右下角圖層控制器也能勾選開關「車站點位」
         const stationOverlayProxy = L.layerGroup();
 
         const myRenderer = L.canvas({ tolerance: 15 }); 
@@ -251,20 +528,36 @@
         let allRouteLayers = [];
         let allStationLayers = [];
         let searchableRoutes = [];
+        let searchableStations = [];
         let masterRouteDescMap = {};
         let masterRouteHistoryMap = {};
+        let masterRouteFeatureMap = {};
+        let groupStationsMap = {}; // groupKey -> [stationLayer, ...]
         let routeKeyToNameMap = {};
+
         let activeRouteName = '';
         let activeRouteSection = '';
         let selectedGroupKey = null;
+        let activeOperatorFilter = null; // 企業路網高亮模式
+        let currentDrawerFeature = null;
         let isRenderingList = false;
 
         let currentFilterYear = 'all';
         let yearFilterMode = 'hide';
-        let showStations = true; // 控制車站點位是否顯示
-        let lastFeatureClickTime = 0; // 紀錄最近一次點擊鐵道或車站的時間戳記
+        let showStations = true;
+        let hiddenLineTypes = new Set(); // 可由左下角圖例切換隱藏 '主線', '舊線', '副線'
+        let lastFeatureClickTime = 0;
 
-        // 4. 點擊「古今鐵道營業線 HGIS 查詢」切換時間軸面板顯示/隱藏
+        // 吐司通知輔助函數
+        function showToast(text) {
+            const t = document.getElementById('toast-msg');
+            t.textContent = text;
+            t.style.display = 'block';
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => { t.style.display = 'none'; }, 2600);
+        }
+
+        // 點擊「古今鐵道營業線 HGIS 查詢」切換時間軸面板顯示/隱藏
         function updateTitleText() {
             if (currentFilterYear !== 'all' && !yfBar.classList.contains('open')) {
                 sysTitle.textContent = `古今鐵道營業線 HGIS 查詢・${currentFilterYear}年`;
@@ -277,6 +570,11 @@
             e.stopPropagation();
             yfBar.classList.toggle('open');
             updateTitleText();
+        });
+
+        // 手機版抽屜頂部拉桿切換半開/全開
+        document.getElementById('drawerHandle').addEventListener('click', function() {
+            infoDrawer.classList.toggle('full-mobile');
         });
 
         function getEraName(y) {
@@ -294,7 +592,7 @@
         const yearResetBtn = document.getElementById('yearResetBtn');
         const toggleStationBtn = document.getElementById('toggleStationBtn');
 
-        // 2. 時間軸提供至 1941 年（昭和16年）
+        // 時間軸上限為 1941 年（昭和16年）
         const MIN_YEAR = 1909;
         const MAX_YEAR = 1941;
         for (let y = MIN_YEAR; y <= MAX_YEAR; y++) {
@@ -304,18 +602,20 @@
             yearSelect.appendChild(opt);
         }
 
-        // 1. 車站點位開關同步邏輯（支援按鈕與右下角圖層選單）
+        // 車站點位開關同步邏輯（支援時間軸按鈕、左下角圖例與右下角圖層選單）
         function setStationsVisibility(visible) {
             showStations = visible;
+            const lgSt = document.getElementById('lg-st');
             if (showStations) {
                 toggleStationBtn.classList.remove('off');
                 toggleStationBtn.textContent = '🚉 車站';
+                lgSt.classList.remove('muted');
                 if (!map.hasLayer(stationOverlayProxy)) map.addLayer(stationOverlayProxy);
             } else {
                 toggleStationBtn.classList.add('off');
                 toggleStationBtn.textContent = '🚉 隱藏';
+                lgSt.classList.add('muted');
                 if (map.hasLayer(stationOverlayProxy)) map.removeLayer(stationOverlayProxy);
-                // 若目前打開的 Popup 是車站，順便關閉
                 allStationLayers.forEach(stLayer => stLayer.closePopup());
             }
             applyYearFilter();
@@ -325,31 +625,61 @@
             setStationsVisibility(!showStations);
         });
 
-        map.on('overlayadd', function(e) {
-            if (e.layer === stationOverlayProxy && !showStations) {
-                setStationsVisibility(true);
+        // 左下角圖例點擊切換線型顯示/隱藏
+        function toggleLineType(typeKey) {
+            if (hiddenLineTypes.has(typeKey)) {
+                hiddenLineTypes.delete(typeKey);
+            } else {
+                hiddenLineTypes.add(typeKey);
             }
-        });
-        map.on('overlayremove', function(e) {
-            if (e.layer === stationOverlayProxy && showStations) {
-                setStationsVisibility(false);
-            }
+            document.getElementById('lg-main').classList.toggle('muted', hiddenLineTypes.has('主線'));
+            document.getElementById('lg-old').classList.toggle('muted', hiddenLineTypes.has('舊線'));
+            document.getElementById('lg-sub').classList.toggle('muted', hiddenLineTypes.has('副線'));
+            applyYearFilter();
+        }
+
+        // 1904 臺灣堡圖透明度滑桿連動
+        const opacityBox = document.getElementById('opacity-box');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityVal = document.getElementById('opacityVal');
+
+        opacitySlider.addEventListener('input', function() {
+            const v = parseInt(this.value, 10);
+            sinica1904.setOpacity(v / 100);
+            opacityVal.textContent = `${v}%`;
         });
 
-        // 📐 空間幾何距離計算：點 (px, py) 到線段 (x1, y1)-(x2, y2) 的最短距離（公尺）
+        map.on('overlayadd', function(e) {
+            if (e.layer === stationOverlayProxy && !showStations) setStationsVisibility(true);
+            if (e.layer === sinica1904) opacityBox.style.display = 'flex';
+        });
+        map.on('overlayremove', function(e) {
+            if (e.layer === stationOverlayProxy && showStations) setStationsVisibility(false);
+            if (e.layer === sinica1904) opacityBox.style.display = 'none';
+        });
+
+        // Zoom-Based LOD：依縮放層級自動調節車站與站名標籤顯隱
+        map.on('zoomend', function() {
+            const z = map.getZoom();
+            const mapEl = document.getElementById('map');
+            if (z >= 14 && showStations) {
+                mapEl.classList.add('zoom-labels');
+            } else {
+                mapEl.classList.remove('zoom-labels');
+            }
+            applyYearFilter();
+        });
+
+        // 空間幾何距離計算：點到線段的最短距離（公尺）
         function pointToSegmentDistMeters(px, py, x1, y1, x2, y2) {
             const kx = 111320 * Math.cos(py * Math.PI / 180);
             const ky = 110574;
             const dx = (x2 - x1) * kx;
             const dy = (y2 - y1) * ky;
-            if (dx === 0 && dy === 0) {
-                return Math.hypot((px - x1) * kx, (py - y1) * ky);
-            }
+            if (dx === 0 && dy === 0) return Math.hypot((px - x1) * kx, (py - y1) * ky);
             let t = (((px - x1) * kx) * dx + ((py - y1) * ky) * dy) / (dx * dx + dy * dy);
             t = Math.max(0, Math.min(1, t));
-            const projX = x1 * kx + t * dx;
-            const projY = y1 * ky + t * dy;
-            return Math.hypot(px * kx - projX, py * ky - projY);
+            return Math.hypot(px * kx - (x1 * kx + t * dx), py * ky - (y1 * ky + t * dy));
         }
 
         function minDistToGeometryMeters(px, py, geom) {
@@ -361,12 +691,17 @@
                     if (d < minD) minD = d;
                 }
             };
-            if (geom.type === "LineString") {
-                checkLine(geom.coordinates);
-            } else if (geom.type === "MultiLineString") {
-                geom.coordinates.forEach(line => checkLine(line));
-            }
+            if (geom.type === "LineString") checkLine(geom.coordinates);
+            else if (geom.type === "MultiLineString") geom.coordinates.forEach(line => checkLine(line));
             return minD;
+        }
+
+        // 判斷路線是否屬於被隱藏的線型分類
+        function isLineTypeHidden(feature) {
+            const t = (feature.properties && feature.properties.line_type) || "主線";
+            if (t === "舊線") return hiddenLineTypes.has("舊線");
+            if (t === "副線" || t.includes("支線")) return hiddenLineTypes.has("副線");
+            return hiddenLineTypes.has("主線");
         }
 
         // 判斷某條「路線」在指定年份是否存在
@@ -380,7 +715,6 @@
             if (hist.length > 0) {
                 return hist.some(h => yr >= parseInt(h.startYear, 10) && yr <= parseInt(h.endYear, 10));
             }
-
             if (p.period && p.period !== '未知') {
                 const m = p.period.match(/(\d{4})\D+(\d{4})/);
                 if (m) return yr >= parseInt(m[1], 10) && yr <= parseInt(m[2], 10);
@@ -390,7 +724,7 @@
             return false;
         }
 
-        // 🚉 判斷某座「車站」在指定年份是否存在
+        // 判斷某座「車站」在指定年份是否存在
         function isStationFeatureActiveInYear(stFeature, yearStr) {
             if (yearStr === 'all') return true;
             const yr = parseInt(yearStr, 10);
@@ -402,7 +736,6 @@
                 const mSingle = p.period.match(/(\d{4})/);
                 if (mSingle) return yr === parseInt(mSingle[1], 10);
             }
-
             const boundFeatures = p._boundRouteFeatures || [];
             if (boundFeatures.length > 0) {
                 return boundFeatures.some(rf => isRouteFeatureActiveInYear(rf, yearStr));
@@ -410,31 +743,43 @@
             return false;
         }
 
-        // 路線樣式
-        function getLineStyle(feature, isSelected = false) {
+        // 路線樣式（支援一般選取、會社路網高亮、Zoom LOD 與年代淡化）
+        function getLineStyle(feature, isSelected = false, isOperatorMatch = false) {
             const p = feature.properties || {};
             const type = p.line_type || "";
             const isActiveYear = isRouteFeatureActiveInYear(feature, currentFilterYear);
+            const isLowZoom = map.getZoom() <= 10;
 
             if (isSelected) {
                 return {
                     color: "#e53935",
-                    weight: type === "主線" || !type ? 7 : 5,
+                    weight: (type === "主線" || !type) ? 7 : 5,
                     opacity: 1,
                     dashArray: type === "舊線" ? '6, 6' : null
                 };
             }
-
+            if (isOperatorMatch) {
+                return {
+                    color: "#7b1fa2",
+                    weight: (type === "主線" || !type) ? 6 : 4.5,
+                    opacity: 0.95,
+                    dashArray: type === "舊線" ? '6, 6' : null
+                };
+            }
+            if (activeOperatorFilter) {
+                return { color: "#bdbdbd", weight: 2, opacity: 0.25, dashArray: null };
+            }
             if (!isActiveYear && yearFilterMode === 'dim') {
                 return { color: "#9e9e9e", weight: 2, opacity: 0.22, dashArray: null };
             }
 
+            const baseW = isLowZoom ? 2.5 : 4;
             if (type === "舊線") {
-                return { color: "#222222", weight: 3, opacity: 0.85, dashArray: '5, 5' };
+                return { color: "#222222", weight: isLowZoom ? 2 : 3, opacity: 0.85, dashArray: '5, 5' };
             } else if (type === "副線" || type.includes("支線")) {
-                return { color: "#3949ab", weight: 3.5, opacity: 0.85, dashArray: null };
+                return { color: "#3949ab", weight: isLowZoom ? 2.2 : 3.5, opacity: 0.85, dashArray: null };
             } else {
-                return { color: "#ff7800", weight: 4, opacity: 0.85, dashArray: null };
+                return { color: "#ff7800", weight: baseW, opacity: 0.85, dashArray: null };
             }
         }
 
@@ -444,43 +789,227 @@
             if (isSelectedRoute) {
                 return { radius: 5.5, fillColor: "#fff59d", color: "#d32f2f", weight: 2.5, opacity: 1, fillOpacity: 1 };
             }
-            if (!isActiveYear && yearFilterMode === 'dim') {
+            if ((!isActiveYear && yearFilterMode === 'dim') || activeOperatorFilter) {
                 return { radius: 3.5, fillColor: "#eeeeee", color: "#9e9e9e", weight: 1, opacity: 0.25, fillOpacity: 0.25 };
             }
             return { radius: 4.5, fillColor: "#ffffff", color: "#1a237e", weight: 2, opacity: 1, fillOpacity: 1 };
         }
 
-        // 格式化 Popup 內容
-        function buildPopupContent(feature) {
+        // 📷 歷史照片自動偵測與載入邏輯
+        function loadRoutePhoto(feature) {
             const p = feature.properties || {};
-            const isStation = (feature.geometry && feature.geometry.type === "Point") || p.status === "車站";
+            const photoBox = document.getElementById('drawer-photo-box');
+            const photoImg = document.getElementById('drawer-photo-img');
+            const photoCap = document.getElementById('drawer-photo-caption');
+            const photoSrc = document.getElementById('drawer-photo-source');
+            const demoBtn = document.getElementById('demoPhotoBtn');
 
-            if (isStation) {
-                const boundKeys = p._boundGroupKeys || [];
-                const routeBadges = boundKeys.map(k => `<span class="route-badge" style="margin-right:4px;margin-top:4px;">${routeKeyToNameMap[k] || k}</span>`).join('');
-                return `
-                    <div style="font-size:15px;font-weight:bold;color:#1a237e;">🚉 ${p.name || '未命名車站'}</div>
-                    ${routeBadges ? `<div style="margin-top:4px;font-size:12px;color:#555;">所屬路線：${routeBadges}</div>` : ''}
-                `;
+            photoBox.style.display = 'none';
+            demoBtn.style.display = 'inline-flex';
+
+            // 1. 優先檢查 data.json 內是否有設定 photos 陣列或 photo 欄位
+            if (p.photos && Array.isArray(p.photos) && p.photos.length > 0) {
+                const item = p.photos[0];
+                photoImg.src = item.url;
+                photoCap.textContent = item.caption || `${p.name} 歷史影像`;
+                photoSrc.textContent = item.source ? `出處：${item.source}` : (item.year || '');
+                photoBox.style.display = 'block';
+                demoBtn.style.display = 'none';
+                return;
+            }
+            if (p.photo) {
+                photoImg.src = p.photo;
+                photoCap.textContent = p.photo_caption || `${p.name} 歷史影像`;
+                photoSrc.textContent = p.photo_source || '';
+                photoBox.style.display = 'block';
+                demoBtn.style.display = 'none';
+                return;
             }
 
-            const groupKey = p.parent_id || p.route_id || p.name;
-            let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
+            // 2. 免改 JSON 自動探測 photos/ 資料夾下的圖片 (如 photos/A1.jpg, photos/B4.jpg)
+            const candidates = [];
+            if (p.route_id) {
+                candidates.push(`photos/${p.route_id}.jpg`, `photos/${p.route_id}.png`);
+            }
+            if (p.parent_id && p.parent_id !== p.route_id) {
+                candidates.push(`photos/${p.parent_id}.jpg`, `photos/${p.parent_id}.png`);
+            }
 
+            function tryNext(idx) {
+                if (idx >= candidates.length) return;
+                const testImg = new Image();
+                testImg.onload = function() {
+                    // 確認目前抽屜仍是同一條路線才顯示
+                    if (currentDrawerFeature !== feature) return;
+                    photoImg.src = candidates[idx];
+                    photoCap.textContent = `${p.name} 歷史影像`;
+                    photoSrc.textContent = p.route_id || '';
+                    photoBox.style.display = 'block';
+                    demoBtn.style.display = 'none';
+                };
+                testImg.onerror = function() {
+                    tryNext(idx + 1);
+                };
+                testImg.src = candidates[idx];
+            }
+            tryNext(0);
+        }
+
+        // 內建老照片展板預覽功能（動態繪製復古台車老照片明信片，供立即測試展板與放大鏡）
+        function triggerDemoPhoto() {
+            if (!currentDrawerFeature) return;
+            const p = currentDrawerFeature.properties || {};
+            const canvas = document.createElement('canvas');
+            canvas.width = 800; canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+
+            // 復古棕褐色底圖
+            const grad = ctx.createLinearGradient(0, 0, 0, 500);
+            grad.addColorStop(0, '#d7ccc8');
+            grad.addColorStop(0.6, '#bcaaa4');
+            grad.addColorStop(1, '#8d6e63');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 500);
+
+            // 遠山與軌道透視線
+            ctx.fillStyle = '#6d4c41';
+            ctx.beginPath();
+            ctx.moveTo(0, 310); ctx.lineTo(220, 170); ctx.lineTo(480, 290); ctx.lineTo(680, 190); ctx.lineTo(800, 280); ctx.lineTo(800, 310);
+            ctx.fill();
+
+            // 輕便軌道枕木與鐵軌
+            ctx.strokeStyle = '#3e2723';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(360, 310); ctx.lineTo(140, 500);
+            ctx.moveTo(440, 310); ctx.lineTo(660, 500);
+            ctx.stroke();
+
+            ctx.lineWidth = 4;
+            for (let i = 0; i <= 10; i++) {
+                const y = 320 + i * 18;
+                const spread = 45 + i * 22;
+                ctx.beginPath();
+                ctx.moveTo(400 - spread, y);
+                ctx.lineTo(400 + spread, y);
+                ctx.stroke();
+            }
+
+            // 復古相框邊線與文字水印
+            ctx.strokeStyle = '#4e342e';
+            ctx.lineWidth = 12;
+            ctx.strokeRect(18, 18, 764, 464);
+
+            ctx.fillStyle = '#3e2723';
+            ctx.font = 'bold 34px "Microsoft JhengHei", serif';
+            ctx.fillText(`【歷史寫真預覽】${p.name || '輕便鐵道'}`, 45, 75);
+            ctx.font = '22px "Microsoft JhengHei", serif';
+            ctx.fillText(`編號：${p.route_id || p.parent_id || '台車線'} ｜ 區間：${(p.section || '').replace(/\s*\([^)]*\)$/, '') || '歷史區間'}`, 45, 115);
+            ctx.font = '18px "Microsoft JhengHei", serif';
+            ctx.fillStyle = '#4e342e';
+            ctx.fillText(`💡 未來只需將照片命名為 photos/${p.route_id || p.parent_id || 'A1'}.jpg 上傳至 GitHub，即會自動取代此預覽圖！`, 45, 455);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const photoBox = document.getElementById('drawer-photo-box');
+            const photoImg = document.getElementById('drawer-photo-img');
+            photoImg.src = dataUrl;
+            document.getElementById('drawer-photo-caption').textContent = `${p.name}（老照片展板模擬預覽，點擊可開啟全螢幕放大鏡）`;
+            document.getElementById('drawer-photo-source').textContent = `檔名規則：photos/${p.route_id || p.parent_id || 'A1'}.jpg`;
+            photoBox.style.display = 'block';
+        }
+
+        function openLightbox() {
+            const src = document.getElementById('drawer-photo-img').src;
+            const cap = document.getElementById('drawer-photo-caption').textContent;
+            if (!src) return;
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox-caption').textContent = cap;
+            document.getElementById('photo-lightbox').classList.add('open');
+        }
+
+        function closeLightbox() {
+            document.getElementById('photo-lightbox').classList.remove('open');
+        }
+
+        // 開啟並渲染右側／底部考據抽屜
+        function openRouteDrawer(feature) {
+            currentDrawerFeature = feature;
+            const p = feature.properties || {};
+            const groupKey = p.parent_id || p.route_id || p.name;
+
+            const badgeText = `${p.route_id || groupKey} ${p.line_type || '主線'}`.trim();
+            document.getElementById('drawer-badge').textContent = badgeText;
+            document.getElementById('drawer-title').textContent = p.name || '未命名路線';
+            document.getElementById('drawer-tailo').textContent = p.tailo || '';
+
+            const cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+            document.getElementById('drawer-section').textContent = cleanSec ? `區間：${cleanSec}` : '';
+
+            // 載入歷史照片
+            loadRoutePhoto(feature);
+
+            // 1. 渲染可點擊的經營者晶片
+            const opsBlock = document.getElementById('drawer-ops-block');
+            const opsList = document.getElementById('drawer-ops-list');
+            opsList.innerHTML = '';
+            const masterFeat = masterRouteFeatureMap[groupKey] || feature;
+            const opsStr = p.operators || (masterFeat.properties && masterFeat.properties.operators) || '';
+            const opsArr = opsStr ? opsStr.split('、').map(s => s.trim()).filter(Boolean) : [];
+
+            if (opsArr.length > 0) {
+                opsBlock.style.display = 'block';
+                opsArr.forEach(opName => {
+                    const chip = document.createElement('span');
+                    chip.className = 'op-chip';
+                    chip.innerHTML = `🏢 ${opName}`;
+                    chip.onclick = () => filterByOperator(opName);
+                    opsList.appendChild(chip);
+                });
+            } else {
+                opsBlock.style.display = 'none';
+            }
+
+            // 2. 渲染沿線車站導覽晶片
+            const stBlock = document.getElementById('drawer-stations-block');
+            const stList = document.getElementById('drawer-stations-list');
+            stList.innerHTML = '';
+            const boundStLayers = groupStationsMap[groupKey] || [];
+
+            if (boundStLayers.length > 0) {
+                stBlock.style.display = 'block';
+                document.getElementById('drawer-stations-title').textContent = `🚉 沿線車站（共 ${boundStLayers.length} 站，點擊飛往定位）`;
+                boundStLayers.forEach(stLayer => {
+                    const stName = stLayer.feature.properties.name || '車站';
+                    const chip = document.createElement('span');
+                    chip.className = 'st-chip';
+                    chip.textContent = stName;
+                    chip.onclick = () => {
+                        if (!showStations) setStationsVisibility(true);
+                        if (!map.hasLayer(stLayer)) stLayer.addTo(map);
+                        map.flyTo(stLayer.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.8 });
+                        setTimeout(() => stLayer.openPopup(), 400);
+                    };
+                    stList.appendChild(chip);
+                });
+            } else {
+                stBlock.style.display = 'none';
+            }
+
+            // 3. 渲染歷年統計沿革表與簡介
+            let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
             if ((rawDesc.includes("年報無統計") || rawDesc.includes("在此輸入中文歷史描述") || !rawDesc.includes("<table")) && masterRouteDescMap[groupKey]) {
                 rawDesc = masterRouteDescMap[groupKey];
-                const badgeText = `${p.route_id || groupKey} ${p.line_type || ''}`.trim();
-                rawDesc = rawDesc.replace(
-                    /<span style="background:#1a237e;[^"]*">[^<]+<\/span>/,
-                    `<span class="route-badge">${badgeText}</span>`
-                );
             }
+            // 移除舊版重複的頂部 badge 與經營者文字列，因為抽屜頂部已經有更美觀的專屬區塊
+            rawDesc = rawDesc.replace(/<div style="margin-bottom:6px;"><span style="background:#1a237e;[\s\S]*?<\/div>/, '');
 
+            // 將「▸ 附屬統計：A1-1 三爪子複線」轉為藍底白字標籤
             rawDesc = rawDesc.replace(
                 /▸\s*附屬統計：\s*([^<]+)<\/div>/g,
                 '▸ 附屬統計：<span class="route-badge" style="margin-left:4px;">$1</span></div>'
             );
 
+            // 若目前有選定年份，將表格中符合該年份的那一列加上黃底高亮
             if (currentFilterYear !== 'all') {
                 const yr = parseInt(currentFilterYear, 10);
                 rawDesc = rawDesc.replace(/<tr>\s*<td([^>]*)>(\d{4})(?:[–~-](\d{4}))?<\/td>/g, (match, tdAttr, y1, y2) => {
@@ -494,21 +1023,77 @@
                 });
             }
 
-            let cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
-            let content = `<div style="font-size:16px;font-weight:bold;color:#1a237e;margin-bottom:2px;">${p.name || '未命名'}</div>`;
-            if (cleanSec) {
-                content += `<div style="font-size:12px;color:#666;margin-bottom:6px;">區間：${cleanSec}</div>`;
-            }
-            if (p.open_time) {
-                content += `<div style="font-size:12px;color:#666;margin-bottom:6px;">通車：${p.open_time}</div>`;
-            }
-            if (rawDesc) {
-                content += rawDesc;
-            }
-            return content;
+            document.getElementById('drawer-table-container').innerHTML = rawDesc || '<div style="color:#777;">尚無詳細沿革紀錄</div>';
+            document.body.classList.add('drawer-open');
+            updateUrlHash();
         }
 
-        // 套用年代篩選與車站開關至所有路線與車站
+        // 🏢 會社勢力範圍高亮模式
+        function filterByOperator(opName) {
+            activeOperatorFilter = opName;
+            selectedGroupKey = null;
+            let opBounds = L.latLngBounds();
+            let matchGroupSet = new Set();
+
+            allRouteLayers.forEach(l => {
+                const f = l.feature;
+                const p = f.properties || {};
+                const groupKey = p.parent_id || p.route_id || p.name;
+                const masterF = masterRouteFeatureMap[groupKey] || f;
+                const opsStr = p.operators || (masterF.properties && masterF.properties.operators) || '';
+                const isMatch = opsStr.split('、').map(s => s.trim()).includes(opName);
+
+                if (isMatch) {
+                    matchGroupSet.add(groupKey);
+                    if (!map.hasLayer(l)) l.addTo(map);
+                    l.setStyle(getLineStyle(f, false, true));
+                    if (l.bringToFront) l.bringToFront();
+                    if (l.getBounds) opBounds.extend(l.getBounds());
+                } else {
+                    l.setStyle(getLineStyle(f, false, false));
+                }
+            });
+
+            allStationLayers.forEach(stLayer => {
+                if (!showStations) return;
+                const boundKeys = stLayer.feature.properties._boundGroupKeys || [];
+                const isMatchSt = boundKeys.some(k => matchGroupSet.has(k));
+                stLayer.setStyle(getStationStyle(stLayer.feature, isMatchSt));
+                if (isMatchSt && stLayer.bringToFront) stLayer.bringToFront();
+            });
+
+            document.getElementById('operator-banner-text').textContent = `🏢 ${opName}（共經營 ${matchGroupSet.size} 條路線）`;
+            opBanner.style.display = 'flex';
+
+            if (opBounds.isValid()) {
+                map.fitBounds(opBounds, { padding: [60, 60] });
+            }
+            showToast(`已高亮「${opName}」旗下所有台車路線`);
+        }
+
+        // 車站彈出視窗內容
+        function buildStationPopupContent(feature) {
+            const p = feature.properties || {};
+            const boundKeys = p._boundGroupKeys || [];
+            const routeButtons = boundKeys.map(k => {
+                const rName = routeKeyToNameMap[k] || k;
+                return `<span class="route-badge" style="margin-right:4px;margin-top:4px;cursor:pointer;" onclick="selectRouteByGroupKey('${k}')">🛤️ ${rName}</span>`;
+            }).join('');
+            return `
+                <div style="font-size:15px;font-weight:bold;color:#1a237e;">🚉 ${p.name || '未命名車站'}</div>
+                ${routeButtons ? `<div style="margin-top:5px;font-size:12px;color:#555;">點擊查看所屬路線：<br>${routeButtons}</div>` : ''}
+            `;
+        }
+
+        window.selectRouteByGroupKey = function(groupKey) {
+            const targetFeat = masterRouteFeatureMap[groupKey];
+            if (targetFeat) {
+                map.closePopup();
+                highlightRouteGroup(targetFeat, true, null);
+            }
+        };
+
+        // 套用年代篩選與圖例開關至所有路線與車站
         function applyYearFilter() {
             const isAll = (currentFilterYear === 'all');
             prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= MIN_YEAR;
@@ -516,25 +1101,33 @@
             yearModeSelect.style.display = isAll ? 'none' : 'inline-block';
             yearResetBtn.style.display = isAll ? 'none' : 'inline-block';
             updateTitleText();
+            updateUrlHash();
+
+            const isLowZoom = map.getZoom() <= 10;
 
             // 1. 更新路線顯隱與樣式
             allRouteLayers.forEach(l => {
                 const f = l.feature;
                 const p = f.properties || {};
                 const lKey = p.parent_id || p.route_id || p.name;
-                const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
                 const isSelected = Boolean(selectedGroupKey && lKey === selectedGroupKey);
 
+                if (isLineTypeHidden(f) && !isSelected) {
+                    if (map.hasLayer(l)) map.removeLayer(l);
+                    return;
+                }
+
+                const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
                 if (!isActive && yearFilterMode === 'hide' && !isSelected) {
                     if (map.hasLayer(l)) map.removeLayer(l);
                 } else {
                     if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, isSelected));
+                    l.setStyle(getLineStyle(f, isSelected, false));
                     if (isSelected && l.bringToFront) l.bringToFront();
                 }
             });
 
-            // 2. 更新車站顯隱與樣式（受 showStations 開關與所屬路線年代雙重控制）
+            // 2. 更新車站顯隱與樣式（支援 Zoom LOD：全島遠景時僅顯示選中路線之車站）
             allStationLayers.forEach(stLayer => {
                 if (!showStations) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
@@ -543,8 +1136,13 @@
                 const stFeat = stLayer.feature;
                 const boundKeys = stFeat.properties._boundGroupKeys || [];
                 const isSelectedSt = Boolean(selectedGroupKey && boundKeys.includes(selectedGroupKey));
-                const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
 
+                if (isLowZoom && !isSelectedSt) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                    return;
+                }
+
+                const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
                 if (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                 } else {
@@ -553,6 +1151,11 @@
                     if (stLayer.bringToFront) stLayer.bringToFront();
                 }
             });
+
+            // 若抽屜正打開著，同步刷新抽屜內的年份黃底高亮列
+            if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
+                openRouteDrawer(currentDrawerFeature);
+            }
 
             if (dropdown.style.display === 'block') {
                 renderList(input.value);
@@ -589,12 +1192,23 @@
             yearSelect.dispatchEvent(new Event('change'));
         });
 
-        // 統一全線家族＆沿線車站高亮與縮放函數
+        // 統一全線家族＆沿線車站高亮與開啟考據抽屜
         function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
+            activeOperatorFilter = null;
+            opBanner.style.display = 'none';
+
             const targetProps = targetFeature.properties || {};
             selectedGroupKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
+
+            searchBox.classList.add('expanded');
+            activeRouteName = targetProps.name || '未命名';
+            activeRouteSection = (targetProps.section || '').replace(/\s*\([^)]*\)$/, '');
+            input.value = activeRouteName;
+            clearBtn.style.display = 'block';
+            syncDisplay();
+
             let groupBounds = L.latLngBounds();
-            let popupLayer = triggerLayer;
+            const isLowZoom = map.getZoom() <= 10;
 
             allRouteLayers.forEach(l => {
                 const f = l.feature;
@@ -604,23 +1218,19 @@
 
                 if (lKey === selectedGroupKey) {
                     if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, true));
+                    l.setStyle(getLineStyle(f, true, false));
                     if (l.bringToFront) l.bringToFront();
                     if (l.getBounds) groupBounds.extend(l.getBounds());
-                    if (!popupLayer || (lp.line_type === "主線" && !triggerLayer)) {
-                        popupLayer = l;
-                    }
                 } else {
-                    if (!isActive && yearFilterMode === 'hide') {
+                    if ((!isActive && yearFilterMode === 'hide') || isLineTypeHidden(f)) {
                         if (map.hasLayer(l)) map.removeLayer(l);
                     } else {
                         if (!map.hasLayer(l)) l.addTo(map);
-                        l.setStyle(getLineStyle(f, false));
+                        l.setStyle(getLineStyle(f, false, false));
                     }
                 }
             });
 
-            // 同步高亮該路線沿線的所有車站圓點（若車站開關為開啟）
             allStationLayers.forEach(stLayer => {
                 if (!showStations) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
@@ -631,7 +1241,7 @@
                 const isSelectedSt = boundKeys.includes(selectedGroupKey);
                 const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
 
-                if (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt) {
+                if ((isLowZoom && !isSelectedSt) || (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt)) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                 } else {
                     if (!map.hasLayer(stLayer)) stLayer.addTo(map);
@@ -640,17 +1250,22 @@
                 }
             });
 
+            openRouteDrawer(targetFeature);
+
             if (shouldFitBounds && groupBounds.isValid()) {
-                map.fitBounds(groupBounds, { padding: [60, 60] });
-            }
-            if (popupLayer) {
-                popupLayer.openPopup();
+                const isDesktop = window.innerWidth > 768;
+                map.fitBounds(groupBounds, {
+                    paddingTopLeft: [50, 70],
+                    paddingBottomRight: isDesktop ? [420, 50] : [50, 260]
+                });
             }
         }
 
-        // 3. 取消選取反紅路線並還原初始狀態
+        // 點擊地圖空白處或關閉按鈕時，取消選取反紅路線並收起抽屜
         function clearRouteSelection() {
             selectedGroupKey = null;
+            activeOperatorFilter = null;
+            currentDrawerFeature = null;
             activeRouteName = '';
             activeRouteSection = '';
             input.value = '';
@@ -658,8 +1273,48 @@
             dropdown.style.display = 'none';
             searchBox.classList.remove('expanded');
             clearBtn.style.display = 'none';
+            opBanner.style.display = 'none';
+            document.body.classList.remove('drawer-open');
+            infoDrawer.classList.remove('full-mobile');
             applyYearFilter();
             map.closePopup();
+        }
+
+        // 🔗 URL Permalink 狀態同步與分享
+        function updateUrlHash() {
+            const params = new URLSearchParams();
+            if (selectedGroupKey) params.set('route', selectedGroupKey);
+            if (currentFilterYear !== 'all') params.set('year', currentFilterYear);
+            const hashStr = params.toString();
+            history.replaceState(null, '', hashStr ? `#${hashStr}` : window.location.pathname + window.location.search);
+        }
+
+        function copyPermalink() {
+            updateUrlHash();
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('✅ 已複製專屬路線連結！可直接貼上分享');
+            }).catch(() => {
+                showToast('🔗 請直接複製瀏覽器網址列分享');
+            });
+        }
+
+        function applyInitialUrlHash() {
+            if (!window.location.hash) return;
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const yr = params.get('year');
+            const rt = params.get('route');
+
+            if (yr && yr >= MIN_YEAR && yr <= MAX_YEAR) {
+                currentFilterYear = String(yr);
+                yearSelect.value = currentFilterYear;
+                yfBar.classList.add('open');
+                applyYearFilter();
+            }
+            if (rt && masterRouteFeatureMap[rt]) {
+                setTimeout(() => {
+                    highlightRouteGroup(masterRouteFeatureMap[rt], true, null);
+                }, 200);
+            }
         }
 
         fetch('data.json?t=' + new Date().getTime())
@@ -695,11 +1350,15 @@
                     const p = f.properties || {};
                     if (f.geometry && f.geometry.type === "Point") {
                         stationFeaturesList.push(f);
+                        searchableStations.push(f);
                     } else if (f.geometry) {
                         routeFeaturesList.push(f);
                         const groupKey = p.parent_id || p.route_id || p.name;
                         if (p.name && !routeKeyToNameMap[groupKey]) {
                             routeKeyToNameMap[groupKey] = p.name;
+                        }
+                        if (!masterRouteFeatureMap[groupKey] || p.line_type === "主線") {
+                            masterRouteFeatureMap[groupKey] = f;
                         }
                         const descText = (p.description && p.description.zh) ? p.description.zh : "";
                         if (descText.includes("<table") && (!masterRouteDescMap[groupKey] || p.line_type === "主線")) {
@@ -762,39 +1421,43 @@
 
                 geojsonLayer = L.geoJSON({ type: "FeatureCollection", features: cleanFeatures }, {
                     style: function (feature) {
-                        return getLineStyle(feature, false);
+                        return getLineStyle(feature, false, false);
                     },
                     pointToLayer: function (feature, latlng) {
-                        return L.circleMarker(latlng, getStationStyle(feature, false));
+                        const marker = L.circleMarker(latlng, getStationStyle(feature, false));
+                        if (feature.properties && feature.properties.name) {
+                            marker.bindTooltip(feature.properties.name, {
+                                permanent: true,
+                                direction: 'top',
+                                className: 'station-label',
+                                offset: [0, -5]
+                            });
+                        }
+                        return marker;
                     },
                     onEachFeature: function (feature, layer) {
                         const isPoint = feature.geometry && feature.geometry.type === "Point";
                         if (isPoint) {
                             allStationLayers.push(layer);
-                        } else {
-                            allRouteLayers.push(layer);
-                        }
-
-                        if (feature.properties) {
-                            layer.bindPopup(() => buildPopupContent(feature), {
-                                className: 'custom-popup',
-                                maxWidth: 360,
-                                autoPanPaddingTopLeft: [15, 75],
-                                autoPanPaddingBottomRight: [15, 50]
+                            const bKeys = feature.properties._boundGroupKeys || [];
+                            bKeys.forEach(k => {
+                                if (!groupStationsMap[k]) groupStationsMap[k] = [];
+                                groupStationsMap[k].push(layer);
                             });
 
-                            layer.on('click', function(e) {
-                                // 標記本次點擊命中了鐵道或車站，避免觸發地圖空白處的取消選取
+                            layer.bindPopup(() => buildStationPopupContent(feature), {
+                                className: 'custom-popup',
+                                maxWidth: 280
+                            });
+
+                            layer.on('click', function() {
                                 lastFeatureClickTime = Date.now();
-                                if (isPoint) return;
-
-                                searchBox.classList.add('expanded');
-                                activeRouteName = feature.properties.name || '未命名';
-                                activeRouteSection = (feature.properties.section || '').replace(/\s*\([^)]*\)$/, '');
-                                input.value = activeRouteName;
+                            });
+                        } else {
+                            allRouteLayers.push(layer);
+                            layer.on('click', function() {
+                                lastFeatureClickTime = Date.now();
                                 setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                                clearBtn.style.display = 'block';
-
                                 highlightRouteGroup(feature, false, layer);
                             });
                         }
@@ -802,6 +1465,8 @@
                 }).addTo(map);
 
                 if (geojsonLayer.getBounds().isValid()) map.fitBounds(geojsonLayer.getBounds());
+                applyYearFilter();
+                applyInitialUrlHash();
             });
 
         const searchBox = document.getElementById('custom-search-box');
@@ -813,7 +1478,7 @@
         function syncDisplay() {
             const val = input.value;
             if (val === '') {
-                displayLayer.innerHTML = '<span style="color:#999; font-size:16px;">搜尋路線名稱...</span>';
+                displayLayer.innerHTML = '<span style="color:#999; font-size:15px;">搜尋路線、編號(A1)、舊稱、會社或車站...</span>';
                 return;
             }
 
@@ -848,6 +1513,7 @@
 
         input.addEventListener('blur', function() { syncDisplay(); });
 
+        // 複合式智慧檢索（支援主線名、台羅、編號 route_id、舊線名 alt_names、經營者 operators 與車站）
         function renderList(val) {
             isRenderingList = true;
             syncDisplay(); 
@@ -861,42 +1527,61 @@
 
             const yearFilteredPool = searchableRoutes.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
 
-            let matched = (keyword === '') ? [...yearFilteredPool] : yearFilteredPool.filter(f => {
-                const nameMatch = normalize(f.properties.name || "").includes(cleanKeyword);
-                const tailoMatch = normalize(f.properties.tailo || "").includes(cleanKeyword);
-                return nameMatch || tailoMatch;
+            let matchedRoutes = [];
+            if (keyword === '') {
+                matchedRoutes = yearFilteredPool.map(f => ({ feature: f, reason: '' }));
+            } else {
+                yearFilteredPool.forEach(f => {
+                    const p = f.properties || {};
+                    const code = (p.parent_id || p.route_id || '').toLowerCase();
+                    const nameMatch = normalize(p.name || "").includes(cleanKeyword);
+                    const tailoMatch = normalize(p.tailo || "").includes(cleanKeyword);
+                    const codeMatch = code.includes(cleanKeyword);
+                    const altMatch = normalize(p.alt_names || "").includes(cleanKeyword);
+                    const opMatch = normalize(p.operators || "").includes(cleanKeyword);
+
+                    if (codeMatch) matchedRoutes.push({ feature: f, reason: `<span class="match-tag code">${p.parent_id || p.route_id}</span>` });
+                    else if (nameMatch || tailoMatch) matchedRoutes.push({ feature: f, reason: p.parent_id ? `<span class="match-tag code">${p.parent_id}</span>` : '' });
+                    else if (altMatch) matchedRoutes.push({ feature: f, reason: `<span class="match-tag">舊稱:${p.alt_names.split('、')[0]}</span>` });
+                    else if (opMatch) matchedRoutes.push({ feature: f, reason: `<span class="match-tag">會社</span>` });
+                });
+            }
+
+            matchedRoutes.sort((a, b) => {
+                const pa = a.feature.properties, pb = b.feature.properties;
+                return (pa.tailo || pa.name || "").localeCompare(pb.tailo || pb.name || "", 'zh-Hant');
             });
 
-            matched.sort((a, b) => (a.properties.tailo || a.properties.name || "").localeCompare(b.properties.tailo || b.properties.name || "", 'zh-Hant'));
+            // 若有輸入關鍵字，同步檢索車站名稱
+            let matchedStations = [];
+            if (keyword !== '') {
+                matchedStations = allStationLayers.filter(stLayer => {
+                    const stFeat = stLayer.feature;
+                    if (!isStationFeatureActiveInYear(stFeat, currentFilterYear)) return false;
+                    return normalize(stFeat.properties.name || "").includes(cleanKeyword);
+                }).slice(0, 10);
+            }
 
-            if (matched.length > 0) {
+            if (matchedRoutes.length > 0 || matchedStations.length > 0) {
                 dropdown.style.display = 'block';
-                if (keyword === '') {
+                if (keyword === '' && matchedRoutes.length > 0) {
                     const randomItem = document.createElement('div');
                     randomItem.className = 'search-item random-item';
-                    const yearLabel = currentFilterYear === 'all' ? '' : ` (${currentFilterYear}年・共${matched.length}條)`;
+                    const yearLabel = currentFilterYear === 'all' ? '' : ` (${currentFilterYear}年・共${matchedRoutes.length}條)`;
                     randomItem.innerHTML = `🎲 隨機探索一條路線${yearLabel}`;
                     
                     randomItem.onclick = (e) => {
                         e.stopPropagation(); 
                         dropdown.style.display = 'none';
-                        searchBox.classList.add('expanded');
-                        
-                        const f = matched[Math.floor(Math.random() * matched.length)];
-                        activeRouteName = f.properties.name || '未命名';
-                        activeRouteSection = (f.properties.section || '').replace(/\s*\([^)]*\)$/, '');
-                        input.value = activeRouteName;
-                        
+                        const pick = matchedRoutes[Math.floor(Math.random() * matchedRoutes.length)].feature;
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                        clearBtn.style.display = 'block';
-
-                        highlightRouteGroup(f, true, null);
+                        highlightRouteGroup(pick, true, null);
                     };
                     dropdown.appendChild(randomItem);
                 }
                 
                 let currentLetter = ''; 
-                matched.forEach(f => {
+                matchedRoutes.forEach(({ feature: f, reason }) => {
                     const tailoStr = f.properties.tailo || "";
                     const firstChar = tailoStr ? tailoStr.charAt(0).toUpperCase() : "#";
                     if (firstChar !== currentLetter) {
@@ -910,24 +1595,50 @@
                     item.className = 'search-item';
                     const lineName = f.properties.name || '未命名';
                     const sectionName = (f.properties.section || '').replace(/\s*\([^)]*\)$/, '');
-                    item.innerHTML = sectionName ? `${lineName}<span style="font-size:12px; color:#999; margin-left:10px;">${sectionName}</span>` : lineName;
+                    const leftHtml = sectionName ? `<span><b>${lineName}</b><span style="font-size:12px; color:#888; margin-left:8px;">${sectionName}</span></span>` : `<b>${lineName}</b>`;
+                    item.innerHTML = `${leftHtml}${reason}`;
                     
                     item.onclick = (e) => {
                         e.stopPropagation(); 
                         dropdown.style.display = 'none';
-                        searchBox.classList.add('expanded');
-                        activeRouteName = lineName;
-                        activeRouteSection = sectionName;
-                        input.value = activeRouteName;
-                        
                         setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                        clearBtn.style.display = 'block'; 
-                        
                         highlightRouteGroup(f, true, null);
                     };
                     dropdown.appendChild(item);
                 });
-            } else { dropdown.style.display = 'none'; }
+
+                // 顯示符合的車站結果
+                if (matchedStations.length > 0) {
+                    const stHeader = document.createElement('div');
+                    stHeader.className = 'search-letter-header';
+                    stHeader.textContent = '🚉 相關車站點位';
+                    dropdown.appendChild(stHeader);
+
+                    matchedStations.forEach(stLayer => {
+                        const stFeat = stLayer.feature;
+                        const stName = stFeat.properties.name || '車站';
+                        const bKeys = stFeat.properties._boundGroupKeys || [];
+                        const parentName = bKeys.length > 0 ? (routeKeyToNameMap[bKeys[0]] || bKeys[0]) : '';
+                        const item = document.createElement('div');
+                        item.className = 'search-item';
+                        item.innerHTML = `<span>🚉 <b>${stName}</b></span><span class="match-tag st">${parentName}</span>`;
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            dropdown.style.display = 'none';
+                            if (!showStations) setStationsVisibility(true);
+                            if (bKeys.length > 0 && masterRouteFeatureMap[bKeys[0]]) {
+                                highlightRouteGroup(masterRouteFeatureMap[bKeys[0]], false, null);
+                            }
+                            if (!map.hasLayer(stLayer)) stLayer.addTo(map);
+                            map.flyTo(stLayer.getLatLng(), 15, { duration: 0.9 });
+                            setTimeout(() => stLayer.openPopup(), 450);
+                        };
+                        dropdown.appendChild(item);
+                    });
+                }
+            } else {
+                dropdown.style.display = 'none';
+            }
             
             setTimeout(() => { isRenderingList = false; }, 50);
         }
@@ -940,14 +1651,8 @@
 
         clearBtn.onclick = function(e) {
             e.stopPropagation();
-            if (input.value.length > 0) {
-                input.value = '';
-                activeRouteName = ''; activeRouteSection = '';
-                selectedGroupKey = null;
-                syncDisplay(); 
-                renderList('');
-                applyYearFilter();
-                map.closePopup();
+            if (input.value.length > 0 || selectedGroupKey !== null) {
+                clearRouteSelection();
                 if (window.innerWidth > 768) input.focus(); 
             } else {
                 searchBox.classList.remove('expanded');
@@ -963,13 +1668,12 @@
             }
         });
         
-        // 3. 點擊地圖空白處（非鐵道、非車站）時，自動取消反紅選取狀態
+        // 點擊地圖空白處（非鐵道、非車站）時，自動取消反紅選取狀態並收起抽屜
         map.on('click', function() {
             dropdown.style.display = 'none';
-            // 若剛剛點擊的是鐵道或車站圖層（150ms 內），則不執行取消選取
             if (Date.now() - lastFeatureClickTime < 150) return;
 
-            if (selectedGroupKey !== null || activeRouteName !== '') {
+            if (selectedGroupKey !== null || activeRouteName !== '' || activeOperatorFilter !== null) {
                 clearRouteSelection();
             }
         });
