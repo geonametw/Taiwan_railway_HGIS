@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.4</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.5</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -21,7 +21,7 @@
         }
         #map { width: 100vw; height: 100%; }
 
-        /* 右上角系統標題（點擊可展開/收合時間軸，抽屜打開時自動向左平滑讓位） */
+        /* 右上角系統標題 */
         #system-title {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background-color: rgba(26, 35, 126, 0.92); color: white;
@@ -34,7 +34,7 @@
         #system-title:hover { background-color: rgba(40, 53, 147, 0.98); }
         #system-title:active { transform: scale(0.97); }
 
-        /* 📅 年代篩選膠囊面板（預設隱藏，點擊標題展開） */
+        /* 📅 年代篩選膠囊面板 */
         #year-filter-bar {
             position: absolute; top: 62px; right: 15px; z-index: 1000;
             background: rgba(255, 255, 255, 0.96);
@@ -47,7 +47,6 @@
         }
         #year-filter-bar.open { display: flex; }
 
-        /* 桌機版抽屜打開時，右側 UI 自動左移讓位 */
         @media (min-width: 769px) {
             body.drawer-open #system-title,
             body.drawer-open #year-filter-bar {
@@ -200,7 +199,7 @@
             border-radius: 3px; margin: 8px auto 2px; cursor: pointer;
         }
         .drawer-header {
-            padding: 16px 18px 12px; border-bottom: 1px solid #e8eaf6;
+            padding: 15px 18px 12px; border-bottom: 1px solid #e8eaf6;
             background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white;
             position: relative; flex-shrink: 0;
         }
@@ -211,7 +210,7 @@
             display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;
         }
         #drawer-back-main-btn {
-            display: none; background: rgba(255, 245, 157, 0.95); color: #b71c1c;
+            display: none; background: #fff59d; color: #b71c1c;
             border: none; padding: 2px 8px; border-radius: 4px; font-size: 12px;
             font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit;
             box-shadow: 0 1px 4px rgba(0,0,0,0.2);
@@ -221,6 +220,24 @@
         .drawer-title { font-size: 20px; font-weight: bold; letter-spacing: 0.5px; }
         .drawer-tailo { font-size: 12px; color: #c5cae9; font-style: italic; margin-top: 2px; }
         .drawer-section { font-size: 13px; color: #e8eaf6; margin-top: 4px; }
+
+        /* 家族子路線快速切換膠囊列（兼顧手機單手切換與桌機直覺對照） */
+        #drawer-family-tabs {
+            display: none; flex-wrap: wrap; gap: 5px; margin-top: 9px;
+            padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.18);
+        }
+        .fam-tab {
+            background: rgba(255,255,255,0.14); color: #e8eaf6;
+            border: 1px solid rgba(255,255,255,0.28);
+            padding: 3px 9px; border-radius: 12px; font-size: 11.5px;
+            cursor: pointer; transition: 0.15s; user-select: none;
+        }
+        .fam-tab:hover { background: rgba(255,255,255,0.28); color: #fff; }
+        .fam-tab.active {
+            background: #e53935; color: #fff; border-color: #ffcdd2;
+            font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.28);
+        }
+
         .drawer-actions {
             display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center;
         }
@@ -285,7 +302,6 @@
             background: var(--primary); color: white; padding: 2px 8px;
             border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;
         }
-        /* 可點擊切換的「相關路線」藍底白字標籤 */
         .clickable-route-badge {
             cursor: pointer; transition: background-color 0.15s, transform 0.12s, box-shadow 0.15s;
             user-select: none; box-shadow: 0 1px 3px rgba(26,35,126,0.25);
@@ -293,9 +309,6 @@
         .clickable-route-badge:hover {
             background: #3949ab; transform: translateY(-1px);
             box-shadow: 0 3px 7px rgba(26,35,126,0.35);
-        }
-        .clickable-route-badge:active {
-            transform: translateY(0);
         }
 
         .active-year-row {
@@ -367,7 +380,7 @@
             .leaflet-control-zoom { display: none !important; }
 
             #info-drawer {
-                top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 50dvh;
+                top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 52dvh;
                 border-radius: 16px 16px 0 0; transform: translateY(105%);
                 transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.25s ease;
             }
@@ -450,6 +463,8 @@
             </div>
             <div class="drawer-tailo" id="drawer-tailo"></div>
             <div class="drawer-section" id="drawer-section"></div>
+            <!-- 家族多路線快速切換膠囊列 -->
+            <div id="drawer-family-tabs"></div>
             <div class="drawer-actions">
                 <button class="drawer-btn" onclick="copyPermalink()" title="複製此路線與年代的專屬分享連結">🔗 分享連結</button>
                 <button class="drawer-btn" id="demoPhotoBtn" onclick="triggerDemoPhoto()" title="預覽歷史照片展板與放大鏡效果">📷 預覽照片效果</button>
@@ -537,15 +552,16 @@
         let masterRouteDescMap = {};
         let masterRouteHistoryMap = {};
         let masterRouteFeatureMap = {};
-        let routeByIdMap = {}; // route_id -> feature (含主線、副線與虛擬內嵌子路線)
-        let familyMembersMap = {}; // groupKey -> [ { id, badgeText, section, operators, tableHtml, feature, isMain } ]
-        let familyOperatorsMap = {}; // groupKey -> Set of all operators across main & sub-routes
+        let routeByIdMap = {};
+        let familyMembersMap = {};
+        let familyOperatorsMap = {};
         let groupStationsMap = {}; 
         let routeKeyToNameMap = {};
 
         let activeRouteName = '';
         let activeRouteSection = '';
         let selectedGroupKey = null;
+        let activeSubRouteId = null; // 目前在資訊欄檢視的特定子路線 ID（如 C5 或 C5-1）
         let activeOperatorFilter = null;
         let currentDrawerFeature = null;
         let isRenderingList = false;
@@ -728,7 +744,6 @@
             return false;
         }
 
-        // 判斷車站是否已具備實質沿革資料（未匯入車站沿革前預設為 false，讓點擊直接穿透給底下的路線）
         function hasStationHistory(feature) {
             const p = (feature && feature.properties) || {};
             if (p.history && Array.isArray(p.history) && p.history.length > 0) return true;
@@ -739,7 +754,6 @@
             return false;
         }
 
-        // 單一匹配規則：比對該路線或其家族成員是否包含指定經營者
         function isOperatorRouteMatch(feature, opName = activeOperatorFilter) {
             if (!opName) return false;
             const p = feature.properties || {};
@@ -749,7 +763,6 @@
             }
             const famOps = familyOperatorsMap[groupKey];
             if (famOps && famOps.has(opName)) {
-                // 若路線本身無獨立經營者記載，或屬於主線，則沿用家族經營者集合
                 if (!p.operators || p.route_id === groupKey) return true;
             }
             const master = masterRouteFeatureMap[groupKey] || feature;
@@ -757,18 +770,42 @@
             return operators.split('、').some(name => name.trim() === opName);
         }
 
-        function getLineStyle(feature, isSelected = false, isOperatorMatch = false) {
+        // 判斷某段 KML 路線在目前選取狀態下是「主角焦點 (primary)」、「同家族關聯線 (sibling)」或「未選取 (none)」
+        function getRouteSelectionRole(feature) {
+            const p = feature.properties || {};
+            const lKey = p.parent_id || p.route_id || p.name;
+            const rid = p.route_id || p.name;
+            if (!selectedGroupKey || lKey !== selectedGroupKey) return 'none';
+
+            // 若目前檢視的是無獨立 KML 線段的內嵌子路線（如 A1-1），則以主線作為焦點
+            const effectiveActiveId = (currentDrawerFeature && currentDrawerFeature._isVirtual)
+                ? selectedGroupKey
+                : (activeSubRouteId || selectedGroupKey);
+
+            return (rid === effectiveActiveId) ? 'primary' : 'sibling';
+        }
+
+        // 雙層次路線樣式：主角正紅粗線 vs. 同家族琥珀橘紅半透明細線
+        function getLineStyle(feature, selectionRole = 'none', isOperatorMatch = false) {
             const p = feature.properties || {};
             const type = p.line_type || "";
             const isActiveYear = isRouteFeatureActiveInYear(feature, currentFilterYear);
             const isLowZoom = map.getZoom() <= 10;
 
-            if (isSelected) {
+            if (selectionRole === 'primary' || selectionRole === true) {
                 return {
-                    color: "#e53935",
-                    weight: (type === "主線" || !type) ? 7 : 5,
+                    color: "#d32f2f",
+                    weight: (type === "主線" || !type) ? 7.5 : 6,
                     opacity: 1,
                     dashArray: type === "舊線" ? '6, 6' : null
+                };
+            }
+            if (selectionRole === 'sibling') {
+                return {
+                    color: "#ff7043",
+                    weight: 3.5,
+                    opacity: 0.55,
+                    dashArray: type === "舊線" ? '5, 5' : null
                 };
             }
             if (isOperatorMatch || isOperatorRouteMatch(feature)) {
@@ -779,7 +816,7 @@
                     dashArray: type === "舊線" ? '6, 6' : null
                 };
             }
-            if (activeOperatorFilter) {
+            if (activeOperatorFilter || selectedGroupKey) {
                 return { color: "#bdbdbd", weight: 2, opacity: 0.25, dashArray: null };
             }
             if (!isActiveYear && yearFilterMode === 'dim') {
@@ -796,15 +833,105 @@
             }
         }
 
-        function getStationStyle(stFeature, isSelectedRoute = false) {
+        // 判斷某座車站是否隸屬於「當前正在檢視的子路線」
+        function isStationOnActiveSubRoute(stFeature) {
+            if (!selectedGroupKey) return false;
+            const p = stFeature.properties || {};
+            const boundKeys = p._boundGroupKeys || [];
+            if (!boundKeys.includes(selectedGroupKey)) return false;
+
+            const effectiveActiveId = (currentDrawerFeature && currentDrawerFeature._isVirtual)
+                ? selectedGroupKey
+                : (activeSubRouteId || selectedGroupKey);
+
+            const boundIds = p._boundRouteIds || [];
+            if (boundIds.includes(effectiveActiveId)) return true;
+
+            // 若該子路線剛好未吸附到任何車站，則回退顯示主線車站
+            return false;
+        }
+
+        function getStationStyle(stFeature, isPrimarySt = false, isSiblingSt = false) {
             const isActiveYear = isStationFeatureActiveInYear(stFeature, currentFilterYear);
-            if (isSelectedRoute) {
-                return { radius: 5.5, fillColor: "#fff59d", color: "#d32f2f", weight: 2.5, opacity: 1, fillOpacity: 1 };
+            if (isPrimarySt) {
+                return { radius: 5.8, fillColor: "#fff59d", color: "#d32f2f", weight: 2.5, opacity: 1, fillOpacity: 1 };
             }
-            if ((!isActiveYear && yearFilterMode === 'dim') || activeOperatorFilter) {
+            if (isSiblingSt) {
+                return { radius: 4.2, fillColor: "#ffffff", color: "#ff7043", weight: 1.8, opacity: 0.75, fillOpacity: 0.85 };
+            }
+            if ((!isActiveYear && yearFilterMode === 'dim') || activeOperatorFilter || selectedGroupKey) {
                 return { radius: 3.5, fillColor: "#eeeeee", color: "#9e9e9e", weight: 1, opacity: 0.25, fillOpacity: 0.25 };
             }
             return { radius: 4.5, fillColor: "#ffffff", color: "#1a237e", weight: 2, opacity: 1, fillOpacity: 1 };
+        }
+
+        // 刷新地圖上所有路線與車站的主次階層樣式
+        function updateMapHighlightStyles() {
+            const isLowZoom = map.getZoom() <= 10;
+            const siblingLayers = [];
+            const primaryLayers = [];
+
+            allRouteLayers.forEach(l => {
+                const f = l.feature;
+                const role = getRouteSelectionRole(f);
+                const isSelectedFamily = (role !== 'none');
+
+                if (isLineTypeHidden(f) && !isSelectedFamily) {
+                    if (map.hasLayer(l)) map.removeLayer(l);
+                    return;
+                }
+
+                const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
+                if (!isActive && yearFilterMode === 'hide' && !isSelectedFamily) {
+                    if (map.hasLayer(l)) map.removeLayer(l);
+                } else {
+                    if (!map.hasLayer(l)) l.addTo(map);
+                    l.setStyle(getLineStyle(f, role, false));
+                    if (role === 'sibling') siblingLayers.push(l);
+                    if (role === 'primary') primaryLayers.push(l);
+                }
+            });
+
+            // 確保繪圖順序：同家族關聯線在中間，當前主角紅線永遠在最頂層
+            siblingLayers.forEach(l => { if (l.bringToFront) l.bringToFront(); });
+            primaryLayers.forEach(l => { if (l.bringToFront) l.bringToFront(); });
+
+            const operatorGroupKeys = new Set();
+            if (activeOperatorFilter) {
+                allRouteLayers.forEach(layer => {
+                    if (!isOperatorRouteMatch(layer.feature)) return;
+                    const p = layer.feature.properties || {};
+                    operatorGroupKeys.add(p.parent_id || p.route_id || p.name);
+                });
+            }
+
+            allStationLayers.forEach(stLayer => {
+                if (!showStations) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                    return;
+                }
+                const stFeat = stLayer.feature;
+                const boundKeys = stFeat.properties._boundGroupKeys || [];
+                const inSelectedFamily = Boolean(selectedGroupKey && boundKeys.includes(selectedGroupKey));
+                const isPrimarySt = inSelectedFamily && isStationOnActiveSubRoute(stFeat);
+                const isSiblingSt = inSelectedFamily && !isPrimarySt;
+                const isOperatorSt = Boolean(activeOperatorFilter && boundKeys.some(k => operatorGroupKeys.has(k)));
+                const isShownSt = inSelectedFamily || isOperatorSt;
+
+                if (isLowZoom && !isShownSt) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                    return;
+                }
+
+                const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
+                if (!isActiveSt && yearFilterMode === 'hide' && !isShownSt) {
+                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
+                } else {
+                    if (!map.hasLayer(stLayer)) stLayer.addTo(map);
+                    stLayer.setStyle(getStationStyle(stFeat, isPrimarySt || isOperatorSt, isSiblingSt));
+                    if (isPrimarySt && stLayer.bringToFront) stLayer.bringToFront();
+                }
+            });
         }
 
         function loadRoutePhoto(feature) {
@@ -918,7 +1045,6 @@
             document.getElementById('photo-lightbox').classList.remove('open');
         }
 
-        // 將表格欄位「經營者」改為「業者」、「路線名」改為「線名」，並套用年份黃底標示
         function formatTableHtml(htmlStr) {
             if (!htmlStr) return '';
             let out = htmlStr
@@ -940,13 +1066,28 @@
             return out;
         }
 
-        // 切換同家族內的主線或相關路線（支援從 C5 切到 C5-1，以及從 C5-1 切回 C5）
+        // 點擊切換同家族內的主線或相關路線，同步更新地圖主次紅線與鏡頭對焦
         window.switchFamilyMember = function(groupKey, targetMemberId) {
             const famList = familyMembersMap[groupKey] || [];
             const targetMember = famList.find(m => m.id === targetMemberId);
             if (!targetMember || !targetMember.feature) return;
 
+            selectedGroupKey = groupKey;
+            activeSubRouteId = targetMember.id;
             openRouteDrawer(targetMember.feature, true);
+            updateMapHighlightStyles();
+
+            // 找出該子路線的實體地圖圖層並確保不被抽屜遮擋
+            let subBounds = L.latLngBounds();
+            allRouteLayers.forEach(l => {
+                const lp = l.feature.properties || {};
+                if (lp.route_id === targetMember.id && l.getBounds) {
+                    subBounds.extend(l.getBounds());
+                }
+            });
+            if (subBounds.isValid()) {
+                ensureRouteNotCoveredByDrawer(subBounds);
+            }
         };
 
         function openRouteDrawer(feature, shouldScrollTop = false) {
@@ -954,6 +1095,8 @@
             const p = feature.properties || {};
             const groupKey = p.parent_id || p.route_id || p.name;
             const currentId = p.route_id || p.name;
+            activeSubRouteId = currentId;
+
             const famList = familyMembersMap[groupKey] || [];
             const currentMember = famList.find(m => m.id === currentId);
             const mainMember = famList.find(m => m.isMain) || famList[0];
@@ -963,7 +1106,6 @@
             document.getElementById('drawer-title').textContent = p.name || '未命名路線';
             document.getElementById('drawer-tailo').textContent = p.tailo || '';
 
-            // 若目前檢視的是子路線（例如 C5-1 副線），於頂部提供「↩ 返回 C5 主線」快速按鈕
             const backMainBtn = document.getElementById('drawer-back-main-btn');
             if (mainMember && currentId !== mainMember.id) {
                 backMainBtn.style.display = 'inline-block';
@@ -977,7 +1119,23 @@
             const cleanSec = rawSec.replace(/\s*\([^)]*\)$/, '');
             document.getElementById('drawer-section').textContent = cleanSec ? `區間：${cleanSec}` : '';
 
-            // 同步左上角搜尋框顯示之區間
+            // 渲染抽屜頂部「家族路線快速切換膠囊列」（當家族有超過 1 條有統計資料的路線時顯示）
+            const famTabsBox = document.getElementById('drawer-family-tabs');
+            const tabCandidates = famList.filter(m => m.isMain || m.hasTable);
+            if (tabCandidates.length > 1) {
+                famTabsBox.style.display = 'flex';
+                famTabsBox.innerHTML = '';
+                tabCandidates.forEach(m => {
+                    const tab = document.createElement('span');
+                    tab.className = 'fam-tab' + (m.id === currentId ? ' active' : '');
+                    tab.textContent = m.badgeText;
+                    tab.onclick = () => window.switchFamilyMember(groupKey, m.id);
+                    famTabsBox.appendChild(tab);
+                });
+            } else {
+                famTabsBox.style.display = 'none';
+            }
+
             activeRouteName = p.name || '未命名';
             activeRouteSection = cleanSec;
             if (selectedGroupKey === groupKey) {
@@ -987,7 +1145,6 @@
 
             loadRoutePhoto(feature);
 
-            // 歷年經營者（優先顯示當前路線之經營者，若無則顯示主線經營者）
             const opsBlock = document.getElementById('drawer-ops-block');
             const opsList = document.getElementById('drawer-ops-list');
             opsList.innerHTML = '';
@@ -1008,16 +1165,22 @@
                 opsBlock.style.display = 'none';
             }
 
-            // 沿線車站
+            // 🚉 沿線車站：優先且精準只列出吸附於當前子路線（currentId）的車站；若無才 fallback 至家族車站
             const stBlock = document.getElementById('drawer-stations-block');
             const stList = document.getElementById('drawer-stations-list');
             stList.innerHTML = '';
-            const boundStLayers = groupStationsMap[groupKey] || [];
+            const allGroupStLayers = groupStationsMap[groupKey] || [];
+            const effectiveId = feature._isVirtual ? groupKey : currentId;
+            const subRouteStLayers = allGroupStLayers.filter(stLayer => {
+                const rids = stLayer.feature.properties._boundRouteIds || [];
+                return rids.includes(effectiveId);
+            });
+            const displayStLayers = subRouteStLayers.length > 0 ? subRouteStLayers : allGroupStLayers;
 
-            if (boundStLayers.length > 0) {
+            if (displayStLayers.length > 0) {
                 stBlock.style.display = 'block';
-                document.getElementById('drawer-stations-title').textContent = `🚉 沿線車站（共 ${boundStLayers.length} 站，點擊飛往定位）`;
-                boundStLayers.forEach(stLayer => {
+                document.getElementById('drawer-stations-title').textContent = `🚉 沿線車站（共 ${displayStLayers.length} 站，點擊飛往定位）`;
+                displayStLayers.forEach(stLayer => {
                     const stName = stLayer.feature.properties.name || '車站';
                     const chip = document.createElement('span');
                     chip.className = 'st-chip';
@@ -1041,7 +1204,6 @@
                 stBlock.style.display = 'none';
             }
 
-            // 📜 統計沿革（當前路線表格置頂 ＋ 同家族其他「相關路線」藍底白字可點擊切換並列）
             let combinedHtml = '';
             if (currentMember && currentMember.tableHtml) {
                 combinedHtml += formatTableHtml(currentMember.tableHtml);
@@ -1051,7 +1213,6 @@
                 combinedHtml += formatTableHtml(rawDesc) || '<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>';
             }
 
-            // 找出同家族中其他具備統計表的路線（例如在 C5 下顯示 C5-1~3；在 C5-1 下顯示 C5 主線、C5-2、C5-3）
             const relatedMembers = famList.filter(m => m.id !== currentId && (m.hasTable || m.isMain));
             relatedMembers.forEach(rm => {
                 const secHint = rm.section ? `<span style="font-weight:normal;font-size:11.5px;color:#555;margin-left:6px;">${rm.section.replace(/\s*\([^)]*\)$/, '')}</span>` : '';
@@ -1076,6 +1237,7 @@
         function filterByOperator(opName) {
             activeOperatorFilter = opName;
             selectedGroupKey = null;
+            activeSubRouteId = null;
             const opBounds = L.latLngBounds();
             const matchGroupSet = new Set();
 
@@ -1133,62 +1295,7 @@
             updateTitleText();
             updateUrlHash();
 
-            const isLowZoom = map.getZoom() <= 10;
-            const operatorGroupKeys = new Set();
-            if (activeOperatorFilter) {
-                allRouteLayers.forEach(layer => {
-                    if (!isOperatorRouteMatch(layer.feature)) return;
-                    const p = layer.feature.properties || {};
-                    operatorGroupKeys.add(p.parent_id || p.route_id || p.name);
-                });
-            }
-
-            allRouteLayers.forEach(l => {
-                const f = l.feature;
-                const p = f.properties || {};
-                const lKey = p.parent_id || p.route_id || p.name;
-                const isSelected = Boolean(selectedGroupKey && lKey === selectedGroupKey);
-
-                if (isLineTypeHidden(f) && !isSelected) {
-                    if (map.hasLayer(l)) map.removeLayer(l);
-                    return;
-                }
-
-                const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
-                if (!isActive && yearFilterMode === 'hide' && !isSelected) {
-                    if (map.hasLayer(l)) map.removeLayer(l);
-                } else {
-                    if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, isSelected, false));
-                    if (isSelected && l.bringToFront) l.bringToFront();
-                }
-            });
-
-            allStationLayers.forEach(stLayer => {
-                if (!showStations) {
-                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
-                    return;
-                }
-                const stFeat = stLayer.feature;
-                const boundKeys = stFeat.properties._boundGroupKeys || [];
-                const isSelectedSt = Boolean(selectedGroupKey && boundKeys.includes(selectedGroupKey));
-                const isOperatorSt = Boolean(activeOperatorFilter && boundKeys.some(k => operatorGroupKeys.has(k)));
-                const isShownSt = isSelectedSt || isOperatorSt;
-
-                if (isLowZoom && !isShownSt) {
-                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
-                    return;
-                }
-
-                const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
-                if (!isActiveSt && yearFilterMode === 'hide' && !isShownSt) {
-                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
-                } else {
-                    if (!map.hasLayer(stLayer)) stLayer.addTo(map);
-                    stLayer.setStyle(getStationStyle(stFeat, isShownSt));
-                    if (stLayer.bringToFront) stLayer.bringToFront();
-                }
-            });
+            updateMapHighlightStyles();
 
             if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
                 openRouteDrawer(currentDrawerFeature, false);
@@ -1229,7 +1336,6 @@
             yearSelect.dispatchEvent(new Event('change'));
         });
 
-        // 檢查選取路線是否被右側（或手機版底部）抽屜遮蔽，自動平滑推移讓位
         function ensureRouteNotCoveredByDrawer(groupBounds) {
             if (!groupBounds || !groupBounds.isValid()) return;
             const isDesktop = window.innerWidth > 768;
@@ -1248,14 +1354,14 @@
                         paddingTopLeft: [50, 70],
                         paddingBottomRight: [drawerWidth + 30, 50]
                     });
-                } else if (nePt.x > safeRightX) {
+                } else if (nePt.x > safeRightX || swPt.x < safeLeftX) {
                     const routeCenterX = (swPt.x + nePt.x) / 2;
                     const visibleCenterX = (safeLeftX + safeRightX) / 2;
                     const panX = routeCenterX - visibleCenterX;
                     map.panBy([panX, 0], { animate: true, duration: 0.35 });
                 }
             } else {
-                const safeBottomY = window.innerHeight * 0.46;
+                const safeBottomY = window.innerHeight * 0.44;
                 const safeTopY = 75;
                 const routePixelHeight = swPt.y - nePt.y;
                 const availableHeight = safeBottomY - safeTopY;
@@ -1263,9 +1369,9 @@
                 if (routePixelHeight > availableHeight * 0.9) {
                     map.fitBounds(groupBounds, {
                         paddingTopLeft: [40, 75],
-                        paddingBottomRight: [40, Math.round(window.innerHeight * 0.52)]
+                        paddingBottomRight: [40, Math.round(window.innerHeight * 0.54)]
                     });
-                } else if (swPt.y > safeBottomY) {
+                } else if (swPt.y > safeBottomY || nePt.y < safeTopY) {
                     const routeCenterY = (nePt.y + swPt.y) / 2;
                     const visibleCenterY = (safeTopY + safeBottomY) / 2;
                     const panY = routeCenterY - visibleCenterY;
@@ -1280,6 +1386,7 @@
 
             const targetProps = targetFeature.properties || {};
             selectedGroupKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
+            activeSubRouteId = targetProps.route_id || targetProps.name;
 
             searchBox.classList.add('expanded');
             activeRouteName = targetProps.name || '未命名';
@@ -1288,56 +1395,24 @@
             clearBtn.style.display = 'block';
             syncDisplay();
 
-            let groupBounds = L.latLngBounds();
-
-            allRouteLayers.forEach(l => {
-                const f = l.feature;
-                const lp = f.properties || {};
-                const lKey = lp.parent_id || lp.route_id || lp.name;
-                const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
-
-                if (lKey === selectedGroupKey) {
-                    if (!map.hasLayer(l)) l.addTo(map);
-                    l.setStyle(getLineStyle(f, true, false));
-                    if (l.bringToFront) l.bringToFront();
-                    if (l.getBounds) groupBounds.extend(l.getBounds());
-                } else {
-                    if ((!isActive && yearFilterMode === 'hide') || isLineTypeHidden(f)) {
-                        if (map.hasLayer(l)) map.removeLayer(l);
-                    } else {
-                        if (!map.hasLayer(l)) l.addTo(map);
-                        l.setStyle(getLineStyle(f, false, false));
-                    }
-                }
-            });
-
-            allStationLayers.forEach(stLayer => {
-                if (!showStations) {
-                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
-                    return;
-                }
-                const stFeat = stLayer.feature;
-                const boundKeys = stFeat.properties._boundGroupKeys || [];
-                const isSelectedSt = boundKeys.includes(selectedGroupKey);
-                const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
-
-                if ((map.getZoom() <= 10 && !isSelectedSt) || (!isActiveSt && yearFilterMode === 'hide' && !isSelectedSt)) {
-                    if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
-                } else {
-                    if (!map.hasLayer(stLayer)) stLayer.addTo(map);
-                    stLayer.setStyle(getStationStyle(stFeat, isSelectedSt));
-                    if (stLayer.bringToFront) stLayer.bringToFront();
-                }
-            });
-
             openRouteDrawer(targetFeature, true);
+            updateMapHighlightStyles();
+
+            let groupBounds = L.latLngBounds();
+            allRouteLayers.forEach(l => {
+                const lp = l.feature.properties || {};
+                const lKey = lp.parent_id || lp.route_id || lp.name;
+                if (lKey === selectedGroupKey && l.getBounds) {
+                    groupBounds.extend(l.getBounds());
+                }
+            });
 
             if (groupBounds.isValid()) {
                 if (shouldFitBounds) {
                     const isDesktop = window.innerWidth > 768;
                     map.fitBounds(groupBounds, {
                         paddingTopLeft: [50, 70],
-                        paddingBottomRight: isDesktop ? [420, 50] : [50, Math.round(window.innerHeight * 0.52)]
+                        paddingBottomRight: isDesktop ? [420, 50] : [50, Math.round(window.innerHeight * 0.54)]
                     });
                 } else {
                     ensureRouteNotCoveredByDrawer(groupBounds);
@@ -1347,6 +1422,7 @@
 
         function clearRouteSelection() {
             selectedGroupKey = null;
+            activeSubRouteId = null;
             activeOperatorFilter = null;
             currentDrawerFeature = null;
             activeRouteName = '';
@@ -1365,7 +1441,7 @@
 
         function updateUrlHash() {
             const params = new URLSearchParams();
-            const activeCode = (currentDrawerFeature && currentDrawerFeature.properties && currentDrawerFeature.properties.route_id) || selectedGroupKey;
+            const activeCode = activeSubRouteId || selectedGroupKey;
             if (activeCode && document.body.classList.contains('drawer-open')) {
                 params.set('route', activeCode);
             } else if (selectedGroupKey) {
@@ -1407,7 +1483,6 @@
             }
         }
 
-        // 從內嵌表格 HTML 提取業者與區間資訊
         function extractMetaFromTableHtml(tableHtml) {
             const rowRegex = /<tr>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/g;
             const ops = [];
@@ -1423,7 +1498,6 @@
             return { operators: ops.join('、'), section: lastSec };
         }
 
-        // 建立家族成員清冊（整合 KML 獨立副線與主線內嵌子路線）
         function buildFamilyRegistry(routeFeaturesList) {
             const byGroup = {};
             routeFeaturesList.forEach(f => {
@@ -1438,11 +1512,9 @@
                 const membersDict = {};
                 const opsSet = new Set();
 
-                // 先找出主線 Feature
                 const mainFeat = flist.find(f => f.properties.line_type === '主線') || flist[0];
                 const mainProps = mainFeat.properties || {};
 
-                // 拆解某段 description.zh 為 [主表格, 子標題1, 子表格1, 子標題2, 子表格2...]
                 const splitDesc = (descStr) => {
                     if (!descStr) return [''];
                     const stripped = descStr.replace(/^<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '').trim();
@@ -1452,7 +1524,6 @@
                 const mainParts = splitDesc((mainProps.description && mainProps.description.zh) || '');
                 const mainTableOnly = mainParts[0] ? mainParts[0].trim() : '';
 
-                // 1. 登錄所有 KML 實體路線 Feature
                 flist.forEach(f => {
                     const p = f.properties || {};
                     const rid = p.route_id || p.name;
@@ -1466,7 +1537,6 @@
                     let ownTable = parts[0] ? parts[0].trim() : '';
                     let hasTable = ownTable.includes('<table');
 
-                    // 若非主線（如未命名支線 B4-支線）卻因舊版匯入器 fallback 而複製了與主線一模一樣的表格，視為無獨立統計表
                     if (rid !== gk && hasTable && ownTable === mainTableOnly) {
                         ownTable = '<div style="color:#777;font-size:12px;">（年報無獨立統計資料）</div>';
                         hasTable = false;
@@ -1491,9 +1561,8 @@
                     }
                 });
 
-                // 2. 登錄內嵌於主線 description.zh 中的子路線（如 A1-1、C1-1、C1-2、B29-3、C7-1~3）
                 for (let i = 1; i < mainParts.length; i += 2) {
-                    const subTitle = mainParts[i].trim(); // 例："A1-1 三爪子複線"
+                    const subTitle = mainParts[i].trim();
                     const subTable = (mainParts[i + 1] || '').trim();
                     const spaceIdx = subTitle.indexOf(' ');
                     const subCode = spaceIdx > 0 ? subTitle.substring(0, spaceIdx).trim() : subTitle;
@@ -1507,6 +1576,7 @@
                     if (!membersDict[subCode]) {
                         const virtualFeature = {
                             type: "Feature",
+                            _isVirtual: true,
                             properties: {
                                 route_id: subCode,
                                 parent_id: gk,
@@ -1534,7 +1604,6 @@
                     }
                 }
 
-                // 3. 排序：主線永遠第一，其餘依子編號自然排序（如 C5 -> C5-1 -> C5-2 -> C5-3）
                 const sortedList = Object.values(membersDict).sort((a, b) => {
                     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
                     return a.id.localeCompare(b.id, undefined, { numeric: true });
@@ -1598,13 +1667,14 @@
                     }
                 });
 
-                // 建立家族成員與「相關路線」雙向切換索引
                 buildFamilyRegistry(routeFeaturesList);
 
+                // 車站空間吸附：同時記錄吸附到的母線 (_boundGroupKeys) 與精確子路線 (_boundRouteIds)
                 stationFeaturesList.forEach(st => {
                     const [px, py] = st.geometry.coordinates;
                     const boundFeatures = [];
                     const boundGroupKeys = new Set();
+                    const boundRouteIds = new Set();
                     let nearestFeature = null;
                     let nearestDist = Infinity;
 
@@ -1617,18 +1687,23 @@
                         if (d <= 80) {
                             boundFeatures.push(rf);
                             const gk = rf.properties.parent_id || rf.properties.route_id || rf.properties.name;
+                            const rid = rf.properties.route_id || rf.properties.name;
                             if (gk) boundGroupKeys.add(gk);
+                            if (rid) boundRouteIds.add(rid);
                         }
                     });
 
                     if (boundFeatures.length === 0 && nearestFeature && nearestDist <= 200) {
                         boundFeatures.push(nearestFeature);
                         const gk = nearestFeature.properties.parent_id || nearestFeature.properties.route_id || nearestFeature.properties.name;
+                        const rid = nearestFeature.properties.route_id || nearestFeature.properties.name;
                         if (gk) boundGroupKeys.add(gk);
+                        if (rid) boundRouteIds.add(rid);
                     }
 
                     st.properties._boundRouteFeatures = boundFeatures;
                     st.properties._boundGroupKeys = Array.from(boundGroupKeys);
+                    st.properties._boundRouteIds = Array.from(boundRouteIds);
                 });
 
                 routeFeaturesList.forEach(f => {
@@ -1650,11 +1725,11 @@
 
                 geojsonLayer = L.geoJSON({ type: "FeatureCollection", features: cleanFeatures }, {
                     style: function (feature) {
-                        return getLineStyle(feature, false, false);
+                        return getLineStyle(feature, 'none', false);
                     },
                     pointToLayer: function (feature, latlng) {
                         const canInteract = hasStationHistory(feature);
-                        const styleOpts = Object.assign({}, getStationStyle(feature, false), {
+                        const styleOpts = Object.assign({}, getStationStyle(feature, false, false), {
                             interactive: canInteract
                         });
                         const marker = L.circleMarker(latlng, styleOpts);
@@ -1847,6 +1922,7 @@
                         const stFeat = stLayer.feature;
                         const stName = stFeat.properties.name || '車站';
                         const bKeys = stFeat.properties._boundGroupKeys || [];
+                        const bIds = stFeat.properties._boundRouteIds || [];
                         const parentName = bKeys.length > 0 ? (routeKeyToNameMap[bKeys[0]] || bKeys[0]) : '';
                         const item = document.createElement('div');
                         item.className = 'search-item';
@@ -1855,8 +1931,9 @@
                             e.stopPropagation();
                             dropdown.style.display = 'none';
                             if (!showStations) setStationsVisibility(true);
-                            if (bKeys.length > 0 && masterRouteFeatureMap[bKeys[0]]) {
-                                highlightRouteGroup(masterRouteFeatureMap[bKeys[0]], false, null);
+                            const targetFeat = (bIds.length > 0 && routeByIdMap[bIds[0]]) || (bKeys.length > 0 && masterRouteFeatureMap[bKeys[0]]);
+                            if (targetFeat) {
+                                highlightRouteGroup(targetFeat, false, null);
                             }
                             if (!map.hasLayer(stLayer)) stLayer.addTo(map);
                             const targetLatLng = stLayer.getLatLng();
