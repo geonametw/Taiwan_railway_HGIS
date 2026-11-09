@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.7</title>
+    <title> v9.7.1 古今鐵道營業線 HGIS 查詢系統</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -66,7 +66,7 @@
         }
         #yearResetBtn:hover { background: #c62828; }
 
-        /* 🏢 會社勢力範圍橫幅 */
+        /* 🏢 業者勢力範圍橫幅 */
         #operator-banner {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
             z-index: 1001; background: #4a148c; color: white; padding: 8px 16px;
@@ -211,7 +211,13 @@
         .drawer-body { padding: 14px 16px 24px; overflow-y: auto; flex: 1; line-height: 1.55; }
         #drawer-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; font-size: 12px; }
         #drawer-summary:empty { display: none; }
-        .summary-pill { border-radius: 8px; background: #eef2ff; color: #27316f; padding: 5px 8px; line-height: 1.5; }
+        .summary-pill { border-radius: 8px; background: #eef2ff; color: #27316f; padding: 5px 9px; line-height: 1.5; }
+        .summary-pill.clickable {
+            cursor: pointer; border: 1px solid #c5cae9; font-weight: bold; user-select: none; transition: 0.15s;
+        }
+        .summary-pill.clickable:hover { background: #dde3ff; }
+        .summary-pill.clickable.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
         .operator-route-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 16px; }
         .operator-route-btn {
             width: 100%; border: 1px solid #d8def4; border-radius: 9px; background: #fff; color: #1a237e;
@@ -229,7 +235,11 @@
         .photo-caption-bar { background: #f8f9fa; padding: 7px 10px; font-size: 12px; color: #444; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
 
-        .info-block { margin-bottom: 14px; }
+        .info-block {
+            margin-bottom: 14px; background: #f8f9fc; border: 1px solid #e2e7f5;
+            border-radius: 8px; padding: 10px 12px;
+        }
+        .info-block-plain { margin-bottom: 14px; }
         .info-block-title { font-size: 12px; font-weight: bold; color: #5c6bc0; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
         .chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
         .op-chip {
@@ -251,6 +261,11 @@
         #drawer-table-container table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
         #drawer-table-container th { position: sticky; top: -14px; background: #e8eaf6; color: #1a237e; z-index: 2; box-shadow: 0 1px 0 #ccc; padding: 6px 5px; }
         #drawer-table-container td { padding: 5px 5px; overflow-wrap: anywhere; }
+        .table-op-link {
+            color: #4a148c; text-decoration: underline; text-decoration-color: #ba68c8;
+            text-underline-offset: 2px; font-weight: bold; cursor: pointer;
+        }
+        .table-op-link:hover { color: #fff; background: #7b1fa2; text-decoration: none; border-radius: 3px; padding: 0 3px; }
 
         #photo-lightbox {
             position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000;
@@ -308,7 +323,6 @@
                 top: 15px !important; right: 14px !important; left: auto !important; bottom: auto !important;
                 max-width: calc(100vw - 85px); padding: 10px 13px; font-size: 13px !important; border-radius: 20px;
             }
-            /* 展開搜尋列時自動隱藏右上角年代按鈕，避免滑動選單時重疊 */
             body.search-expanded #system-title, body:has(#custom-search-box.expanded) #system-title { opacity: 0; pointer-events: none; }
             body.search-expanded #active-state-bar, body:has(#custom-search-box.expanded) #active-state-bar { display: none; }
 
@@ -338,7 +352,7 @@
             body.year-filter-open.drawer-open #active-state-bar { top: 226px; }
             body.drawer-open #active-state-bar .state-reset, body.operator-active #active-state-bar { display: none; }
 
-            /* 手機版歷史統計卡片化（同時支援 thead 與直接 tr>th 結構） */
+            /* 手機版歷史統計卡片化 */
             #drawer-table-container table { font-size: 13px; border: 0; margin-top: 2px; }
             #drawer-table-container table thead, #drawer-table-container table tr.table-header-row { display: none !important; }
             #drawer-table-container table tbody, #drawer-table-container table tr { display: block !important; }
@@ -368,7 +382,7 @@
     <button id="system-title" type="button" aria-controls="year-filter-bar" aria-expanded="false" title="點擊展開／收合歷史年代篩選器">古今鐵道營業線 HGIS 查詢</button>
 
     <div id="operator-banner">
-        <span id="operator-banner-text">🏢 會社路網模式</span>
+        <span id="operator-banner-text">🏢 業者路網模式</span>
         <button onclick="clearRouteSelection()">✕ 結束檢視</button>
     </div>
 
@@ -392,7 +406,7 @@
 
     <div id="custom-search-box" role="search">
         <div id="input-display-layer"></div>
-        <input type="text" id="searchInput" autocomplete="off" role="combobox" aria-label="搜尋路線、編號、舊稱、經營者或車站" aria-controls="searchDropdown" aria-expanded="false">
+        <input type="text" id="searchInput" autocomplete="off" role="combobox" aria-label="搜尋路線、編號、舊稱、業者或車站" aria-controls="searchDropdown" aria-expanded="false">
         <span id="clearBtn" title="清除">&times;</span>
         <div id="searchDropdown" role="listbox" aria-label="搜尋結果"></div>
     </div>
@@ -431,8 +445,8 @@
                 <div>
                     <div class="drawer-badge-row">
                         <span id="drawer-badge" class="route-badge" style="background:#fff;color:#1a237e;">A1 主線</span>
-                        <button id="drawer-back-main-btn" title="點擊切回主線">↩ 返回主線</button>
-                        <button id="drawer-back-operator-btn" title="返回經營者總覽" style="display:none;">↩ 經營者總覽</button>
+                        <button id="drawer-back-main-btn" title="點擊返回">↩ 返回主線</button>
+                        <button id="drawer-back-operator-btn" title="返回業者總覽" style="display:none;">↩ 業者總覽</button>
                     </div>
                     <div class="drawer-title" id="drawer-title">路線名稱</div>
                 </div>
@@ -442,7 +456,7 @@
             <div class="drawer-section" id="drawer-section"></div>
             <div id="drawer-family-tabs"></div>
             <div class="drawer-actions">
-                <button class="drawer-btn" id="shareLinkBtn" onclick="copyPermalink()" title="複製目前路線、會社與年代的分享連結">🔗 分享連結</button>
+                <button class="drawer-btn" id="shareLinkBtn" onclick="copyPermalink()" title="複製目前路線、業者與年代的分享連結">🔗 分享連結</button>
                 <button class="drawer-btn" id="readingModeBtn" type="button" title="加寬資訊面板，方便閱讀歷史沿革">⇔ 展開閱讀</button>
                 <button class="drawer-btn" id="resetViewBtn" type="button" title="清除選取與篩選並返回全圖">↩ 返回全圖</button>
             </div>
@@ -459,7 +473,7 @@
             </div>
 
             <div class="info-block" id="drawer-ops-block" style="display:none;">
-                <div class="info-block-title"><span>🏢 歷年經營者（點擊以顯示所轄路線）</span></div>
+                <div class="info-block-title"><span>🏢 歷年業者（點擊以顯示所轄路線）</span></div>
                 <div class="chip-list" id="drawer-ops-list"></div>
             </div>
 
@@ -468,7 +482,7 @@
                 <div class="chip-list" id="drawer-stations-list"></div>
             </div>
 
-            <div class="info-block">
+            <div class="info-block-plain">
                 <div class="info-block-title"><span>📜 統計沿革</span></div>
                 <div id="drawer-table-container"></div>
             </div>
@@ -531,6 +545,7 @@
         let activeSubRouteId = null;
         let activeOperatorFilter = null;
         let previousOperatorName = null;
+        let previousRouteFeature = null;
         let lastOperatorGroups = new Set();
         let currentDrawerFeature = null;
         let isRenderingList = false;
@@ -704,7 +719,6 @@
             applyYearFilter();
         });
 
-        /* v9.7 極速 BBox 空間外框索引與距離計算（完全免預改 data.json） */
         function getGeometryBBox(geom) {
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
             const scan = coords => {
@@ -1006,18 +1020,42 @@
             return out;
         }
 
-        /* v9.7 修正：支援無 thead 的 <tr><th> 統計表格轉換為手機資訊卡 */
+        /* 統計表格處理：支援手機資訊卡標籤 + 將「業者」欄位轉為可點擊 Link */
         function decorateHistoryTables() {
             const fallbackLabels = ['年間', '業者', '線名', '區間', '哩程'];
             document.querySelectorAll('#drawer-table-container table').forEach(table => {
                 const head = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+                const opColIdx = head.findIndex(h => h === '業者' || h === '經營者');
+                const targetOpIdx = opColIdx !== -1 ? opColIdx : 1;
+
                 table.querySelectorAll('tr').forEach(tr => {
                     if (tr.querySelector('th')) {
                         tr.classList.add('table-header-row');
                         return;
                     }
-                    Array.from(tr.querySelectorAll('td')).forEach((td, i) => {
+                    const tds = Array.from(tr.querySelectorAll('td'));
+                    tds.forEach((td, i) => {
                         td.setAttribute('data-label', head[i] || fallbackLabels[i] || '資料');
+                        if (i === targetOpIdx) {
+                            const rawOpText = td.textContent.trim();
+                            if (rawOpText && rawOpText !== '—' && rawOpText !== '-') {
+                                const opParts = rawOpText.split('、').map(s => s.trim()).filter(Boolean);
+                                td.innerHTML = '';
+                                opParts.forEach((opName, idx) => {
+                                    if (idx > 0) td.appendChild(document.createTextNode('、'));
+                                    const link = document.createElement('a');
+                                    link.href = 'javascript:void(0)';
+                                    link.className = 'table-op-link';
+                                    link.textContent = opName;
+                                    link.title = `點擊檢視「${opName}」所轄路線`;
+                                    link.addEventListener('click', e => {
+                                        e.stopPropagation();
+                                        filterByOperator(opName);
+                                    });
+                                    td.appendChild(link);
+                                });
+                            }
+                        }
                     });
                 });
             });
@@ -1096,38 +1134,37 @@
 
             loadRoutePhoto(feature);
 
+            /* 預設隱藏歷年業者與沿線車站區塊，改由上方膠囊點擊展開 */
             const opsBlock = document.getElementById('drawer-ops-block');
             const opsList = document.getElementById('drawer-ops-list');
             opsList.innerHTML = '';
+            opsBlock.style.display = 'none';
+
             const masterFeat = masterRouteFeatureMap[groupKey] || feature;
             const opsStr = (currentMember && currentMember.operators) || p.operators || (masterFeat.properties && masterFeat.properties.operators) || '';
             const opsArr = opsStr ? opsStr.split('、').map(s => s.trim()).filter(Boolean) : [];
 
-            if (opsArr.length > 0) {
-                opsBlock.style.display = 'block';
-                opsArr.forEach(opName => {
-                    const chip = document.createElement('span');
-                    chip.className = 'op-chip';
-                    chip.textContent = `🏢 ${opName}`;
-                    chip.tabIndex = 0; chip.setAttribute('role', 'button');
-                    chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); filterByOperator(opName); } });
-                    chip.onclick = () => filterByOperator(opName);
-                    opsList.appendChild(chip);
-                });
-            } else {
-                opsBlock.style.display = 'none';
-            }
+            opsArr.forEach(opName => {
+                const chip = document.createElement('span');
+                chip.className = 'op-chip';
+                chip.textContent = `🏢 ${opName}`;
+                chip.tabIndex = 0; chip.setAttribute('role', 'button');
+                chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); filterByOperator(opName); } });
+                chip.onclick = () => filterByOperator(opName);
+                opsList.appendChild(chip);
+            });
 
             const stBlock = document.getElementById('drawer-stations-block');
             const stList = document.getElementById('drawer-stations-list');
             stList.innerHTML = '';
+            stBlock.style.display = 'none';
+
             const allGroupStLayers = groupStationsMap[groupKey] || [];
             const effectiveId = feature._isVirtual ? groupKey : currentId;
             const subRouteStLayers = allGroupStLayers.filter(stLayer => (stLayer.feature.properties._boundRouteIds || []).includes(effectiveId));
             const displayStLayers = subRouteStLayers.length > 0 ? subRouteStLayers : allGroupStLayers;
 
             if (displayStLayers.length > 0) {
-                stBlock.style.display = 'block';
                 document.getElementById('drawer-stations-title').textContent = `🚉 沿線車站（共 ${displayStLayers.length} 站，點擊飛往定位）`;
                 displayStLayers.forEach(stLayer => {
                     const stName = stLayer.feature.properties.name || '車站';
@@ -1149,8 +1186,6 @@
                     };
                     stList.appendChild(chip);
                 });
-            } else {
-                stBlock.style.display = 'none';
             }
 
             let combinedHtml = '';
@@ -1178,16 +1213,48 @@
             document.getElementById('drawer-table-container').innerHTML = combinedHtml || '<div style="color:#777;">尚無詳細沿革紀錄</div>';
             decorateHistoryTables();
 
+            /* 建立可點擊展開／收合的「🚉○站」與「🏢○位歷年業者」膠囊 */
             const summary = document.getElementById('drawer-summary');
             summary.innerHTML = '';
-            [
-                `🚉 ${displayStLayers.length} 站`,
-                `🏢 ${opsArr.length} 位歷年經營者`,
-                currentFilterYear !== 'all' ? `📅 檢視 ${currentFilterYear} 年` : '📅 檢視全部年代'
-            ].forEach(s => {
-                const el = document.createElement('span'); el.className = 'summary-pill'; el.textContent = s;
-                summary.appendChild(el);
-            });
+
+            const stPill = document.createElement('span');
+            stPill.className = 'summary-pill' + (displayStLayers.length > 0 ? ' clickable' : '');
+            stPill.textContent = displayStLayers.length > 0 ? `🚉 ${displayStLayers.length} 站 ▾` : `🚉 0 站`;
+            if (displayStLayers.length > 0) {
+                stPill.title = '點擊展開／收合沿線車站清單';
+                stPill.tabIndex = 0; stPill.setAttribute('role', 'button');
+                const toggleSt = () => {
+                    const isHidden = stBlock.style.display === 'none';
+                    stBlock.style.display = isHidden ? 'block' : 'none';
+                    stPill.classList.toggle('active', isHidden);
+                    stPill.textContent = `🚉 ${displayStLayers.length} 站 ${isHidden ? '▴' : '▾'}`;
+                };
+                stPill.onclick = toggleSt;
+                stPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSt(); } });
+            }
+            summary.appendChild(stPill);
+
+            const opPill = document.createElement('span');
+            opPill.className = 'summary-pill' + (opsArr.length > 0 ? ' clickable' : '');
+            opPill.textContent = opsArr.length > 0 ? `🏢 ${opsArr.length} 家歷年業者 ▾` : `🏢 0 家歷年業者`;
+            if (opsArr.length > 0) {
+                opPill.title = '點擊展開／收合歷年業者清單';
+                opPill.tabIndex = 0; opPill.setAttribute('role', 'button');
+                const toggleOp = () => {
+                    const isHidden = opsBlock.style.display === 'none';
+                    opsBlock.style.display = isHidden ? 'block' : 'none';
+                    opPill.classList.toggle('active', isHidden);
+                    opPill.textContent = `🏢 ${opsArr.length} 家歷年業者 ${isHidden ? '▴' : '▾'}`;
+                };
+                opPill.onclick = toggleOp;
+                opPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOp(); } });
+            }
+            summary.appendChild(opPill);
+
+            const yrPill = document.createElement('span');
+            yrPill.className = 'summary-pill';
+            yrPill.textContent = currentFilterYear !== 'all' ? `📅 檢視 ${currentFilterYear} 年` : '📅 檢視全部年代';
+            summary.appendChild(yrPill);
 
             const backOpBtn = document.getElementById('drawer-back-operator-btn');
             backOpBtn.style.display = previousOperatorName ? 'inline-block' : 'none';
@@ -1214,12 +1281,23 @@
                 isRouteFeatureActiveInYear(l.feature, currentFilterYear))
                 .map(l => l.feature.properties.parent_id || l.feature.properties.route_id || l.feature.properties.name));
 
-            document.getElementById('drawer-badge').textContent = '🏢 會社路網';
+            document.getElementById('drawer-badge').textContent = '🏢 業者路網';
             document.getElementById('drawer-title').textContent = opName;
-            document.getElementById('drawer-tailo').textContent = '歷年經營路線總覽';
+            document.getElementById('drawer-tailo').textContent = '歷年營業路線總覽';
             document.getElementById('drawer-section').textContent = currentFilterYear === 'all'
                 ? `歷年收錄 ${matches.length} 條路線` : `${currentFilterYear} 年有營業資料 ${activeKeys.size} 條；歷年收錄 ${matches.length} 條`;
-            document.getElementById('drawer-back-main-btn').style.display = 'none';
+
+            /* 若從某條路線點進業者頁，提供「↩ 返回 [原路線]」按鈕 */
+            const backMainBtn = document.getElementById('drawer-back-main-btn');
+            if (previousRouteFeature) {
+                const prevName = (previousRouteFeature.properties && previousRouteFeature.properties.name) || '原路線';
+                backMainBtn.style.display = 'inline-block';
+                backMainBtn.textContent = `↩ 返回 ${prevName}`;
+                backMainBtn.onclick = () => highlightRouteGroup(previousRouteFeature, true, null);
+            } else {
+                backMainBtn.style.display = 'none';
+            }
+
             document.getElementById('drawer-back-operator-btn').style.display = 'none';
             document.getElementById('drawer-family-tabs').style.display = 'none';
             document.getElementById('drawer-photo-box').style.display = 'none';
@@ -1228,7 +1306,7 @@
 
             const summary = document.getElementById('drawer-summary');
             summary.innerHTML = '';
-            ['🟣 紫色：本會社路網', '⚪ 灰色：其他路線', currentFilterYear === 'all' ? '📅 全部年代' : `📅 ${currentFilterYear} 年`].forEach(s => {
+            ['🟣 紫色：本業者路網', '⚪ 灰色：其他路線', currentFilterYear === 'all' ? '📅 全部年代' : `📅 ${currentFilterYear} 年`].forEach(s => {
                 const pill = document.createElement('span'); pill.className = 'summary-pill'; pill.textContent = s;
                 summary.appendChild(pill);
             });
@@ -1237,7 +1315,7 @@
             container.innerHTML = '';
             const intro = document.createElement('p');
             intro.style.cssText = 'font-size:12px;color:#53627c;line-height:1.6';
-            intro.textContent = '點選下列路線即可查看沿革；返回經營者總覽可繼續比較。歷年經營名單不代表同一年度全部營業。';
+            intro.textContent = '點選下列路線即可查看沿革；亦可隨時返回原路線或業者總覽繼續比較。';
             container.appendChild(intro);
 
             const list = document.createElement('div'); list.className = 'operator-route-list';
@@ -1261,6 +1339,9 @@
         }
 
         function filterByOperator(opName) {
+            if (currentDrawerFeature) {
+                previousRouteFeature = currentDrawerFeature;
+            }
             activeOperatorFilter = opName;
             previousOperatorName = null;
             selectedGroupKey = null;
@@ -1286,7 +1367,7 @@
                     paddingBottomRight: window.innerWidth > 960 ? [Math.min(getDrawerWidth() + 30, window.innerWidth * 0.68), 50] : [50, Math.round(window.innerHeight * 0.55)]
                 });
             }
-            showToast(`已顯示「${opName}」所轄路線；右側可選擇各路線`);
+            showToast(`已顯示「${opName}」所轄路線`);
         }
 
         function buildStationPopupContent(feature) {
@@ -1464,6 +1545,7 @@
             activeSubRouteId = null;
             activeOperatorFilter = null;
             previousOperatorName = null;
+            previousRouteFeature = null;
             lastOperatorGroups = new Set();
             currentDrawerFeature = null;
             activeRouteName = '';
@@ -1532,7 +1614,11 @@
             while ((m = rowRegex.exec(tableHtml)) !== null) {
                 const op = m[2].replace(/<[^>]+>/g, '').trim();
                 const sec = m[4].replace(/<[^>]+>/g, '').trim();
-                if (op && op !== '—' && !ops.includes(op)) ops.push(op);
+                if (op && op !== '—') {
+                    op.split('、').map(s => s.trim()).filter(Boolean).forEach(o => {
+                        if (!ops.includes(o)) ops.push(o);
+                    });
+                }
                 if (sec && sec !== '—' && !secs.includes(sec)) secs.push(sec);
             }
             const lastSec = secs.length > 0 ? secs[secs.length - 1].replace(/-/g, '＝').replace(/—/g, '＝') : '';
@@ -1577,12 +1663,18 @@
                         ownTable = '<div style="color:#777;font-size:12px;">（年報無獨立統計資料）</div>';
                         hasTable = false;
                     }
+                    const ownMeta = hasTable ? extractMetaFromTableHtml(ownTable) : { operators: '' };
+                    if (ownMeta.operators) {
+                        ownMeta.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
+                    }
+
                     const existing = membersDict[rid];
                     const shouldReplace = !existing || (ltype === '主線') || (existing.lineType === '舊線' && ltype !== '舊線');
                     if (shouldReplace) {
                         membersDict[rid] = {
                             id: rid, lineType: ltype, badgeText: `${rid} ${ltype}`.trim(),
-                            section: (p.section || '').replace(/\s*\([^)]*\)$/, ''), operators: p.operators || '',
+                            section: (p.section || '').replace(/\s*\([^)]*\)$/, ''),
+                            operators: p.operators || ownMeta.operators || '',
                             tableHtml: ownTable, hasTable: hasTable, feature: f, isMain: (rid === gk)
                         };
                         routeByIdMap[rid] = f;
@@ -1671,8 +1763,7 @@
 
                 buildFamilyRegistry(routeFeaturesList);
 
-                /* v9.7：使用 BBox 外框索引進行即時、無損的車站—路線空間綁定（100% 相容 admin_import.html） */
-                const BBOX_PAD = 0.003; // 約 330 公尺緩衝框
+                const BBOX_PAD = 0.003;
                 stationFeaturesList.forEach(st => {
                     const [px, py] = st.geometry.coordinates;
                     const boundFeatures = [];
@@ -1775,7 +1866,7 @@
         function syncDisplay() {
             const val = input.value;
             if (val === '') {
-                displayLayer.innerHTML = '<span style="color:#999; font-size:15px;">搜尋路線、編號(A1)、舊稱、會社或車站...</span>';
+                displayLayer.innerHTML = '<span style="color:#999; font-size:15px;">搜尋路線、編號(A1)、舊稱、業者或車站...</span>';
                 return;
             }
             let safeVal = val.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1811,7 +1902,6 @@
 
         input.addEventListener('blur', () => syncDisplay());
 
-        /* v9.7：支援去聲調與去連字號／空白的台羅拼音比對 */
         function normalizeSearchText(s) {
             return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         }
@@ -1856,7 +1946,6 @@
 
             const pool = searchableRoutes.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
 
-            /* 未輸入關鍵字時：恢復 v9.5 台羅拼音 A–Z 字母分段索引 */
             if (!keyword) {
                 if (!pool.length) {
                     dropdown.style.display = 'none';
@@ -1899,7 +1988,6 @@
                 return;
             }
 
-            /* 有輸入關鍵字時：結合台羅容錯與 v9.6「經營者／路線／車站」三分類檢索 */
             const results = [];
             pool.forEach(f => {
                 const p = f.properties || {};
@@ -1938,7 +2026,7 @@
                 normalizeSearchText(st.feature.properties.name).includes(keyword)).slice(0, 30);
 
             if (!results.length && !ops.length && !stations.length) {
-                addSearchHeader('沒有符合的結果，請試試舊稱、台羅拼音、編號或會社名稱');
+                addSearchHeader('沒有符合的結果，請試試舊稱、台羅拼音、編號或業者名稱');
                 dropdown.style.display = 'block';
                 input.setAttribute('aria-expanded', 'true');
                 isRenderingList = false;
@@ -1949,7 +2037,7 @@
             input.setAttribute('aria-expanded', 'true');
 
             if (ops.length) {
-                addSearchHeader(`🏢 經營者（${ops.length}）`);
+                addSearchHeader(`🏢 業者（${ops.length}）`);
                 ops.forEach(op => addSearchItem(`🏢 ${op}`, '查看所轄路線', () => { closeSearchResults(); filterByOperator(op); }));
             }
             if (results.length) {
@@ -2042,10 +2130,16 @@
             }
         });
 
+        /* 恢復點擊地圖空白處取消選取功能（搭配 250ms 防誤觸保護） */
         map.on('click', function() {
+            if (Date.now() - lastFeatureClickTime < 250) return;
             dropdown.style.display = 'none';
             input.setAttribute('aria-expanded', 'false');
-            if (input.value.trim() === '') setSearchExpanded(false);
+            if (selectedGroupKey !== null || activeOperatorFilter !== null) {
+                clearRouteSelection();
+            } else if (input.value.trim() === '') {
+                setSearchExpanded(false);
+            }
         });
 
         dropdown.addEventListener('scroll', function() {
