@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title> v9.7.1 古今鐵道營業線 HGIS 查詢系統</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.7</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -24,7 +24,6 @@
         }
         #map { width: 100vw; height: 100%; }
 
-        /* 右上角系統標題與年代觸發器 */
         #system-title {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background-color: rgba(26, 35, 126, 0.92); color: white; border: 0;
@@ -34,7 +33,6 @@
         }
         #system-title:hover { background-color: rgba(40, 53, 147, 0.98); }
 
-        /* 📅 年代篩選面板 */
         #year-filter-bar {
             position: absolute; top: 62px; right: 15px; z-index: 1000;
             background: rgba(255, 255, 255, 0.96); padding: 8px 12px; border-radius: 14px;
@@ -66,7 +64,6 @@
         }
         #yearResetBtn:hover { background: #c62828; }
 
-        /* 🏢 業者勢力範圍橫幅 */
         #operator-banner {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
             z-index: 1001; background: #4a148c; color: white; padding: 8px 16px;
@@ -79,7 +76,6 @@
         }
         #operator-banner button:hover { background: rgba(255,255,255,0.35); }
 
-        /* 🔍 左上角動態伸縮搜尋列 */
         #custom-search-box {
             position: absolute; top: 15px; left: 15px; z-index: 1001;
             background-color: white;
@@ -127,7 +123,6 @@
         .match-tag.code { background: #e8eaf6; color: #1a237e; font-weight: bold; }
         .match-tag.st { background: #e0f7fa; color: #006064; }
 
-        /* 🗺️ 圖例與狀態列 */
         #mobile-legend-toggle { display: none; }
         #active-state-bar {
             position: absolute; top: 72px; left: 15px; z-index: 999; display: none;
@@ -165,7 +160,6 @@
         #opacity-box { display: none; align-items: center; gap: 6px; border-top: 1px solid #eee; padding-top: 5px; font-size: 12px; color: var(--primary); font-weight: bold; }
         #opacitySlider { width: 90px; cursor: pointer; accent-color: var(--primary); }
 
-        /* 📑 響應式考據資訊抽屜 */
         #info-drawer {
             position: absolute; top: 0; right: 0; width: var(--drawer-width); height: 100dvh;
             background: white; z-index: 1002; box-shadow: -4px 0 20px rgba(0,0,0,0.18);
@@ -226,13 +220,13 @@
         .operator-route-btn:hover, .operator-route-btn:focus-visible { background: #eef2ff; border-color: #7b1fa2; }
         .operator-route-btn small { font-size: 11px; color: #627092; }
 
-        /* 📷 歷史照片展板 */
+        /* 📷 歷史照片／動圖展板 */
         #drawer-photo-box {
             display: none; margin-bottom: 14px; border-radius: 8px; overflow: hidden;
             border: 1px solid #d1d9ff; background: #111; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.12);
         }
-        #drawer-photo-img { width: 100%; max-height: 220px; object-fit: cover; display: block; cursor: zoom-in; }
-        .photo-caption-bar { background: #f8f9fa; padding: 7px 10px; font-size: 12px; color: #444; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        #drawer-photo-img { width: 100%; max-height: 240px; object-fit: cover; display: block; cursor: zoom-in; }
+        .photo-caption-bar { background: #f8f9fa; padding: 7px 10px; font-size: 12px; color: #444; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
         .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
 
         .info-block {
@@ -352,7 +346,6 @@
             body.year-filter-open.drawer-open #active-state-bar { top: 226px; }
             body.drawer-open #active-state-bar .state-reset, body.operator-active #active-state-bar { display: none; }
 
-            /* 手機版歷史統計卡片化 */
             #drawer-table-container table { font-size: 13px; border: 0; margin-top: 2px; }
             #drawer-table-container table thead, #drawer-table-container table tr.table-header-row { display: none !important; }
             #drawer-table-container table tbody, #drawer-table-container table tr { display: block !important; }
@@ -510,6 +503,14 @@
         const displayLayer = document.getElementById('input-display-layer');
         const dropdown = document.getElementById('searchDropdown');
         const clearBtn = document.getElementById('clearBtn');
+
+        /* 預設路線影像圖說與典藏出處註冊表 */
+        const ROUTE_PHOTO_META = {
+            'B4': {
+                caption: '1930年角板山輕便軌道台車影像',
+                source: '出處：USC MIRC (Fox Movietone News, MVTN 5-701)'
+            }
+        };
 
         [sysTitle, yfBar, infoDrawer, mapLegend, opBanner].forEach(el => {
             L.DomEvent.disableClickPropagation(el);
@@ -948,6 +949,7 @@
             });
         }
 
+        /* 支援 .gif / .jpg / .png / .webp 自動偵測（同時支援 photos/ 資料夾與根目錄） */
         function loadRoutePhoto(feature) {
             const p = feature.properties || {};
             const photoBox = document.getElementById('drawer-photo-box');
@@ -955,33 +957,50 @@
             const photoCap = document.getElementById('drawer-photo-caption');
             const photoSrc = document.getElementById('drawer-photo-source');
             photoBox.style.display = 'none';
+            photoImg.removeAttribute('src');
+
+            const codeKey = p.route_id || p.parent_id || selectedGroupKey || '';
+            const parentKey = p.parent_id || selectedGroupKey || '';
+            const presetMeta = ROUTE_PHOTO_META[codeKey] || ROUTE_PHOTO_META[parentKey] || null;
 
             if (p.photos && Array.isArray(p.photos) && p.photos.length > 0) {
                 const item = p.photos[0];
                 photoImg.src = item.url;
-                photoCap.textContent = item.caption || `${p.name} 歷史影像`;
-                photoSrc.textContent = item.source ? `出處：${item.source}` : (item.year || '');
+                photoCap.textContent = item.caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
+                photoSrc.textContent = item.source ? `出處：${item.source}` : ((presetMeta && presetMeta.source) || item.year || '');
                 photoBox.style.display = 'block';
                 return;
             }
             if (p.photo) {
                 photoImg.src = p.photo;
-                photoCap.textContent = p.photo_caption || `${p.name} 歷史影像`;
-                photoSrc.textContent = p.photo_source || '';
+                photoCap.textContent = p.photo_caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
+                photoSrc.textContent = p.photo_source || (presetMeta && presetMeta.source) || '';
                 photoBox.style.display = 'block';
                 return;
             }
+
+            const codes = [];
+            if (p.route_id) codes.push(p.route_id);
+            if (p.parent_id && !codes.includes(p.parent_id)) codes.push(p.parent_id);
+            if (selectedGroupKey && !codes.includes(selectedGroupKey)) codes.push(selectedGroupKey);
+
+            const exts = ['gif', 'jpg', 'jpeg', 'png', 'webp', 'GIF', 'JPG', 'PNG'];
             const candidates = [];
-            if (p.route_id) candidates.push(`photos/${p.route_id}.jpg`, `photos/${p.route_id}.png`);
-            if (p.parent_id && p.parent_id !== p.route_id) candidates.push(`photos/${p.parent_id}.jpg`, `photos/${p.parent_id}.png`);
+            codes.forEach(c => {
+                exts.forEach(ext => {
+                    candidates.push(`photos/${c}.${ext}`);
+                    candidates.push(`${c}.${ext}`);
+                });
+            });
+
             function tryNext(idx) {
                 if (idx >= candidates.length) return;
                 const testImg = new Image();
                 testImg.onload = function() {
                     if (currentDrawerFeature !== feature) return;
                     photoImg.src = candidates[idx];
-                    photoCap.textContent = `${p.name} 歷史影像`;
-                    photoSrc.textContent = p.route_id || '';
+                    photoCap.textContent = (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
+                    photoSrc.textContent = (presetMeta && presetMeta.source) || codeKey;
                     photoBox.style.display = 'block';
                 };
                 testImg.onerror = () => tryNext(idx + 1);
@@ -993,9 +1012,10 @@
         function openLightbox() {
             const src = document.getElementById('drawer-photo-img').src;
             const cap = document.getElementById('drawer-photo-caption').textContent;
+            const srcInfo = document.getElementById('drawer-photo-source').textContent;
             if (!src) return;
             document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox-caption').textContent = cap;
+            document.getElementById('lightbox-caption').textContent = srcInfo ? `${cap}（${srcInfo}）` : cap;
             document.getElementById('photo-lightbox').classList.add('open');
         }
         function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
@@ -1020,7 +1040,6 @@
             return out;
         }
 
-        /* 統計表格處理：支援手機資訊卡標籤 + 將「業者」欄位轉為可點擊 Link */
         function decorateHistoryTables() {
             const fallbackLabels = ['年間', '業者', '線名', '區間', '哩程'];
             document.querySelectorAll('#drawer-table-container table').forEach(table => {
@@ -1134,7 +1153,6 @@
 
             loadRoutePhoto(feature);
 
-            /* 預設隱藏歷年業者與沿線車站區塊，改由上方膠囊點擊展開 */
             const opsBlock = document.getElementById('drawer-ops-block');
             const opsList = document.getElementById('drawer-ops-list');
             opsList.innerHTML = '';
@@ -1213,7 +1231,6 @@
             document.getElementById('drawer-table-container').innerHTML = combinedHtml || '<div style="color:#777;">尚無詳細沿革紀錄</div>';
             decorateHistoryTables();
 
-            /* 建立可點擊展開／收合的「🚉○站」與「🏢○位歷年業者」膠囊 */
             const summary = document.getElementById('drawer-summary');
             summary.innerHTML = '';
 
@@ -1287,7 +1304,6 @@
             document.getElementById('drawer-section').textContent = currentFilterYear === 'all'
                 ? `歷年收錄 ${matches.length} 條路線` : `${currentFilterYear} 年有營業資料 ${activeKeys.size} 條；歷年收錄 ${matches.length} 條`;
 
-            /* 若從某條路線點進業者頁，提供「↩ 返回 [原路線]」按鈕 */
             const backMainBtn = document.getElementById('drawer-back-main-btn');
             if (previousRouteFeature) {
                 const prevName = (previousRouteFeature.properties && previousRouteFeature.properties.name) || '原路線';
@@ -2130,7 +2146,6 @@
             }
         });
 
-        /* 恢復點擊地圖空白處取消選取功能（搭配 250ms 防誤觸保護） */
         map.on('click', function() {
             if (Date.now() - lastFeatureClickTime < 250) return;
             dropdown.style.display = 'none';
