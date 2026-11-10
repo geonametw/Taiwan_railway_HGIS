@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.8</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.9</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -220,13 +220,44 @@
         .operator-route-btn:hover, .operator-route-btn:focus-visible { background: #eef2ff; border-color: #7b1fa2; }
         .operator-route-btn small { font-size: 11px; color: #627092; }
 
-        /* 📷 歷史照片／動圖展板（路線資訊欄不顯示圖說，點擊後於燈箱顯示） */
+        /* 📷 歷史照片／動圖展板 */
         #drawer-photo-box {
             display: none; margin-bottom: 14px; border-radius: 8px; overflow: hidden;
             border: 1px solid #d1d9ff; background: #111; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.12);
         }
         #drawer-photo-img { width: 100%; max-height: 240px; object-fit: cover; display: block; cursor: zoom-in; }
         .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.68); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
+
+        /* 📖 路線沿革專屬區塊樣式 */
+        .narrative-card {
+            background: #f8f9fc; border: 1px solid #d8def4; border-left: 4px solid var(--primary);
+            border-radius: 8px; padding: 11px 13px; font-size: 13.5px; color: #222; line-height: 1.72;
+        }
+        .narrative-meta-box {
+            background: #eef2ff; border-radius: 6px; padding: 7px 10px; margin-bottom: 9px;
+            font-size: 12.5px; color: #1a237e; line-height: 1.55;
+        }
+        .narrative-para { margin: 0 0 8px 0; text-align: justify; }
+        .narrative-para:last-child { margin-bottom: 0; }
+        .fn-sup {
+            color: #1a237e; background: #e8eaf6; border: 1px solid #c5cae9;
+            padding: 0 4px; border-radius: 4px; font-weight: bold; font-size: 11px;
+            cursor: pointer; margin: 0 1px; user-select: none; transition: 0.15s;
+        }
+        .fn-sup:hover { background: #1a237e; color: #fff; }
+        .narrative-fn-box {
+            margin-top: 10px; padding-top: 8px; border-top: 1px dashed #c5cae9;
+            font-size: 12px; color: #4a5568; line-height: 1.55;
+        }
+        .narrative-fn-item {
+            margin-bottom: 4px; padding: 3px 5px; border-radius: 4px; transition: background-color 0.4s;
+        }
+        .narrative-fn-item:last-child { margin-bottom: 0; }
+        .fn-back {
+            color: #1a237e; font-weight: bold; cursor: pointer; margin-right: 4px;
+            text-decoration: underline; text-underline-offset: 2px;
+        }
+        .fn-back:hover { color: #d32f2f; }
 
         .info-block {
             margin-bottom: 14px; background: #f8f9fc; border: 1px solid #e2e7f5;
@@ -261,7 +292,7 @@
         }
         .table-op-link:hover { color: #fff; background: #7b1fa2; text-decoration: none; border-radius: 3px; padding: 0 3px; }
 
-        /* 🔍 全螢幕照片燈箱（含可點擊出處連結） */
+        /* 🔍 全螢幕照片燈箱 */
         #photo-lightbox {
             position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000;
             display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
@@ -462,6 +493,12 @@
                 <div class="chip-list" id="drawer-stations-list"></div>
             </div>
 
+            <!-- 📖 路線沿革區塊（自動讀取 narratives 顯示） -->
+            <div class="info-block-plain" id="drawer-narrative-block" style="display:none;">
+                <div class="info-block-title"><span>📖 路線沿革</span></div>
+                <div id="drawer-narrative-container"></div>
+            </div>
+
             <div class="info-block-plain">
                 <div class="info-block-title"><span>📜 統計沿革</span></div>
                 <div id="drawer-table-container"></div>
@@ -491,9 +528,9 @@
         const dropdown = document.getElementById('searchDropdown');
         const clearBtn = document.getElementById('clearBtn');
 
-        /* 動態讀取 photos/meta.json（完全移除寫死圖說） */
         let ROUTE_PHOTO_META = {};
         let currentPhotoMeta = { caption: '', source: '', link: '' };
+        let globalNarrativesMap = {}; // 儲存自 data.json 載入的 narratives 字典
 
         fetch('photos/meta.json?t=' + Date.now())
             .then(r => r.ok ? r.json() : {})
@@ -549,6 +586,14 @@
         let showStations = true;
         let hiddenLineTypes = new Set();
         let lastFeatureClickTime = 0;
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
 
         function setSearchExpanded(flag) {
             searchBox.classList.toggle('expanded', flag);
@@ -942,7 +987,6 @@
             });
         }
 
-        /* 讀取 photos/meta.json 或自動探測圖片，圖說與連結暫存於 currentPhotoMeta 供點擊燈箱顯示 */
         function loadRoutePhoto(feature) {
             const p = feature.properties || {};
             const photoBox = document.getElementById('drawer-photo-box');
@@ -1065,9 +1109,95 @@
         }
         function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
 
+        /* 註腳雙向平滑跳轉與高亮 */
+        window.jumpToFootnote = function(num) {
+            const target = document.getElementById(`nar-fn-item-${num}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                target.style.backgroundColor = '#fff59d';
+                setTimeout(() => { target.style.backgroundColor = 'transparent'; }, 1800);
+            }
+        };
+        window.jumpToFnRef = function(num) {
+            const target = document.getElementById(`nar-fn-ref-${num}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.backgroundColor = '#fff59d';
+                setTimeout(() => { target.style.backgroundColor = ''; }, 1800);
+            }
+        };
+
+        /* 渲染「📖 路線沿革」區塊 */
+        function renderRouteNarrative(feature, groupKey, currentId) {
+            const narBlock = document.getElementById('drawer-narrative-block');
+            const narContainer = document.getElementById('drawer-narrative-container');
+            narContainer.innerHTML = '';
+
+            const p = feature.properties || {};
+            const masterFeat = masterRouteFeatureMap[groupKey];
+            const narObj = p.narrative
+                || globalNarrativesMap[currentId]
+                || (currentId === groupKey ? globalNarrativesMap[groupKey] : null)
+                || globalNarrativesMap[groupKey]
+                || (masterFeat && masterFeat.properties && masterFeat.properties.narrative)
+                || null;
+
+            if (!narObj) {
+                narBlock.style.display = 'none';
+                return null;
+            }
+
+            const fnDict = {};
+            (narObj.footnotes || []).forEach(f => { fnDict[f.num] = f.text; });
+
+            const seenRefNums = new Set();
+            const formatInlineSup = (escapedStr) => {
+                return escapedStr.replace(/\[(\d+)\]/g, (m, num) => {
+                    const tip = escapeHtml(fnDict[num] || `註腳 [${num}]`);
+                    const idAttr = !seenRefNums.has(num) ? `id="nar-fn-ref-${num}"` : '';
+                    seenRefNums.add(num);
+                    return `<sup ${idAttr} class="fn-sup" title="${tip}" onclick="jumpToFootnote(${num})">[${num}]</sup>`;
+                });
+            };
+
+            let cardHtml = `<div class="narrative-card">`;
+            if (narObj.sectionText || narObj.openDate) {
+                cardHtml += `<div class="narrative-meta-box">`;
+                if (narObj.sectionText) {
+                    cardHtml += `<div><b>📍 考據區間：</b>${formatInlineSup(escapeHtml(narObj.sectionText))}</div>`;
+                }
+                if (narObj.openDate) {
+                    cardHtml += `<div><b>🗓️ 通車日期：</b>${formatInlineSup(escapeHtml(narObj.openDate))}</div>`;
+                }
+                cardHtml += `</div>`;
+            }
+
+            if (Array.isArray(narObj.paragraphs) && narObj.paragraphs.length > 0) {
+                cardHtml += `<div>`;
+                narObj.paragraphs.forEach(para => {
+                    cardHtml += `<p class="narrative-para">${formatInlineSup(escapeHtml(para))}</p>`;
+                });
+                cardHtml += `</div>`;
+            }
+
+            if (Array.isArray(narObj.footnotes) && narObj.footnotes.length > 0) {
+                cardHtml += `<div class="narrative-fn-box">`;
+                narObj.footnotes.forEach(fn => {
+                    cardHtml += `<div id="nar-fn-item-${fn.num}" class="narrative-fn-item"><span class="fn-back" onclick="jumpToFnRef(${fn.num})" title="點擊跳回內文引用處">[${fn.num}] ↩</span>${escapeHtml(fn.text)}</div>`;
+                });
+                cardHtml += `</div>`;
+            }
+            cardHtml += `</div>`;
+
+            narContainer.innerHTML = cardHtml;
+            narBlock.style.display = 'block';
+            return narObj;
+        }
+
         function formatTableHtml(htmlStr) {
             if (!htmlStr) return '';
             let out = htmlStr
+                .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
                 .replace(/(<th[^>]*>)\s*經營者\s*(<\/th>)/g, '$1業者$2')
                 .replace(/(<th[^>]*>)\s*路線名\s*(<\/th>)/g, '$1線名$2');
             if (currentFilterYear !== 'all') {
@@ -1085,7 +1215,6 @@
             return out;
         }
 
-        /* 將統計沿革表格中的「業者」欄位轉為可點擊連結（維持標準表格結構） */
         function decorateHistoryTables() {
             document.querySelectorAll('#drawer-table-container table').forEach(table => {
                 const head = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
@@ -1161,7 +1290,10 @@
                 backMainBtn.style.display = 'none';
             }
 
-            const rawSec = (currentMember && currentMember.section) ? currentMember.section : (p.section || '');
+            /* 渲染 📖 路線沿革區塊 */
+            const activeNarObj = renderRouteNarrative(feature, groupKey, currentId);
+
+            const rawSec = (currentMember && currentMember.section) ? currentMember.section : (p.section || (activeNarObj && activeNarObj.sectionText) || '');
             const cleanSec = rawSec.replace(/\s*\([^)]*\)$/, '');
             document.getElementById('drawer-section').textContent = cleanSec ? `區間：${cleanSec}` : '';
 
@@ -1250,7 +1382,9 @@
                 combinedHtml += formatTableHtml(currentMember.tableHtml);
             } else {
                 let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
-                rawDesc = rawDesc.replace(/<div style="margin-bottom:6px;"><span style="background:#1a237e;[\s\S]*?<\/div>/, '');
+                rawDesc = rawDesc
+                    .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
+                    .replace(/<div style="margin-bottom:6px;"><span style="background:#1a237e;[\s\S]*?<\/div>/, '');
                 combinedHtml += formatTableHtml(rawDesc) || '<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>';
             }
 
@@ -1358,6 +1492,7 @@
             document.getElementById('drawer-photo-box').style.display = 'none';
             document.getElementById('drawer-ops-block').style.display = 'none';
             document.getElementById('drawer-stations-block').style.display = 'none';
+            document.getElementById('drawer-narrative-block').style.display = 'none';
 
             const summary = document.getElementById('drawer-summary');
             summary.innerHTML = '';
@@ -1696,9 +1831,11 @@
                 const mainFeat = flist.find(f => f.properties.line_type === '主線') || flist[0];
                 const mainProps = mainFeat.properties || {};
 
+                /* 剝除內嵌沿革標記與標題徽章，確保統計表格與附屬統計純淨拆解 */
                 const splitDesc = (descStr) => {
                     if (!descStr) return [''];
-                    const stripped = descStr.replace(/^<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '').trim();
+                    const withoutNar = descStr.replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '');
+                    const stripped = withoutNar.replace(/^<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '').trim();
                     return stripped.split(/<div[^>]*>\s*▸\s*(?:附屬統計|相關路線)：\s*([^<]+)<\/div>/);
                 };
 
@@ -1751,7 +1888,8 @@
                             properties: {
                                 route_id: subCode, parent_id: gk, line_type: subLabel, name: mainProps.name,
                                 tailo: mainProps.tailo || '', section: meta.section || subLabel,
-                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable }
+                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable },
+                                narrative: globalNarrativesMap[subCode] || null
                             },
                             geometry: mainFeat.geometry
                         };
@@ -1772,12 +1910,18 @@
             });
         }
 
-        fetch('data.json?v=9.8')
+        /* 使用動態時間戳確保每次重整皆載入最新 data.json 與 narratives */
+        fetch('data.json?t=' + Date.now())
             .then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
             .then(rawData => {
                 const geoData = rawData.data || rawData;
-                const rawFeatures = geoData.features || [];
+                if (geoData.narratives && typeof geoData.narratives === 'object') {
+                    globalNarrativesMap = geoData.narratives;
+                } else if (rawData.narratives && typeof rawData.narratives === 'object') {
+                    globalNarrativesMap = rawData.narratives;
+                }
 
+                const rawFeatures = geoData.features || [];
                 const seenStations = new Set();
                 const cleanFeatures = rawFeatures.filter(f => {
                     const p = f.properties || {};
@@ -1808,6 +1952,9 @@
                         f._bbox = getGeometryBBox(f.geometry);
                         routeFeaturesList.push(f);
                         const groupKey = p.parent_id || p.route_id || p.name;
+                        if (p.narrative && p.route_id && !globalNarrativesMap[p.route_id]) {
+                            globalNarrativesMap[p.route_id] = p.narrative;
+                        }
                         if (p.name && !routeKeyToNameMap[groupKey]) routeKeyToNameMap[groupKey] = p.name;
                         if (!masterRouteFeatureMap[groupKey] || p.line_type === "主線") masterRouteFeatureMap[groupKey] = f;
                         const descText = (p.description && p.description.zh) ? p.description.zh : "";
@@ -2046,12 +2193,16 @@
             const results = [];
             pool.forEach(f => {
                 const p = f.properties || {};
-                const code = normalizeSearchText(p.parent_id || p.route_id || '');
+                const gk = p.parent_id || p.route_id || '';
+                const code = normalizeSearchText(gk);
                 const name = normalizeSearchText(p.name);
                 const tai = normalizeSearchText(p.tailo);
                 const taiCompact = compactSearchText(p.tailo);
                 const alt = normalizeSearchText(p.alt_names);
                 const ops = normalizeSearchText(p.operators);
+                const narObj = p.narrative || globalNarrativesMap[gk] || null;
+                const narText = narObj ? normalizeSearchText([narObj.sectionText, narObj.openDate, ...(narObj.paragraphs || [])].join(' ')) : '';
+
                 let rank = 99, matchHint = '';
 
                 if (code === keyword) rank = 0;
@@ -2065,9 +2216,11 @@
                     rank = 5; matchHint = `舊稱: ${p.alt_names}`;
                 } else if (ops.includes(keyword)) {
                     rank = 6;
+                } else if (narText && narText.includes(keyword)) {
+                    rank = 7; matchHint = '📖 沿革提及';
                 } else return;
 
-                results.push({ f, rank, code: p.parent_id || p.route_id || '', matchHint });
+                results.push({ f, rank, code: gk, matchHint });
             });
             results.sort((a, b) => a.rank - b.rank || String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
 
@@ -2155,7 +2308,7 @@
             if (e.key === 'Escape') { input.focus(); dropdown.style.display = 'none'; return; }
             const options = Array.from(dropdown.querySelectorAll('.search-item'));
             const i = options.indexOf(document.activeElement);
-            const next = options[Math.max(0, Math.min(options.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+            const next = options[Math.max(0, Math.min(options.length-1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
             if (next) next.focus();
         });
 
