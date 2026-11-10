@@ -3,819 +3,696 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HGIS 輕便鐵道 KML + CSV 批次匯入與清理工具 (v9.8 自動連線版)</title>
+    <title>KML + CSV 智慧縫合神器 v2.1 - 古今鐵道 HGIS</title>
     <style>
-        :root {
-            --primary: #1a237e;
-            --primary-light: #e8eaf6;
-            --accent: #d32f2f;
-            --success: #2e7d32;
-        }
-        body {
-            font-family: '微軟正黑體', 'PingFang TC', -apple-system, sans-serif;
-            background: #f4f6fb; color: #222; margin: 0; padding: 24px; line-height: 1.6;
-        }
-        .container {
-            max-width: 980px; margin: 0 auto; background: #fff;
-            border-radius: 12px; padding: 28px 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        h1 { margin-top: 0; color: var(--primary); font-size: 24px; border-bottom: 2px solid var(--primary-light); padding-bottom: 12px; }
-        .step-card {
-            background: #f8f9fc; border: 1px solid #dce1f0; border-radius: 10px;
-            padding: 16px 20px; margin-bottom: 18px;
-        }
-        .step-title { font-weight: bold; font-size: 16px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-        .file-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-        input[type="file"] {
-            background: #fff; border: 1px solid #b0bec5; padding: 8px 12px;
-            border-radius: 6px; font-size: 14px; cursor: pointer; flex: 1; min-width: 240px;
-        }
-        .status-box {
-            padding: 8px 12px; border-radius: 6px; font-size: 13.5px; font-weight: bold;
-            background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-        }
-        .status-box.loading { background: #fff8e1; color: #e65100; border-color: #ffe082; }
-        .status-box.error { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
-        .opt-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 14px; }
-        .opt-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-        button {
-            border: none; border-radius: 8px; padding: 11px 20px; font-size: 15px;
-            font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit;
-        }
-        .btn-sm { padding: 5px 12px; font-size: 12.5px; border-radius: 6px; background: #fff; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-sm:hover { background: var(--primary-light); }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: #283593; }
-        .btn-clean { background: #00695c; color: #fff; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 30px; color: #333; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-top: 0; text-align: center; }
+        
+        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none; }
+        .inventory-header { font-size: 15px; font-weight: bold; color: #1a237e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; max-height: 160px; overflow-y: auto; padding: 4px 2px; }
+        .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 3px 9px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; }
+        .tag.station { border-color: #4dd0e1; color: #006064; background: #e0f7fa; }
+        .tag.sugar { border-color: #ef5350; color: #c62828; background: #ffebee; text-decoration: line-through; }
+        .tag-sec { font-size: 11px; color: #777; font-weight: normal; margin-left: 4px; }
+
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .upload-area { display: block; border: 2px dashed #3949ab; padding: 25px 15px; border-radius: 10px; background: #f8f9fa; text-align: center; cursor: pointer; transition: 0.2s; }
+        .upload-area:hover { background: #e8eaf6; }
+        .upload-area.loaded { border-color: #2e7d32; background: #e8f5e9; }
+        input[type="file"] { display: none; }
+
+        .options-bar { background: #fafafa; border: 1px solid #e0e0e0; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        
+        .btn { background: #2e7d32; color: white; border: none; padding: 14px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: inline-block; margin: 4px; }
+        .btn:hover { background: #1b5e20; transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; transform: none; }
+        .btn-clean { background: #00695c; padding: 8px 14px; font-size: 13px; border-radius: 6px; color: white; border: none; cursor: pointer; font-weight: bold; }
         .btn-clean:hover { background: #004d40; }
-        .btn-download { background: var(--success); color: #fff; display: none; }
-        .btn-download:hover { background: #1b5e20; }
-        button:disabled { opacity: 0.45; cursor: not-allowed; }
-        #report-box {
-            margin-top: 22px; background: #1e2433; color: #e2e8f0;
-            padding: 16px 20px; border-radius: 8px; font-family: Consolas, monospace;
-            font-size: 13px; white-space: pre-wrap; max-height: 420px; overflow-y: auto; display: none;
-        }
-        .badge { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-        .hint { font-size: 12.5px; color: #555; margin-top: 6px; }
+        
+        .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; line-height: 1.6; }
+        .success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+        .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 20px; display: block; }
+        .error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; margin-bottom: 20px; display: block; }
+        .alert-mismatch { background: #fff8e1; border-left: 4px solid #ff8f00; padding: 10px 12px; margin-bottom: 12px; color: #bf360c; font-size: 13px; }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <h1>🛤️ HGIS 輕便鐵道 KML + CSV 批次匯入與清理工具 (v9.8)</h1>
-
-    <!-- 步驟 1 -->
-    <div class="step-card">
-        <div class="step-title">
-            <span>步驟 1：基底 data.json（開啟時自動抓取線上最新版）</span>
-            <span class="badge">自動連線載入</span>
-        </div>
-        <div id="onlineStatusBox" class="status-box loading">
-            <span id="onlineStatusText">⏳ 正在自動抓取線上最新 data.json...</span>
-            <button type="button" class="btn-sm" onclick="fetchOnlineBaseJson()">🔄 重新抓取線上版</button>
-        </div>
-        <div class="hint">💡 若你想改用電腦本機的特定 <code>data.json</code>，才需在下方手動選擇檔案（會優先使用手動選擇的本機檔）：</div>
-        <div class="file-row">
-            <input type="file" id="baseJsonInput" accept=".json">
-        </div>
-        <div class="opt-group">
-            <label><input type="checkbox" id="chkRemoveSugar" checked> 🧹 自動移除早期匯入之無編號糖鐵線（<code>SHP Import</code> / <code>Manual Import</code> 共 18 條）</label>
-            <label><input type="checkbox" id="chkRemoveUnnamed" checked> 🧹 自動移除 Google Maps 未命名廢線段（如 <code>Line xx km</code>、<code>線條 1</code>）與 v9.6 殘留 <code>_prebound*</code> 欄位</label>
-            <label><input type="checkbox" id="chkKeepExisting" checked> 🔄 增量合併模式：保留基底 <code>data.json</code> 中未包含於本次 KML 的其他分區台車線與車站（若同編號則以新 KML 覆蓋）</label>
-        </div>
+    <h2>🗺️ KML 圖資 + CSV 台車線名表 智慧縫合器 v2.1</h2>
+    <div class="status warning">
+        <b>💡 v2.1 升級重點：</b><br>
+        1. <b>完整保留 v2.0 矩陣解析核心</b>：100% 對應 <code>台車編號表.csv</code>（4 列屬性 × 1895–1945 年份矩陣，共 317 組編號）。<br>
+        2. <b>糖鐵線與雜訊線一鍵剔除</b>：自動過濾早期無編號糖鐵線（隆田線、學甲線等 18 條）與 Google Maps 預設 <code>Line xx km</code> / <code>線條 1</code> 雜訊，並將未命名支線自動歸戶至最近主線。<br>
+        3. <b>支援多檔 KML 批次縫合</b>：可一次選擇多個分區的 KML 檔（如中、南、東部）同步匯入。
     </div>
 
-    <!-- 步驟 2 -->
-    <div class="step-card">
-        <div class="step-title">
-            <span>步驟 2：選擇 Google My Maps 匯出的 KML 檔（支援同時選取多個 KML）</span>
-            <span class="badge">可多選</span>
-        </div>
-        <div class="hint">可一次選取中、南、東部等多個 <code>.kml</code> 檔。自動識別資料夾類型（主線／舊線／副線／支線(自用)／車站）。</div>
-        <div class="file-row">
-            <input type="file" id="kmlInput" accept=".kml,.xml" multiple>
-        </div>
+    <div id="inventoryBox" class="inventory-box">
+        <div class="inventory-header" id="inventoryTitle"></div>
+        <div class="tag-container" id="inventoryList"></div>
     </div>
 
-    <!-- 步驟 3 -->
-    <div class="step-card">
-        <div class="step-title">
-            <span>步驟 3：選擇「歷年年報統計表」CSV 檔</span>
-            <span class="badge">統計沿革來源</span>
-        </div>
-        <div class="hint">支援寬表（1909～1941 歷年欄位）與長表兩種 CSV 格式；若基底已有統計且僅做路線增補，亦會自動對齊。</div>
-        <div class="file-row">
-            <input type="file" id="csvInput" accept=".csv">
-        </div>
+    <div class="options-bar">
+        <b>路線主名稱 (name) 命名方式：</b>
+        <label><input type="radio" name="nameMode" value="ref_line" checked> 參考名＋線（例：<code>三爪子線</code>）</label>
+        <label><input type="radio" name="nameMode" value="code_ref"> 編號＋參考名（例：<code>A1 三爪子</code>）</label>
+        <label><input type="radio" name="nameMode" value="last_official"> 最終年官方路線名（例：<code>三爪子線</code>）</label>
     </div>
 
-    <div class="btn-row">
-        <button class="btn-clean" id="cleanOnlyBtn" onclick="runProcess(true)">🧹 僅清理線上 data.json（移除糖鐵線）並準備下載</button>
-        <button class="btn-primary" id="mergeBtn" onclick="runProcess(false)">🚀 執行 KML + CSV 合併轉換</button>
-        <button class="btn-download" id="downloadBtn" onclick="downloadResult()">💾 下載最新 data.json</button>
+    <div class="options-bar" style="background:#f3e5f5; border-color:#ce93d8;">
+        <label style="font-weight:bold; color:#4a148c; cursor:pointer;">
+            <input type="checkbox" id="chkRemoveSugar" checked>
+            🧹 自動剔除早期無編號糖鐵線（SHP / Manual Import 共 18 條）與未命名雜訊線（Line xx km / 線條 1）
+        </label>
+    </div>
+    
+    <div class="upload-grid">
+        <label class="upload-area" id="csvDrop" for="csvFile">
+            <div style="font-size: 34px; margin-bottom: 8px;">📊</div>
+            <div id="csvText" style="font-size: 16px; font-weight: bold; color: #3949ab;">步驟 1：選擇 CSV 屬性資料表<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車編號表.csv)</span></div>
+        </label>
+        <input type="file" id="csvFile" accept=".csv" />
+
+        <label class="upload-area" id="kmlDrop" for="kmlFile">
+            <div style="font-size: 34px; margin-bottom: 8px;">📂</div>
+            <div id="kmlText" style="font-size: 16px; font-weight: bold; color: #3949ab;">步驟 2：選擇 KML 路線圖資（可多選）<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車地圖C/D/E/F...kml)</span></div>
+        </label>
+        <input type="file" id="kmlFile" accept=".kml,.xml" multiple />
     </div>
 
-    <div id="report-box"></div>
+    <div style="text-align: center;">
+        <button id="cleanOnlyBtn" class="btn" style="background:#00695c; display:none;" onclick="runCleanOnly()">🧹 僅剔除現有糖鐵線與雜訊（免選 KML/CSV）</button>
+        <button id="mergeBtn" class="btn" disabled onclick="runMerge()">⚙️ 開始智慧縫合並執行空間防呆檢查</button>
+        <button id="downloadBtn" class="btn" style="display:none; background:#1565c0;" onclick="downloadJSON()">📥 下載合併後的 data.json</button>
+    </div>
+
+    <div id="status" class="status"></div>
 </div>
 
 <script>
-let onlineBaseJsonData = null;
-let onlineBaseSourceLabel = '';
-let finalOutputData = null;
+    let existingData = null;
+    let oldPropsMap = {};
+    let csvRoutesMap = {};
+    let rawKmlTexts = [];
+    let finalGeoJson = null;
 
-const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/geonametw/Taiwan_railway_HGIS/main/data.json';
-const GITHUB_PAGES_URL = 'https://geonametw.github.io/Taiwan_railway_HGIS/data.json';
+    // 判斷是否為早期匯入之無編號糖鐵線或 Google Maps 未命名雜訊線
+    function isLegacySugarOrNoiseRoute(f) {
+        const p = f.properties || {};
+        if (f.geometry && f.geometry.type === "Point") return false;
+        if (!p.route_id || p.source === "SHP Import" || p.source === "Manual Import") return true;
+        if (/^(Line\s+[\d.]+|線條\s*\d+|未命名)/i.test(String(p.route_id).trim())) return true;
+        return false;
+    }
 
-/* 網頁啟動時自動抓取線上 data.json */
-async function fetchOnlineBaseJson() {
-    const box = document.getElementById('onlineStatusBox');
-    const txt = document.getElementById('onlineStatusText');
-    box.className = 'status-box loading';
-    txt.textContent = '⏳ 正在自動抓取線上最新 data.json...';
-
-    const candidates = [
-        { url: `data.json?t=${Date.now()}`, label: '同目錄線上 data.json' },
-        { url: `${GITHUB_RAW_URL}?t=${Date.now()}`, label: 'GitHub 儲存庫 (main/data.json)' },
-        { url: `${GITHUB_PAGES_URL}?t=${Date.now()}`, label: 'GitHub Pages 線上 data.json' }
-    ];
-
-    for (const item of candidates) {
-        try {
-            const resp = await fetch(item.url, { cache: 'no-store' });
-            if (!resp.ok) continue;
-            const json = await resp.json();
-            const feats = (json.data || json).features;
-            if (Array.isArray(feats)) {
-                onlineBaseJsonData = json;
-                onlineBaseSourceLabel = item.label;
-                box.className = 'status-box';
-                txt.textContent = `🟢 已自動載入線上基底：${item.label}（共 ${feats.length} 筆圖徵）`;
-                return;
-            }
-        } catch (e) {
-            // 嘗試下一個候選網址
+    // 清理車站上可能殘留的 v9.6 _prebound 屬性
+    function cleanStationFeature(f) {
+        if (f && f.properties) {
+            delete f.properties._preboundRouteIndices;
+            delete f.properties._preboundRouteIds;
+            delete f.properties._preboundGroupKeys;
+            delete f.properties._boundRouteFeatures;
+            delete f.properties._boundGroupKeys;
+            delete f.properties._boundRouteIds;
         }
+        return f;
     }
 
-    onlineBaseJsonData = null;
-    box.className = 'status-box error';
-    txt.textContent = '⚠️ 無法自動連線抓取線上 data.json，請於下方手動選擇本機 data.json 檔案。';
-}
-
-window.addEventListener('DOMContentLoaded', fetchOnlineBaseJson);
-
-document.getElementById('baseJsonInput').addEventListener('change', function() {
-    const box = document.getElementById('onlineStatusBox');
-    const txt = document.getElementById('onlineStatusText');
-    if (this.files && this.files[0]) {
-        box.className = 'status-box';
-        txt.textContent = `📁 已改用本機手動選擇檔案：${this.files[0].name}`;
-    } else if (onlineBaseJsonData) {
-        const feats = (onlineBaseJsonData.data || onlineBaseJsonData).features || [];
-        box.className = 'status-box';
-        txt.textContent = `🟢 已自動載入線上基底：${onlineBaseSourceLabel}（共 ${feats.length} 筆圖徵）`;
+    // 自動抓取線上 data.json（支援同目錄與 GitHub 遠端備援）
+    async function loadOnlineDataJson() {
+        const urls = [
+            'data.json?t=' + Date.now(),
+            'https://raw.githubusercontent.com/geonametw/Taiwan_railway_HGIS/main/data.json?t=' + Date.now(),
+            'https://geonametw.github.io/Taiwan_railway_HGIS/data.json?t=' + Date.now()
+        ];
+        for (const url of urls) {
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) continue;
+                const data = await res.json();
+                const features = (data.data && data.data.features) ? data.data.features : (data.features || []);
+                if (Array.isArray(features)) return data;
+            } catch (e) {}
+        }
+        throw new Error("無法連線讀取 data.json");
     }
-});
 
-function logReport(lines) {
-    const box = document.getElementById('report-box');
-    box.style.display = 'block';
-    box.textContent = Array.isArray(lines) ? lines.join('\n') : String(lines);
-}
+    loadOnlineDataJson()
+        .then(data => {
+            existingData = data;
+            const features = (data.data && data.data.features) ? data.data.features : (data.features || []);
+            let routeCount = 0, sugarCount = 0, stationCount = 0;
+            const listContainer = document.getElementById('inventoryList');
+            listContainer.innerHTML = '';
 
-function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
+            features.forEach((f, idx) => {
+                const p = f.properties || {};
+                const name = p.name || `未命名_${idx + 1}`;
+                const rid = p.route_id ? `[${p.route_id}] ` : '';
+                const section = p.section ? `<span class="tag-sec">(${p.section})</span>` : '';
+                const isPoint = f.geometry && f.geometry.type === "Point";
+                const isSugar = isLegacySugarOrNoiseRoute(f);
+
+                if (isPoint) stationCount++;
+                else if (isSugar) sugarCount++;
+                else routeCount++;
+
+                const key = p.route_id || p.name;
+                if (key && !oldPropsMap[key]) oldPropsMap[key] = p;
+
+                const tag = document.createElement('span');
+                tag.className = isPoint ? 'tag station' : (isSugar ? 'tag sugar' : 'tag');
+                tag.title = isSugar ? '早期無編號糖鐵線／雜訊線（將於匯出時自動剔除）' : '';
+                tag.innerHTML = `${isPoint ? '🚉' : (isSugar ? '🗑️' : '🛤️')} ${rid}${name}${section}`;
+                listContainer.appendChild(tag);
+            });
+
+            const invBox = document.getElementById('inventoryBox');
+            invBox.style.display = 'block';
+            document.getElementById('inventoryTitle').innerHTML = `
+                <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
+                <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
+                    台車路線 ${routeCount} 筆 / 待剔除糖鐵與雜訊 ${sugarCount} 筆 / 車站 ${stationCount} 座
+                </span>
+            `;
+            if (sugarCount > 0) {
+                document.getElementById('cleanOnlyBtn').style.display = 'inline-block';
+            }
+        })
+        .catch(err => {
+            const invBox = document.getElementById('inventoryBox');
+            invBox.style.display = 'block';
+            invBox.className = 'status error';
+            invBox.innerHTML = `<b>⚠️ 無法自動讀取現有 <code>data.json</code></b>（將以全新狀態建立資料庫）。`;
+        });
+
+    function parseCSVLine(text) {
+        const result = [];
+        let cur = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (ch === '"') {
+                inQuotes = !inQuotes;
+            } else if (ch === ',' && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = err => reject(err);
+        reader.onload = function(evt) {
+            parseCSVData(evt.target.result);
+            document.getElementById('csvDrop').classList.add('loaded');
+            document.getElementById('csvText').innerHTML = `✅ CSV 已載入：<b>${file.name}</b><br><span style="font-size:12px; color:#1b5e20;">共解析出 ${Object.keys(csvRoutesMap).length} 組路線編號</span>`;
+            checkReady();
+        };
         reader.readAsText(file, 'UTF-8');
     });
-}
 
-function isSugarOrLegacyRoute(feat) {
-    const p = feat.properties || {};
-    const isPoint = feat.geometry && feat.geometry.type === 'Point';
-    if (isPoint) return false;
-    if (p.source === 'SHP Import' || p.source === 'Manual Import') return true;
-    if (!p.route_id && !p.parent_id) return true;
-    return false;
-}
+    function parseCSVData(csvText) {
+        csvRoutesMap = {};
+        const lines = csvText.replace(/^\uFEFF/, '').split(/\r?\n/);
+        let yearsHeader = [];
+        for (let y = 1895; y <= 1945; y++) yearsHeader.push(String(y));
 
-function isUnnamedNoiseRoute(feat) {
-    const p = feat.properties || {};
-    const isPoint = feat.geometry && feat.geometry.type === 'Point';
-    if (isPoint) return false;
-    const rid = String(p.route_id || '').trim();
-    const name = String(p.name || '').trim();
-    if (/^(Line\s+[\d.]+|線條\s*\d+|未命名)/i.test(rid) || /^(Line\s+[\d.]+|線條\s*\d+|未命名)/i.test(name)) {
-        return true;
-    }
-    const desc = (p.description && p.description.zh) ? p.description.zh : '';
-    if (!p.route_id && desc.includes('在此輸入中文歷史描述')) return true;
-    return false;
-}
+        const rawMatrix = {};
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const cols = parseCSVLine(line);
+            const code = cols[0];
+            const refName = cols[1];
+            const attrType = cols[2];
 
-function cleanStationProps(stFeat) {
-    const p = stFeat.properties || {};
-    delete p._preboundRouteIndices;
-    delete p._preboundRouteIds;
-    delete p._preboundGroupKeys;
-    delete p._boundRouteFeatures;
-    delete p._boundGroupKeys;
-    delete p._boundRouteIds;
-}
+            if (!code || code === '編號' || !['經營者', '路線名', '區間', '里程'].includes(attrType)) return;
 
-function parseCSV(text) {
-    const rows = [];
-    let row = [], cur = '', inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        const ch = text[i], next = text[i + 1];
-        if (inQuotes) {
-            if (ch === '"' && next === '"') { cur += '"'; i++; }
-            else if (ch === '"') inQuotes = false;
-            else cur += ch;
-        } else {
-            if (ch === '"') inQuotes = true;
-            else if (ch === ',') { row.push(cur.trim()); cur = ''; }
-            else if (ch === '\n' || (ch === '\r' && next === '\n')) {
-                if (ch === '\r') i++;
-                row.push(cur.trim());
-                if (row.some(c => c !== '')) rows.push(row);
-                row = []; cur = '';
-            } else cur += ch;
-        }
-    }
-    if (cur !== '' || row.length > 0) {
-        row.push(cur.trim());
-        if (row.some(c => c !== '')) rows.push(row);
-    }
-    return rows;
-}
-
-function getParentId(code) {
-    const m = String(code || '').trim().match(/^([A-Z]\d+)/i);
-    return m ? m[1].toUpperCase() : String(code || '').trim();
-}
-
-function buildCsvStatsRegistry(csvText) {
-    const rows = parseCSV(csvText.replace(/^\uFEFF/, ''));
-    if (rows.length < 2) return {};
-
-    const registry = {};
-    const header0 = rows[0];
-    const header1 = rows[1] || [];
-    const yearCols = [];
-
-    for (let c = 0; c < header0.length; c++) {
-        const yMatch = header0[c].match(/(19[0-4]\d)/);
-        if (yMatch) {
-            yearCols.push({ col: c, year: parseInt(yMatch[1], 10), field: header1[c] || '' });
-        }
-    }
-
-    const isLongTable = yearCols.length < 3;
-
-    if (isLongTable) {
-        const h = header0.map(s => s.trim());
-        const idxCode = h.findIndex(s => /編號|id|code|代碼/i.test(s));
-        const idxName = h.findIndex(s => /^(名稱|主線名|基準線名|short_name)$/i.test(s));
-        const idxYear = h.findIndex(s => /年|year/i.test(s));
-        const idxOp = h.findIndex(s => /業|經營|會社|operator/i.test(s));
-        const idxRn = h.findIndex(s => /路線名|線名|route_name/i.test(s));
-        const idxSec = h.findIndex(s => /區間|起迄|section/i.test(s));
-        const idxMi = h.findIndex(s => /里|哩|長|mile|km/i.test(s));
-
-        for (let r = 1; r < rows.length; r++) {
-            const cols = rows[r];
-            let rawCode = cols[idxCode !== -1 ? idxCode : 0] || '';
-            if (!rawCode) continue;
-            let code = rawCode.trim();
-            let shortName = (idxName !== -1 ? cols[idxName] : '') || '';
-            const spaceMatch = code.match(/^([A-Z]\d+(?:-\S+)?)\s+(.+)$/i);
-            if (spaceMatch) {
-                code = spaceMatch[1].toUpperCase();
-                if (!shortName) shortName = spaceMatch[2].trim();
+            if (!rawMatrix[code]) {
+                rawMatrix[code] = { code: code, refName: refName || code, rows: { '經營者': {}, '路線名': {}, '區間': {}, '里程': {} } };
             }
-            const yr = parseInt(cols[idxYear] || '', 10);
-            if (!yr || isNaN(yr)) continue;
-            const op = (idxOp !== -1 ? cols[idxOp] : '') || '';
-            const rn = (idxRn !== -1 ? cols[idxRn] : '') || '';
-            const sec = (idxSec !== -1 ? cols[idxSec] : '') || '';
-            const mi = (idxMi !== -1 ? cols[idxMi] : '') || '';
-            if (!op && !sec && !mi) continue;
-
-            if (!registry[code]) {
-                registry[code] = { code, parentId: getParentId(code), shortName, yearly: [] };
-            }
-            if (shortName && !registry[code].shortName) registry[code].shortName = shortName;
-            registry[code].yearly.push({ year: yr, op, rn, sec, mi });
-        }
-    } else {
-        let startRow = 1;
-        if (header1.some(s => /經營|業者|區間|里程|哩程|線名/.test(s))) startRow = 2;
-
-        const yearMap = {};
-        for (let c = 0; c < header0.length; c++) {
-            const ym = header0[c].match(/(19[0-4]\d)/);
-            if (ym) {
-                const yr = parseInt(ym[1], 10);
-                if (!yearMap[yr]) yearMap[yr] = { year: yr, cols: [] };
-                yearMap[yr].cols.push(c);
-            }
-        }
-        const yearSpecs = Object.values(yearMap).sort((a, b) => a.year - b.year);
-        for (let i = 0; i < yearSpecs.length; i++) {
-            const spec = yearSpecs[i];
-            const firstCol = spec.cols[0];
-            const nextFirstCol = (i + 1 < yearSpecs.length) ? yearSpecs[i + 1].cols[0] : header0.length;
-            const span = nextFirstCol - firstCol;
-            if (span >= 4) {
-                spec.opCol = firstCol;
-                spec.rnCol = firstCol + 1;
-                spec.secCol = firstCol + 2;
-                spec.miCol = firstCol + 3;
-            } else if (span === 3) {
-                spec.opCol = firstCol;
-                spec.rnCol = -1;
-                spec.secCol = firstCol + 1;
-                spec.miCol = firstCol + 2;
-            }
-        }
-
-        for (let r = startRow; r < rows.length; r++) {
-            const cols = rows[r];
-            let c0 = (cols[0] || '').trim();
-            let c1 = (cols[1] || '').trim();
-            let code = '', shortName = '';
-
-            if (/^[A-Z]\d+/i.test(c0)) {
-                const sp = c0.match(/^([A-Z]\d+(?:-[^\s]+)?)\s*(.*)$/i);
-                code = sp ? sp[1].toUpperCase() : c0;
-                shortName = (sp && sp[2]) ? sp[2].trim() : c1;
-            } else if (/^[A-Z]\d+/i.test(c1)) {
-                const sp = c1.match(/^([A-Z]\d+(?:-[^\s]+)?)\s*(.*)$/i);
-                code = sp ? sp[1].toUpperCase() : c1;
-                shortName = (sp && sp[2]) ? sp[2].trim() : (cols[2] || '').trim();
-            }
-            if (!code) continue;
-
-            if (!registry[code]) {
-                registry[code] = { code, parentId: getParentId(code), shortName, yearly: [] };
-            }
-
-            yearSpecs.forEach(spec => {
-                const op = (spec.opCol >= 0 ? cols[spec.opCol] : '') || '';
-                const rn = (spec.rnCol >= 0 ? cols[spec.rnCol] : '') || '';
-                const sec = (spec.secCol >= 0 ? cols[spec.secCol] : '') || '';
-                const mi = (spec.miCol >= 0 ? cols[spec.miCol] : '') || '';
-                const cleanOp = op.replace(/^[—\-]+$/, '').trim();
-                const cleanRn = rn.replace(/^[—\-]+$/, '').trim();
-                const cleanSec = sec.replace(/^[—\-]+$/, '').trim();
-                const cleanMi = mi.replace(/^[—\-]+$/, '').trim();
-                if (!cleanOp && !cleanSec && !cleanMi) return;
-                registry[code].yearly.push({
-                    year: spec.year,
-                    op: cleanOp,
-                    rn: cleanRn,
-                    sec: cleanSec,
-                    mi: cleanMi
-                });
-            });
-        }
-    }
-
-    Object.values(registry).forEach(item => {
-        item.yearly.sort((a, b) => a.year - b.year);
-        const history = [];
-        const opsSet = [];
-        const altNamesSet = [];
-        let lastSec = '';
-
-        item.yearly.forEach(rec => {
-            const stateKey = `${rec.op}|${rec.rn}|${rec.sec}|${rec.mi}`;
-            if (rec.op && !opsSet.includes(rec.op)) opsSet.push(rec.op);
-            if (rec.rn && !altNamesSet.includes(rec.rn)) altNamesSet.push(rec.rn);
-            if (rec.sec) lastSec = rec.sec;
-
-            const prev = history[history.length - 1];
-            if (prev && prev.stateKey === stateKey && rec.year === prev.endYear + 1) {
-                prev.endYear = rec.year;
-            } else {
-                history.push({
-                    startYear: rec.year,
-                    endYear: rec.year,
-                    op: rec.op,
-                    rn: rec.rn,
-                    sec: rec.sec,
-                    mi: rec.mi,
-                    stateKey
-                });
+            for (let i = 0; i < yearsHeader.length; i++) {
+                const yr = yearsHeader[i];
+                const val = cols[i + 3] ? cols[i + 3].trim() : '';
+                if (val) rawMatrix[code].rows[attrType][yr] = val;
             }
         });
 
-        item.history = history;
-        item.operators = opsSet.join('、');
-        item.alt_names = altNamesSet.join('、');
-        item.section = lastSec ? lastSec.replace(/-/g, '＝') : '';
-        if (history.length > 0) {
-            const minY = history[0].startYear;
-            const maxY = history[history.length - 1].endYear;
-            item.period = minY === maxY ? `${minY}` : `${minY}–${maxY}`;
-        } else {
-            item.period = '未知';
+        Object.keys(rawMatrix).forEach(code => {
+            const item = rawMatrix[code];
+            const history = [];
+            const allOperators = new Set();
+            const allRouteNames = new Set();
+            const allSections = new Set();
+
+            for (let y = 1895; y <= 1945; y++) {
+                const yr = String(y);
+                const op = item.rows['經營者'][yr] || '';
+                const rn = item.rows['路線名'][yr] || '';
+                const sec = item.rows['區間'][yr] || '';
+                const mi = item.rows['里程'][yr] || '';
+
+                if (op) allOperators.add(op);
+                if (rn) allRouteNames.add(rn);
+                if (sec) allSections.add(sec);
+
+                if (op || rn || sec || mi) {
+                    const stateKey = `${op}|${rn}|${sec}|${mi}`;
+                    if (history.length > 0 && history[history.length - 1].stateKey === stateKey && history[history.length - 1].endYear === y - 1) {
+                        history[history.length - 1].endYear = y;
+                    } else {
+                        history.push({ startYear: y, endYear: y, op, rn, sec, mi, stateKey });
+                    }
+                }
+            }
+
+            const startYr = history.length > 0 ? history[0].startYear : null;
+            const endYr = history.length > 0 ? history[history.length - 1].endYear : null;
+            const secsArr = Array.from(allSections);
+            const rnsArr = Array.from(allRouteNames);
+            const lastSec = secsArr.length > 0 ? secsArr[secsArr.length - 1].replace(/-/g, '＝').replace(/—/g, '＝') : '';
+            const lastRn = rnsArr.length > 0 ? rnsArr[rnsArr.length - 1] : '';
+
+            csvRoutesMap[code] = {
+                code: code,
+                refName: item.refName,
+                lastOfficialName: lastRn,
+                section: lastSec,
+                period: (startYr && endYr) ? `${startYr}–${endYr}` : '未知',
+                operators: Array.from(allOperators),
+                routeNames: rnsArr,
+                history: history
+            };
+        });
+    }
+
+    document.getElementById('kmlFile').addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        Promise.all(files.map(f => new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = evt => res({ name: f.name, text: evt.target.result });
+            r.onerror = rej;
+            r.readAsText(f, 'UTF-8');
+        }))).then(results => {
+            rawKmlTexts = results;
+            document.getElementById('kmlDrop').classList.add('loaded');
+            document.getElementById('kmlText').innerHTML = `✅ KML 已載入（共 ${results.length} 檔）：<br><span style="font-size:12px; color:#1b5e20;">${results.map(r => r.name).join('、')}</span>`;
+            checkReady();
+        });
+    });
+
+    function checkReady() {
+        if (rawKmlTexts.length > 0 && Object.keys(csvRoutesMap).length > 0) {
+            document.getElementById('mergeBtn').disabled = false;
         }
-        item.tableHtml = buildHtmlTableFromHistory(history);
-    });
+    }
 
-    return registry;
-}
+    function minDistCoordsListKm(list1, list2) {
+        let minD = Infinity;
+        list1.forEach(line1 => {
+            const step1 = Math.max(1, Math.floor(line1.length / 40));
+            for (let i = 0; i < line1.length; i += step1) {
+                const p1 = line1[i];
+                list2.forEach(line2 => {
+                    const step2 = Math.max(1, Math.floor(line2.length / 40));
+                    for (let j = 0; j < line2.length; j += step2) {
+                        const p2 = line2[j];
+                        const dx = (p1[0] - p2[0]) * 101.0;
+                        const dy = (p1[1] - p2[1]) * 111.0;
+                        const d = Math.hypot(dx, dy);
+                        if (d < minD) minD = d;
+                    }
+                });
+            }
+        });
+        return minD;
+    }
 
-function buildHtmlTableFromHistory(history) {
-    if (!history || history.length === 0) return '';
-    let rowsHtml = '';
-    history.forEach(h => {
-        const yrStr = h.startYear === h.endYear ? `${h.startYear}` : `${h.startYear}–${h.endYear}`;
-        rowsHtml += `<tr>
-                    <td style="padding:3px 4px;border:1px solid #ddd;white-space:nowrap;">${yrStr}</td>
-                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.op || '—'}</td>
-                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.rn || '—'}</td>
-                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.sec || '—'}</td>
-                    <td style="padding:3px 4px;border:1px solid #ddd;text-align:right;">${h.mi || '—'}</td>
-                </tr>`;
-    });
-    return `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;">
+    function buildHistoryHTML(mainCsv, subCsvList, folderName) {
+        let html = `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${mainCsv.code} ${folderName}</span>`;
+        if (mainCsv.operators.length > 0) {
+            html += ` <span style="font-size:12px;color:#555;">經營者：${mainCsv.operators.join('、')}</span>`;
+        }
+        html += `</div>`;
+
+        const renderTable = (title, histArr) => {
+            if (!histArr || histArr.length === 0) return '';
+            let t = title ? `<div style="font-weight:bold;font-size:12px;color:#3949ab;margin-top:8px;">▸ ${title}</div>` : '';
+            t += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;">
                 <thead><tr style="background:#e8eaf6;color:#1a237e;text-align:left;">
                     <th style="padding:4px;border:1px solid #ccc;">年份</th>
                     <th style="padding:4px;border:1px solid #ccc;">經營者</th>
                     <th style="padding:4px;border:1px solid #ccc;">路線名</th>
                     <th style="padding:4px;border:1px solid #ccc;">區間</th>
                     <th style="padding:4px;border:1px solid #ccc;">里程</th>
-                </tr></thead><tbody>${rowsHtml}</tbody></table>`;
-}
+                </tr></thead><tbody>`;
+            histArr.forEach(h => {
+                const yrStr = h.startYear === h.endYear ? `${h.startYear}` : `${h.startYear}–${h.endYear}`;
+                t += `<tr>
+                    <td style="padding:3px 4px;border:1px solid #ddd;white-space:nowrap;">${yrStr}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.op || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.rn || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;">${h.sec || '—'}</td>
+                    <td style="padding:3px 4px;border:1px solid #ddd;text-align:right;">${h.mi || '—'}</td>
+                </tr>`;
+            });
+            t += `</tbody></table>`;
+            return t;
+        };
 
-function parseKmlToFeatures(kmlText) {
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(kmlText, 'text/xml');
-    const placemarks = Array.from(xml.getElementsByTagName('Placemark'));
-    const routes = [];
-    const stations = [];
-
-    const parseCoords = (coordStr) => {
-        return coordStr.trim().split(/\s+/).map(pair => {
-            const parts = pair.split(',');
-            return [parseFloat(parts[0]), parseFloat(parts[1])];
-        }).filter(c => !isNaN(c[0]) && !isNaN(c[1]));
-    };
-
-    placemarks.forEach(pm => {
-        const rawName = (pm.getElementsByTagName('name')[0]?.textContent || '').trim();
-        const rawDesc = (pm.getElementsByTagName('description')[0]?.textContent || '').trim();
-
-        let folderName = '';
-        let parentNode = pm.parentNode;
-        while (parentNode && parentNode.nodeName !== 'Document' && parentNode.nodeName !== 'kml') {
-            if (parentNode.nodeName === 'Folder') {
-                const fn = parentNode.getElementsByTagName('name')[0]?.textContent || '';
-                if (fn) { folderName = fn.trim(); break; }
-            }
-            parentNode = parentNode.parentNode;
+        if (mainCsv.history.length > 0) {
+            html += renderTable('', mainCsv.history);
+        } else {
+            html += `<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`;
         }
 
-        const pointEl = pm.getElementsByTagName('Point')[0];
-        const lineEls = Array.from(pm.getElementsByTagName('LineString'));
+        subCsvList.forEach(sub => {
+            if (sub.history.length > 0) {
+                html += renderTable(`附屬統計：${sub.code} ${sub.refName}`, sub.history);
+            }
+        });
 
-        if (pointEl) {
-            const coordEl = pointEl.getElementsByTagName('coordinates')[0];
-            if (!coordEl) return;
-            const coords = parseCoords(coordEl.textContent);
-            if (!coords.length) return;
-            const stName = rawName || '未命名車站';
-            const cleanDesc = rawDesc && !rawDesc.includes('<table') ? `【車站】${rawDesc}` : `【車站】${stName}`;
-            stations.push({
-                type: 'Feature',
-                properties: {
-                    name: stName,
-                    section: '',
-                    tailo: '',
-                    description: { zh: cleanDesc },
-                    source: 'KML Import',
-                    last_updated: new Date().toISOString().slice(0, 10),
-                    status: '車站',
-                    period: '未知',
-                    comment: '',
-                    line_type: '車站'
-                },
-                geometry: {
-                    type: 'Point',
-                    coordinates: coords[0]
+        return html;
+    }
+
+    // 單獨清理現有 data.json 中的糖鐵線與雜訊線
+    function runCleanOnly() {
+        if (!existingData) return;
+        const oldFeatures = (existingData.data && existingData.data.features)
+            ? existingData.data.features
+            : (existingData.features || []);
+
+        const cleanedFeatures = [];
+        let removedCount = 0;
+        const seenStationKeys = new Set();
+
+        oldFeatures.forEach(f => {
+            const p = f.properties || {};
+            const isPoint = f.geometry && f.geometry.type === "Point";
+            if (isPoint) {
+                const skey = `${p.name}_${f.geometry.coordinates.join(',')}`;
+                if (!seenStationKeys.has(skey)) {
+                    seenStationKeys.add(skey);
+                    cleanedFeatures.push(cleanStationFeature(f));
                 }
-            });
-        } else if (lineEls.length > 0) {
-            const allLines = lineEls.map(le => {
-                const ce = le.getElementsByTagName('coordinates')[0];
-                return ce ? parseCoords(ce.textContent) : [];
-            }).filter(arr => arr.length >= 2);
-            if (!allLines.length) return;
-
-            let lineType = '主線';
-            if (folderName.includes('舊線') || rawName.includes('舊線')) lineType = '舊線';
-            else if (folderName.includes('副線') || rawName.includes('副線')) lineType = '副線';
-            else if (folderName.includes('支線') || folderName.includes('自用') || rawName.includes('支線')) lineType = '支線(自用)';
-
-            let routeId = rawName;
-            let routeName = '';
-            const matchCode = rawName.match(/^([A-Z]\d+(?:-[^\s]+)?)\s*(.*)$/i);
-            if (matchCode) {
-                routeId = matchCode[1].charAt(0).toUpperCase() + matchCode[1].slice(1);
-                routeName = (matchCode[2] || '').trim();
+            } else if (isLegacySugarOrNoiseRoute(f)) {
+                removedCount++;
+            } else {
+                cleanedFeatures.push(f);
             }
-            const parentId = getParentId(routeId);
+        });
 
-            routes.push({
-                type: 'Feature',
-                properties: {
-                    route_id: routeId,
-                    parent_id: parentId,
-                    line_type: lineType,
-                    name: routeName,
-                    section: '',
-                    tailo: '',
-                    operators: '',
-                    alt_names: '',
-                    period: '未知',
-                    status: '廢止',
-                    description: { zh: '' },
-                    history: [],
-                    source: 'KML + CSV 107版',
-                    last_updated: new Date().toISOString().slice(0, 10)
-                },
-                geometry: allLines.length === 1
-                    ? { type: 'LineString', coordinates: allLines[0] }
-                    : { type: 'MultiLineString', coordinates: allLines }
-            });
-        }
-    });
+        finalGeoJson = { data: { type: "FeatureCollection", features: cleanedFeatures } };
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = `
+            <div style="font-size:16px; font-weight:bold;">
+                🧹 清理完成！已移除 ${removedCount} 條早期無編號糖鐵線與未命名雜訊線，保留 ${cleanedFeatures.length} 筆純台車圖資。
+            </div>
+            <div style="margin-top:6px;">請點擊上方藍色「📥 下載合併後的 data.json」按鈕並覆蓋至 GitHub。</div>
+        `;
+        document.getElementById('downloadBtn').style.display = 'inline-block';
+    }
 
-    return { routes, stations };
-}
-
-async function runProcess(cleanOnly = false) {
-    try {
-        const localBaseFile = document.getElementById('baseJsonInput').files[0];
-        const kmlFiles = Array.from(document.getElementById('kmlInput').files);
-        const csvFile = document.getElementById('csvInput').files[0];
-
+    function runMerge() {
+        const nameMode = document.querySelector('input[name="nameMode"]:checked').value;
         const removeSugar = document.getElementById('chkRemoveSugar').checked;
-        const removeUnnamed = document.getElementById('chkRemoveUnnamed').checked;
-        const keepExisting = document.getElementById('chkKeepExisting').checked;
+        const parser = new DOMParser();
 
-        let rawBaseJson = null;
-        let baseLabel = '';
+        const kmlCodesSet = new Set();
+        const groupedLines = {};
+        const mainLinesCoordsMap = {}; // parentCode -> coordsList
+        const unnamedBranches = [];
+        const stationFeatures = [];
 
-        if (localBaseFile) {
-            const baseText = await readFileAsText(localBaseFile);
-            rawBaseJson = JSON.parse(baseText);
-            baseLabel = `本機檔案 (${localBaseFile.name})`;
-        } else if (onlineBaseJsonData) {
-            rawBaseJson = JSON.parse(JSON.stringify(onlineBaseJsonData));
-            baseLabel = onlineBaseSourceLabel;
-        }
+        rawKmlTexts.forEach(kmlObj => {
+            const xmlDoc = parser.parseFromString(kmlObj.text, "text/xml");
+            const placemarks = xmlDoc.getElementsByTagName("Placemark");
 
-        if (cleanOnly && !rawBaseJson) {
-            alert('尚未載入線上或本機的 data.json！請點擊「重新抓取線上版」或手動選擇檔案。');
-            return;
-        }
-        if (!cleanOnly && !rawBaseJson && kmlFiles.length === 0) {
-            alert('請確認已載入線上 data.json，或選擇要匯入的 KML 檔！');
-            return;
-        }
+            for (let i = 0; i < placemarks.length; i++) {
+                const p = placemarks[i];
+                const nameNode = p.getElementsByTagName("name")[0];
+                let rawCode = (nameNode && nameNode.textContent) ? nameNode.textContent.trim() : "";
 
-        const report = [];
-        const today = new Date().toISOString().slice(0, 10);
-
-        let baseRoutes = [];
-        let baseStations = [];
-        const existingTailoMap = {};
-
-        if (rawBaseJson) {
-            const rawFeatures = (rawBaseJson.data || rawBaseJson).features || [];
-            let removedSugarCount = 0;
-            let removedNoiseCount = 0;
-
-            rawFeatures.forEach(f => {
-                const p = f.properties || {};
-                const isPoint = f.geometry && f.geometry.type === 'Point';
-
-                if (isPoint) {
-                    cleanStationProps(f);
-                    baseStations.push(f);
-                    return;
+                let parent = p.parentNode;
+                let folderName = "未分類";
+                while (parent && parent.nodeName !== "#document") {
+                    if (parent.nodeName === "Folder") {
+                        const fnNode = parent.getElementsByTagName("name")[0];
+                        if (fnNode) folderName = fnNode.textContent.trim();
+                        break;
+                    }
+                    parent = parent.parentNode;
                 }
-                if (removeSugar && isSugarOrLegacyRoute(f)) {
+
+                const pointNode = p.getElementsByTagName("Point")[0];
+                const lineNode = p.getElementsByTagName("LineString")[0];
+
+                if (pointNode) {
+                    const coords = pointNode.getElementsByTagName("coordinates")[0].textContent.trim().split(',');
+                    if (coords.length >= 2) {
+                        const stName = rawCode || "未命名車站";
+                        stationFeatures.push({
+                            type: "Feature",
+                            properties: {
+                                name: stName,
+                                line_type: "車站",
+                                status: "車站",
+                                description: { zh: `【車站】${stName}` },
+                                source: "KML Import",
+                                last_updated: new Date().toISOString().split('T')[0]
+                            },
+                            geometry: { type: "Point", coordinates: [parseFloat(coords[0]), parseFloat(coords[1])] }
+                        });
+                    }
+                } else if (lineNode) {
+                    const coordArray = lineNode.getElementsByTagName("coordinates")[0].textContent.trim().split(/\s+/);
+                    const lineCoords = [];
+                    for (let c of coordArray) {
+                        if (!c) continue;
+                        const pts = c.split(',');
+                        if (pts.length >= 2) lineCoords.push([parseFloat(pts[0]), parseFloat(pts[1])]);
+                    }
+
+                    if (lineCoords.length > 1) {
+                        // 若未命名，或為 Google Maps 預設產生的 "Line xx km" / "線條 1"，一律歸入未命名支線自動尋找最近主線
+                        if (!rawCode || /^(Line\s+[\d.]+|線條\s*\d+|未命名)/i.test(rawCode)) {
+                            unnamedBranches.push({ folderName, lineCoords });
+                        } else {
+                            // 若 KML 名稱寫了「C1 竹南」，自動提取前方的編號「C1」以對齊 CSV
+                            const codeMatch = rawCode.match(/^([A-Z]\d+(?:-[^\s]+)?)/i);
+                            if (codeMatch) {
+                                rawCode = codeMatch[1].charAt(0).toUpperCase() + codeMatch[1].slice(1);
+                            }
+                            kmlCodesSet.add(rawCode);
+                            const groupKey = `${rawCode}__${folderName}`;
+                            if (!groupedLines[groupKey]) {
+                                groupedLines[groupKey] = { code: rawCode, folderName: folderName, coordsList: [] };
+                            }
+                            groupedLines[groupKey].coordsList.push(lineCoords);
+                            if (folderName === "主線") {
+                                mainLinesCoordsMap[rawCode.split('-')[0]] = groupedLines[groupKey].coordsList;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 將未命名支線自動歸戶至距離最近的主線
+        unnamedBranches.forEach(ub => {
+            let bestParent = "未命名";
+            let bestDist = Infinity;
+            Object.keys(mainLinesCoordsMap).forEach(mCode => {
+                const d = minDistCoordsListKm([ub.lineCoords], mainLinesCoordsMap[mCode]);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestParent = mCode;
+                }
+            });
+            if (bestParent === "未命名") return;
+            const autoCode = `${bestParent}-支線`;
+            kmlCodesSet.add(autoCode);
+            const groupKey = `${autoCode}__${ub.folderName}`;
+            if (!groupedLines[groupKey]) {
+                groupedLines[groupKey] = { code: autoCode, folderName: ub.folderName, coordsList: [] };
+            }
+            groupedLines[groupKey].coordsList.push(ub.lineCoords);
+        });
+
+        const kmlParentSet = new Set();
+        kmlCodesSet.forEach(c => kmlParentSet.add(c.split('-')[0]));
+
+        const orphanSubMap = {};
+        Object.keys(csvRoutesMap).forEach(csvCode => {
+            if (!kmlCodesSet.has(csvCode) && csvCode.includes('-')) {
+                const parentCode = csvCode.split('-')[0];
+                if (kmlParentSet.has(parentCode)) {
+                    if (!orphanSubMap[parentCode]) orphanSubMap[parentCode] = [];
+                    orphanSubMap[parentCode].push(csvRoutesMap[csvCode]);
+                }
+            }
+        });
+
+        const mergedRouteFeatures = [];
+        const matchedReport = [];
+        const mismatchWarnings = [];
+
+        Object.values(groupedLines).forEach(grp => {
+            const code = grp.code;
+            const parentCode = code.split('-')[0];
+            const csvInfo = csvRoutesMap[code] || csvRoutesMap[parentCode] || {
+                code: code, refName: code, lastOfficialName: '', section: '', period: '未知', operators: [], routeNames: [], history: []
+            };
+
+            if (grp.folderName !== '主線' && mainLinesCoordsMap[parentCode]) {
+                const distToAssigned = minDistCoordsListKm(grp.coordsList, mainLinesCoordsMap[parentCode]);
+                if (distToAssigned > 1.5) {
+                    let closestCode = parentCode;
+                    let closestDist = distToAssigned;
+                    Object.keys(mainLinesCoordsMap).forEach(mCode => {
+                        const d = minDistCoordsListKm(grp.coordsList, mainLinesCoordsMap[mCode]);
+                        if (d < closestDist) {
+                            closestDist = d;
+                            closestCode = mCode;
+                        }
+                    });
+                    if (closestCode !== parentCode) {
+                        const closestName = csvRoutesMap[closestCode] ? csvRoutesMap[closestCode].refName : closestCode;
+                        mismatchWarnings.push(`⚠️ <b>疑似錯標警告</b>：KML 中的 <b>${code} [${grp.folderName}]</b> 距離 ${parentCode} 主線達 <b>${distToAssigned.toFixed(1)} km</b>，但距離 <b>${closestCode} (${closestName}) 主線</b>僅 <b>${closestDist.toFixed(2)} km</b>！請檢查 KML 是否標錯編號。`);
+                    }
+                }
+            }
+
+            const baseCsv = csvRoutesMap[parentCode] || csvInfo;
+            let displayName = baseCsv.refName;
+            if (nameMode === 'ref_line') {
+                displayName = baseCsv.refName.endsWith('線') ? baseCsv.refName : (baseCsv.refName + '線');
+            } else if (nameMode === 'code_ref') {
+                displayName = `${parentCode} ${baseCsv.refName}`;
+            } else if (nameMode === 'last_official') {
+                displayName = baseCsv.lastOfficialName || (baseCsv.refName + '線');
+            }
+
+            let displaySection = csvInfo.section || baseCsv.section || '';
+            if (grp.folderName !== '主線') {
+                displaySection = displaySection ? `${displaySection} (${grp.folderName})` : grp.folderName;
+            }
+
+            const orphanSubs = (grp.folderName === '主線' && orphanSubMap[code]) ? orphanSubMap[code] : [];
+            const htmlTable = buildHistoryHTML(csvInfo, orphanSubs, grp.folderName);
+
+            const geom = grp.coordsList.length === 1
+                ? { type: "LineString", coordinates: grp.coordsList[0] }
+                : { type: "MultiLineString", coordinates: grp.coordsList };
+
+            const oldProp = oldPropsMap[code] || {};
+
+            mergedRouteFeatures.push({
+                type: "Feature",
+                properties: {
+                    route_id: code,
+                    parent_id: parentCode,
+                    line_type: grp.folderName,
+                    name: displayName,
+                    section: displaySection,
+                    tailo: oldProp.tailo || "",
+                    operators: csvInfo.operators.join('、'),
+                    alt_names: csvInfo.routeNames.join('、'),
+                    period: csvInfo.period,
+                    status: "廢止",
+                    description: { zh: htmlTable },
+                    history: csvInfo.history,
+                    source: "KML + CSV 107版",
+                    last_updated: new Date().toISOString().split('T')[0]
+                },
+                geometry: geom
+            });
+
+            matchedReport.push(`${code} [${grp.folderName}] ➔ <b>${displayName}</b> <span style="color:#666;">(${displaySection || '無區間'})</span>`);
+        });
+
+        const preservedFeatures = [];
+        const preservedNames = [];
+        let removedSugarCount = 0;
+        const oldFeatures = (existingData && existingData.data && existingData.data.features) 
+            ? existingData.data.features 
+            : ((existingData && existingData.features) ? existingData.features : []);
+
+        const seenStationKeys = new Set();
+        stationFeatures.forEach(sf => {
+            seenStationKeys.add(`${sf.properties.name}_${sf.geometry.coordinates.join(',')}`);
+        });
+
+        oldFeatures.forEach(f => {
+            const p = f.properties || {};
+            const isPoint = f.geometry && f.geometry.type === "Point";
+            if (isPoint) {
+                const skey = `${p.name}_${f.geometry.coordinates.join(',')}`;
+                if (!seenStationKeys.has(skey)) {
+                    seenStationKeys.add(skey);
+                    preservedFeatures.push(cleanStationFeature(f));
+                }
+            } else {
+                if (p.source === "KML Import" && !p.route_id) return;
+                if (removeSugar && isLegacySugarOrNoiseRoute(f)) {
                     removedSugarCount++;
                     return;
                 }
-                if (removeUnnamed && isUnnamedNoiseRoute(f)) {
-                    removedNoiseCount++;
-                    return;
+                if (!kmlCodesSet.has(p.route_id) && !kmlParentSet.has(p.parent_id)) {
+                    preservedFeatures.push(f);
+                    preservedNames.push(p.route_id ? `${p.route_id} ${p.name}` : p.name);
                 }
-                const gk = p.parent_id || p.route_id || p.name;
-                if (p.tailo && gk) existingTailoMap[gk] = p.tailo;
-                baseRoutes.push(f);
-            });
-
-            report.push(`✅ 已讀取基底 [${baseLabel}]：原始共 ${rawFeatures.length} 筆圖徵`);
-            if (removeSugar) report.push(`   🧹 已移除早期無編號糖鐵線：${removedSugarCount} 條`);
-            if (removeUnnamed) report.push(`   🧹 已移除 Google Maps 未命名雜訊線：${removedNoiseCount} 條`);
-            report.push(`   📦 基底保留台車路線：${baseRoutes.length} 條｜車站：${baseStations.length} 座`);
-        }
-
-        if (cleanOnly) {
-            const seenSt = new Set();
-            const dedupStations = baseStations.filter(st => {
-                const key = `${st.properties.name}_${st.geometry.coordinates.join(',')}`;
-                if (seenSt.has(key)) return false;
-                seenSt.add(key);
-                return true;
-            });
-
-            finalOutputData = {
-                data: {
-                    type: 'FeatureCollection',
-                    features: [...baseRoutes, ...dedupStations]
-                }
-            };
-            report.push(`\n🎉 清理完成！共輸出 ${baseRoutes.length} 條台車路線、${dedupStations.length} 座車站。`);
-            report.push(`👉 請點擊上方綠色「💾 下載最新 data.json」按鈕儲存檔案並上傳至 GitHub。`);
-            logReport(report);
-            document.getElementById('downloadBtn').style.display = 'inline-block';
-            return;
-        }
-
-        let csvRegistry = {};
-        if (csvFile) {
-            const csvText = await readFileAsText(csvFile);
-            csvRegistry = buildCsvStatsRegistry(csvText);
-            report.push(`📊 已解析 CSV 統計表：共載入 ${Object.keys(csvRegistry).length} 組路線編號統計`);
-        }
-
-        let newKmlRoutes = [];
-        let newKmlStations = [];
-        for (const kf of kmlFiles) {
-            const kmlText = await readFileAsText(kf);
-            const parsed = parseKmlToFeatures(kmlText);
-            newKmlRoutes.push(...parsed.routes);
-            newKmlStations.push(...parsed.stations);
-            report.push(`🗺️ 已解析 KML [${kf.name}]：路線段 ${parsed.routes.length} 筆｜車站 ${parsed.stations.length} 座`);
-        }
-
-        if (removeUnnamed) {
-            const beforeLen = newKmlRoutes.length;
-            newKmlRoutes = newKmlRoutes.filter(r => !isUnnamedNoiseRoute(r));
-            if (newKmlRoutes.length < beforeLen) {
-                report.push(`   🧹 已從新 KML 自動過濾未命名雜訊線：${beforeLen - newKmlRoutes.length} 條`);
-            }
-        }
-
-        const newGroupKeys = new Set(newKmlRoutes.map(r => r.properties.parent_id || r.properties.route_id));
-        let mergedRoutes = [];
-        if (keepExisting && baseRoutes.length > 0) {
-            const keptBase = baseRoutes.filter(r => {
-                const gk = r.properties.parent_id || r.properties.route_id;
-                return !newGroupKeys.has(gk);
-            });
-            mergedRoutes = [...keptBase, ...newKmlRoutes];
-            report.push(`🔄 增量合併：保留基底其他分區路線 ${keptBase.length} 條 ＋ 本次 KML 路線 ${newKmlRoutes.length} 條`);
-        } else {
-            mergedRoutes = [...newKmlRoutes];
-        }
-
-        const familyNameMap = {};
-        mergedRoutes.forEach(r => {
-            const p = r.properties;
-            if (p.name && p.route_id === p.parent_id) {
-                let n = p.name.trim();
-                if (!n.endsWith('線')) n += '線';
-                familyNameMap[p.parent_id] = n;
-            }
-        });
-        Object.values(csvRegistry).forEach(item => {
-            if (item.code === item.parentId && item.shortName && !familyNameMap[item.parentId]) {
-                let n = item.shortName.trim();
-                if (!n.endsWith('線')) n += '線';
-                familyNameMap[item.parentId] = n;
             }
         });
 
-        const kmlRouteIdsByParent = {};
-        mergedRoutes.forEach(r => {
-            const pid = r.properties.parent_id;
-            if (!kmlRouteIdsByParent[pid]) kmlRouteIdsByParent[pid] = new Set();
-            kmlRouteIdsByParent[pid].add(r.properties.route_id);
-        });
+        const allFeatures = preservedFeatures.concat(mergedRouteFeatures, stationFeatures);
+        finalGeoJson = { data: { type: "FeatureCollection", features: allFeatures } };
 
-        mergedRoutes.forEach(r => {
-            const p = r.properties;
-            const rid = p.route_id;
-            const pid = p.parent_id;
-            const ltype = p.line_type || '主線';
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'status success';
 
-            if (!p.tailo && existingTailoMap[pid]) {
-                p.tailo = existingTailoMap[pid];
-            }
-            if (familyNameMap[pid]) {
-                p.name = familyNameMap[pid];
-            } else if (p.name && !p.name.endsWith('線')) {
-                p.name = p.name + '線';
-            }
+        let warnHtml = mismatchWarnings.length > 0
+            ? `<div class="alert-mismatch">${mismatchWarnings.join('<br>')}</div>`
+            : `<div style="color:#2e7d32;font-weight:bold;margin-bottom:8px;">✅ 空間防呆檢查通過：所有舊線與副線皆位於其主線鄰近範圍內！</div>`;
 
-            const ownStat = csvRegistry[rid];
-            const mainStat = csvRegistry[pid];
-            const chosenStat = ownStat || (rid === pid ? mainStat : (ltype === '舊線' ? mainStat : null));
+        statusDiv.innerHTML = `
+            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">
+                🎉 縫合完成！目前資料庫總計 ${allFeatures.length} 筆圖資（本次新增/更新路線 ${mergedRouteFeatures.length} 筆、車站 ${stationFeatures.length} 座｜已自動剔除舊糖鐵與雜訊 ${removedSugarCount} 筆）
+            </div>
+            ${warnHtml}
+            <b>📌 本次縫合之台車路線清冊：</b><br>
+            <div style="max-height:200px; overflow-y:auto; background:white; padding:10px; border-radius:6px; border:1px solid #c8e6c9; margin-top:6px; font-size:13px;">
+                ${matchedReport.join('<br>')}
+            </div>
+            <div style="margin-top:10px; font-size:13px; color:#2e7d32;">
+                🛡️ <b>安全保留其他分區之台車路線（共 ${preservedNames.length} 筆）：</b> ${preservedNames.join('、') || '無'}
+            </div>
+        `;
 
-            if (chosenStat && chosenStat.history && chosenStat.history.length > 0) {
-                p.operators = chosenStat.operators;
-                p.alt_names = chosenStat.alt_names;
-                p.period = chosenStat.period;
-                p.history = chosenStat.history;
-                const baseSec = chosenStat.section || p.section || '';
-                p.section = (ltype !== '主線' && baseSec && !baseSec.includes(`(${ltype})`))
-                    ? `${baseSec} (${ltype})`
-                    : baseSec;
-
-                let descHtml = `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${rid} ${ltype}</span>${p.operators ? ` <span style="font-size:12px;color:#555;">經營者：${p.operators}</span>` : ''}</div>`;
-                descHtml += chosenStat.tableHtml;
-
-                if (rid === pid && ltype === '主線') {
-                    const subStats = Object.values(csvRegistry).filter(item =>
-                        item.parentId === pid &&
-                        item.code !== pid &&
-                        !(kmlRouteIdsByParent[pid] && kmlRouteIdsByParent[pid].has(item.code)) &&
-                        item.tableHtml
-                    ).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-
-                    subStats.forEach(sub => {
-                        descHtml += `<div style="font-weight:bold;font-size:12px;color:#3949ab;margin-top:8px;">▸ 附屬統計：${sub.code} ${sub.shortName || ''}</div>` + sub.tableHtml;
-                    });
-                }
-
-                p.description = { zh: descHtml };
-                p.last_updated = today;
-            } else if (!p.description || !p.description.zh || !p.description.zh.includes('<table')) {
-                const parentSec = (mainStat && mainStat.section) ? mainStat.section : '';
-                p.section = parentSec ? `${parentSec} (${ltype})` : ltype;
-                p.description = {
-                    zh: `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${rid} ${ltype}</span></div><div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`
-                };
-                p.last_updated = today;
-            }
-        });
-
-        const rawStations = keepExisting ? [...baseStations, ...newKmlStations] : [...newKmlStations];
-        const seenStationKeys = new Set();
-        const finalStations = [];
-        rawStations.forEach(st => {
-            cleanStationProps(st);
-            const coordKey = `${st.properties.name}_${st.geometry.coordinates.map(n => Number(n).toFixed(5)).join(',')}`;
-            if (seenStationKeys.has(coordKey)) return;
-            seenStationKeys.add(coordKey);
-            finalStations.push(st);
-        });
-
-        finalOutputData = {
-            data: {
-                type: 'FeatureCollection',
-                features: [...mergedRoutes, ...finalStations]
-            }
-        };
-
-        report.push(`\n🎉 合併轉換完成！`);
-        report.push(`   🛤️ 最終台車路線段總數：${mergedRoutes.length} 條`);
-        report.push(`   🚉 最終不重複車站總數：${finalStations.length} 座`);
-        report.push(`👉 請點擊上方綠色「💾 下載最新 data.json」按鈕儲存並覆蓋至 GitHub。`);
-        logReport(report);
         document.getElementById('downloadBtn').style.display = 'inline-block';
-
-    } catch (err) {
-        console.error(err);
-        alert('處理發生錯誤：' + err.message);
     }
-}
 
-function downloadResult() {
-    if (!finalOutputData) return;
-    const jsonStr = JSON.stringify(finalOutputData, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'data.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+    function downloadJSON() {
+        if (!finalGeoJson) return;
+        const dataStr = JSON.stringify(finalGeoJson, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "data.json";
+        a.click();
+    }
 </script>
 </body>
 </html>
