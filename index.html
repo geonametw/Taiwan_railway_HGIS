@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.7</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.8</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -220,14 +220,13 @@
         .operator-route-btn:hover, .operator-route-btn:focus-visible { background: #eef2ff; border-color: #7b1fa2; }
         .operator-route-btn small { font-size: 11px; color: #627092; }
 
-        /* 📷 歷史照片／動圖展板 */
+        /* 📷 歷史照片／動圖展板（路線資訊欄不顯示圖說，點擊後於燈箱顯示） */
         #drawer-photo-box {
             display: none; margin-bottom: 14px; border-radius: 8px; overflow: hidden;
             border: 1px solid #d1d9ff; background: #111; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.12);
         }
         #drawer-photo-img { width: 100%; max-height: 240px; object-fit: cover; display: block; cursor: zoom-in; }
-        .photo-caption-bar { background: #f8f9fa; padding: 7px 10px; font-size: 12px; color: #444; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
+        .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.68); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
 
         .info-block {
             margin-bottom: 14px; background: #f8f9fc; border: 1px solid #e2e7f5;
@@ -250,8 +249,9 @@
         .clickable-route-badge { cursor: pointer; user-select: none; box-shadow: 0 1px 3px rgba(26,35,126,0.25); }
         .clickable-route-badge:hover { background: #3949ab; }
 
+        /* 電腦與手機統一表格樣式 */
         .active-year-row { background-color: #fff59d !important; font-weight: bold; color: #b71c1c; }
-        #drawer-table-container { overflow-wrap: anywhere; }
+        #drawer-table-container { overflow-x: auto; overflow-wrap: anywhere; }
         #drawer-table-container table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
         #drawer-table-container th { position: sticky; top: -14px; background: #e8eaf6; color: #1a237e; z-index: 2; box-shadow: 0 1px 0 #ccc; padding: 6px 5px; }
         #drawer-table-container td { padding: 5px 5px; overflow-wrap: anywhere; }
@@ -261,14 +261,21 @@
         }
         .table-op-link:hover { color: #fff; background: #7b1fa2; text-decoration: none; border-radius: 3px; padding: 0 3px; }
 
+        /* 🔍 全螢幕照片燈箱（含可點擊出處連結） */
         #photo-lightbox {
             position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000;
             display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
         }
         #photo-lightbox.open { display: flex; }
-        #lightbox-img { max-width: 92vw; max-height: 80dvh; object-fit: contain; border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
-        #lightbox-caption { color: #eee; margin-top: 12px; font-size: 14px; text-align: center; max-width: 700px; }
+        #lightbox-img { max-width: 92vw; max-height: 78dvh; object-fit: contain; border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+        #lightbox-caption { color: #eee; margin-top: 14px; font-size: 14px; text-align: center; max-width: 720px; line-height: 1.6; }
+        .lightbox-source-row { margin-top: 4px; font-size: 13px; color: #ccc; }
+        .lightbox-source-link {
+            color: #90caf9; text-decoration: underline; text-underline-offset: 3px; font-weight: bold; transition: color 0.15s;
+        }
+        .lightbox-source-link:hover { color: #fff59d; }
         #lightbox-close { position: absolute; top: 20px; right: 25px; background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+
         #toast-msg {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(33,33,33,0.92); color: white; padding: 8px 18px; border-radius: 20px; font-size: 13px; z-index: 2500; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -287,7 +294,6 @@
             body.drawer-open #system-title, body.drawer-open #year-filter-bar { right: calc(var(--drawer-width) + 15px); }
             body.drawer-open .leaflet-right { right: var(--drawer-width); }
             body.drawer-open #active-state-bar { max-width: min(480px, calc(100vw - var(--drawer-width) - 30px)); }
-            #drawer-table-container { overflow-x: auto; }
         }
 
         @media (max-width: 960px) {
@@ -345,21 +351,6 @@
             body.drawer-open #active-state-bar { bottom: auto; top: 112px; right: auto; left: 14px; max-width: min(240px, 55vw); }
             body.year-filter-open.drawer-open #active-state-bar { top: 226px; }
             body.drawer-open #active-state-bar .state-reset, body.operator-active #active-state-bar { display: none; }
-
-            #drawer-table-container table { font-size: 13px; border: 0; margin-top: 2px; }
-            #drawer-table-container table thead, #drawer-table-container table tr.table-header-row { display: none !important; }
-            #drawer-table-container table tbody, #drawer-table-container table tr { display: block !important; }
-            #drawer-table-container table tr {
-                background: #fff; border: 1px solid #d8dfeb; border-radius: 9px;
-                margin-bottom: 9px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-            }
-            #drawer-table-container table tr.active-year-row { background: #fff8c6 !important; }
-            #drawer-table-container table td {
-                display: grid !important; grid-template-columns: minmax(72px, 29%) minmax(0, 1fr);
-                gap: 8px; padding: 7px 9px; text-align: left !important; border-bottom: 1px solid #edf0f6; font-size: 12px;
-            }
-            #drawer-table-container table td:last-child { border-bottom: 0; }
-            #drawer-table-container table td::before { content: attr(data-label); color: #68758e; font-weight: 700; }
         }
         @media (max-width: 360px) {
             #system-title { max-width: calc(100vw - 80px); font-size: 12px !important; padding: 10px; }
@@ -457,12 +448,8 @@
         <div class="drawer-body" id="drawerBody">
             <div id="drawer-summary" aria-live="polite"></div>
             <div id="drawer-photo-box">
-                <span class="photo-zoom-hint">🔍 點擊放大檢視</span>
+                <span class="photo-zoom-hint">🔍 點擊放大與查看圖說</span>
                 <img id="drawer-photo-img" src="" alt="路線歷史照片" onclick="openLightbox()">
-                <div class="photo-caption-bar">
-                    <span id="drawer-photo-caption">歷史影像</span>
-                    <span id="drawer-photo-source" style="color:#888;font-size:11px;"></span>
-                </div>
             </div>
 
             <div class="info-block" id="drawer-ops-block" style="display:none;">
@@ -504,13 +491,19 @@
         const dropdown = document.getElementById('searchDropdown');
         const clearBtn = document.getElementById('clearBtn');
 
-        /* 預設路線影像圖說與典藏出處註冊表 */
-        const ROUTE_PHOTO_META = {
-            'B4': {
-                caption: '1930年角板山輕便軌道台車影像',
-                source: '出處：USC MIRC (Fox Movietone News, MVTN 5-701)'
-            }
-        };
+        /* 動態讀取 photos/meta.json（完全移除寫死圖說） */
+        let ROUTE_PHOTO_META = {};
+        let currentPhotoMeta = { caption: '', source: '', link: '' };
+
+        fetch('photos/meta.json?t=' + Date.now())
+            .then(r => r.ok ? r.json() : {})
+            .then(meta => {
+                ROUTE_PHOTO_META = meta || {};
+                if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
+                    loadRoutePhoto(currentDrawerFeature);
+                }
+            })
+            .catch(() => {});
 
         [sysTitle, yfBar, infoDrawer, mapLegend, opBanner].forEach(el => {
             L.DomEvent.disableClickPropagation(el);
@@ -949,32 +942,52 @@
             });
         }
 
-        /* 支援 .gif / .jpg / .png / .webp 自動偵測（同時支援 photos/ 資料夾與根目錄） */
+        /* 讀取 photos/meta.json 或自動探測圖片，圖說與連結暫存於 currentPhotoMeta 供點擊燈箱顯示 */
         function loadRoutePhoto(feature) {
             const p = feature.properties || {};
             const photoBox = document.getElementById('drawer-photo-box');
             const photoImg = document.getElementById('drawer-photo-img');
-            const photoCap = document.getElementById('drawer-photo-caption');
-            const photoSrc = document.getElementById('drawer-photo-source');
             photoBox.style.display = 'none';
             photoImg.removeAttribute('src');
+            currentPhotoMeta = { caption: '', source: '', link: '' };
 
             const codeKey = p.route_id || p.parent_id || selectedGroupKey || '';
             const parentKey = p.parent_id || selectedGroupKey || '';
-            const presetMeta = ROUTE_PHOTO_META[codeKey] || ROUTE_PHOTO_META[parentKey] || null;
+            const rawMeta = ROUTE_PHOTO_META[codeKey] || ROUTE_PHOTO_META[parentKey] || null;
+            const presetMeta = Array.isArray(rawMeta) ? rawMeta[0] : rawMeta;
+
+            if (presetMeta && presetMeta.file) {
+                const filePath = (presetMeta.file.startsWith('http') || presetMeta.file.startsWith('photos/'))
+                    ? presetMeta.file
+                    : `photos/${presetMeta.file}`;
+                photoImg.src = filePath;
+                currentPhotoMeta = {
+                    caption: presetMeta.caption || `${p.name} 歷史影像`,
+                    source: presetMeta.source || '',
+                    link: presetMeta.link || presetMeta.url || ''
+                };
+                photoBox.style.display = 'block';
+                return;
+            }
 
             if (p.photos && Array.isArray(p.photos) && p.photos.length > 0) {
                 const item = p.photos[0];
                 photoImg.src = item.url;
-                photoCap.textContent = item.caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
-                photoSrc.textContent = item.source ? `出處：${item.source}` : ((presetMeta && presetMeta.source) || item.year || '');
+                currentPhotoMeta = {
+                    caption: item.caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                    source: item.source || (presetMeta && presetMeta.source) || item.year || '',
+                    link: item.link || item.url_source || (presetMeta && (presetMeta.link || presetMeta.url)) || ''
+                };
                 photoBox.style.display = 'block';
                 return;
             }
             if (p.photo) {
                 photoImg.src = p.photo;
-                photoCap.textContent = p.photo_caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
-                photoSrc.textContent = p.photo_source || (presetMeta && presetMeta.source) || '';
+                currentPhotoMeta = {
+                    caption: p.photo_caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                    source: p.photo_source || (presetMeta && presetMeta.source) || '',
+                    link: p.photo_link || p.photo_url || (presetMeta && (presetMeta.link || presetMeta.url)) || ''
+                };
                 photoBox.style.display = 'block';
                 return;
             }
@@ -999,8 +1012,11 @@
                 testImg.onload = function() {
                     if (currentDrawerFeature !== feature) return;
                     photoImg.src = candidates[idx];
-                    photoCap.textContent = (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`;
-                    photoSrc.textContent = (presetMeta && presetMeta.source) || codeKey;
+                    currentPhotoMeta = {
+                        caption: (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                        source: (presetMeta && presetMeta.source) || '',
+                        link: (presetMeta && (presetMeta.link || presetMeta.url)) || ''
+                    };
                     photoBox.style.display = 'block';
                 };
                 testImg.onerror = () => tryNext(idx + 1);
@@ -1011,11 +1027,40 @@
 
         function openLightbox() {
             const src = document.getElementById('drawer-photo-img').src;
-            const cap = document.getElementById('drawer-photo-caption').textContent;
-            const srcInfo = document.getElementById('drawer-photo-source').textContent;
             if (!src) return;
             document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox-caption').textContent = srcInfo ? `${cap}（${srcInfo}）` : cap;
+
+            const capBox = document.getElementById('lightbox-caption');
+            capBox.innerHTML = '';
+
+            if (currentPhotoMeta.caption) {
+                const titleDiv = document.createElement('div');
+                titleDiv.style.fontWeight = 'bold';
+                titleDiv.textContent = currentPhotoMeta.caption;
+                capBox.appendChild(titleDiv);
+            }
+
+            if (currentPhotoMeta.source || currentPhotoMeta.link) {
+                const srcRow = document.createElement('div');
+                srcRow.className = 'lightbox-source-row';
+                const rawSrc = (currentPhotoMeta.source || '').trim();
+                const cleanSrc = rawSrc.replace(/^(出處|來源)[：:]\s*/, '');
+
+                if (currentPhotoMeta.link) {
+                    srcRow.appendChild(document.createTextNode('出處：'));
+                    const a = document.createElement('a');
+                    a.href = currentPhotoMeta.link;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.className = 'lightbox-source-link';
+                    a.textContent = (cleanSrc || currentPhotoMeta.link) + ' ↗';
+                    srcRow.appendChild(a);
+                } else {
+                    srcRow.textContent = rawSrc.startsWith('出處') ? rawSrc : `出處：${rawSrc}`;
+                }
+                capBox.appendChild(srcRow);
+            }
+
             document.getElementById('photo-lightbox').classList.add('open');
         }
         function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
@@ -1040,42 +1085,36 @@
             return out;
         }
 
+        /* 將統計沿革表格中的「業者」欄位轉為可點擊連結（維持標準表格結構） */
         function decorateHistoryTables() {
-            const fallbackLabels = ['年間', '業者', '線名', '區間', '哩程'];
             document.querySelectorAll('#drawer-table-container table').forEach(table => {
                 const head = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
                 const opColIdx = head.findIndex(h => h === '業者' || h === '經營者');
                 const targetOpIdx = opColIdx !== -1 ? opColIdx : 1;
 
                 table.querySelectorAll('tr').forEach(tr => {
-                    if (tr.querySelector('th')) {
-                        tr.classList.add('table-header-row');
-                        return;
-                    }
+                    if (tr.querySelector('th')) return;
                     const tds = Array.from(tr.querySelectorAll('td'));
-                    tds.forEach((td, i) => {
-                        td.setAttribute('data-label', head[i] || fallbackLabels[i] || '資料');
-                        if (i === targetOpIdx) {
-                            const rawOpText = td.textContent.trim();
-                            if (rawOpText && rawOpText !== '—' && rawOpText !== '-') {
-                                const opParts = rawOpText.split('、').map(s => s.trim()).filter(Boolean);
-                                td.innerHTML = '';
-                                opParts.forEach((opName, idx) => {
-                                    if (idx > 0) td.appendChild(document.createTextNode('、'));
-                                    const link = document.createElement('a');
-                                    link.href = 'javascript:void(0)';
-                                    link.className = 'table-op-link';
-                                    link.textContent = opName;
-                                    link.title = `點擊檢視「${opName}」所轄路線`;
-                                    link.addEventListener('click', e => {
-                                        e.stopPropagation();
-                                        filterByOperator(opName);
-                                    });
-                                    td.appendChild(link);
-                                });
-                            }
-                        }
-                    });
+                    const td = tds[targetOpIdx];
+                    if (!td) return;
+                    const rawOpText = td.textContent.trim();
+                    if (rawOpText && rawOpText !== '—' && rawOpText !== '-') {
+                        const opParts = rawOpText.split('、').map(s => s.trim()).filter(Boolean);
+                        td.innerHTML = '';
+                        opParts.forEach((opName, idx) => {
+                            if (idx > 0) td.appendChild(document.createTextNode('、'));
+                            const link = document.createElement('a');
+                            link.href = 'javascript:void(0)';
+                            link.className = 'table-op-link';
+                            link.textContent = opName;
+                            link.title = `點擊檢視「${opName}」所轄路線`;
+                            link.addEventListener('click', e => {
+                                e.stopPropagation();
+                                filterByOperator(opName);
+                            });
+                            td.appendChild(link);
+                        });
+                    }
                 });
             });
         }
@@ -1733,7 +1772,7 @@
             });
         }
 
-        fetch('data.json?v=9.7')
+        fetch('data.json?v=9.8')
             .then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
             .then(rawData => {
                 const geoData = rawData.data || rawData;
