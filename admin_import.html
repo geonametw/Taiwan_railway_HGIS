@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 沿革 智慧縫合神器 v2.2 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 沿革 智慧縫合神器 v2.3 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .container { max-width: 920px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-top: 0; text-align: center; }
         
         .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 18px; display: none; }
@@ -32,8 +32,42 @@
             font-size: 15px; font-weight: bold; color: #4a148c; margin-bottom: 8px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
         }
+
+        /* 📚 已存沿革管理面板 */
+        .saved-nar-panel {
+            background: #fff; border: 1px solid #d1c4e9; border-radius: 8px;
+            padding: 10px 12px; margin-bottom: 12px;
+        }
+        .saved-nar-title {
+            font-size: 13px; font-weight: bold; color: #4a148c; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .saved-nar-list {
+            display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto;
+        }
+        .saved-nar-item {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            background: #f3e5f5; border: 1px solid #ce93d8; border-radius: 6px;
+            padding: 6px 10px; font-size: 13px; flex-wrap: wrap;
+        }
+        .saved-nar-info { flex: 1; min-width: 220px; color: #222; }
+        .saved-nar-actions { display: flex; gap: 5px; flex-shrink: 0; }
+        .mini-btn {
+            border: 1px solid #9575cd; background: #fff; color: #4a148c;
+            border-radius: 5px; padding: 3px 8px; font-size: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.15s; font-family: inherit;
+        }
+        .mini-btn:hover { background: #4a148c; color: #fff; }
+        .mini-btn.danger { border-color: #e57373; color: #c62828; }
+        .mini-btn.danger:hover { background: #c62828; color: #fff; }
+
+        .auto-fix-banner {
+            background: #fff8e1; border-left: 4px solid #ffa000; color: #e65100;
+            padding: 8px 12px; border-radius: 4px; font-size: 12.5px; margin-bottom: 10px; display: none;
+        }
+
         #wordNarrativeInput {
-            width: 100%; height: 180px; box-sizing: border-box; border: 1px solid #9575cd;
+            width: 100%; height: 175px; box-sizing: border-box; border: 1px solid #9575cd;
             border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.55;
             font-family: inherit; resize: vertical; background: #fff;
         }
@@ -59,12 +93,12 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML 圖資 + CSV 統計表 + Word 沿革 智慧縫合器 v2.2</h2>
+    <h2>🗺️ KML 圖資 + CSV 統計表 + Word 沿革 智慧縫合器 v2.3</h2>
     <div class="status warning">
-        <b>💡 v2.2 升級重點：</b><br>
-        1. <b>Word 沿革批次貼上自動歸位</b>：支援一次貼上 1 至多條路線的 Word 文字（如 <code>A3 [金山線]</code> 或 <code>[關廟線]</code>），自動從底部抓回註腳 <code>[1]</code>、<code>[2]</code> 並按各路線重新由 <code>[1]</code> 編號。<br>
-        2. <b>免重傳 KML/CSV 快速更新</b>：若只新增或修改沿革文字，貼上後直接按紫色「<b>📝 僅更新沿革文字至現有 data.json</b>」即可下載。<br>
-        3. <b>沿革永久記憶庫</b>：所有貼上過的沿革皆會保存在 <code>data.json</code> 中，日後重新匯入 KML + CSV 時自動保留不流失。
+        <b>💡 v2.3 升級重點：</b><br>
+        1. <b>自動糾錯清洗（Auto-Sanitize）</b>：載入 <code>data.json</code> 時，自動將誤存之非標準編號（如 <code>E-10 [菁寮線]</code>）轉正為 <code>E10-1</code> 並移除殘留舊鍵值。<br>
+        2. <b>已存沿革管理面板</b>：可隨時檢視目前已收錄的沿革，支援「<b>✏️ 載回修改</b>」、「<b>🏷️ 改編號</b>」與「<b>🗑️ 刪除</b>」。<br>
+        3. <b>主線／子路線智慧歸戶</b>：貼上 <code>E-10 [菁寮線]</code> 或 <code>[菁寮線]</code> 時，自動比對 317 組編號表並精準歸戶至子路線 <code>E10-1</code>。
     </div>
 
     <div id="inventoryBox" class="inventory-box">
@@ -82,7 +116,7 @@
     <div class="options-bar" style="background:#f3e5f5; border-color:#ce93d8;">
         <label style="font-weight:bold; color:#4a148c; cursor:pointer;">
             <input type="checkbox" id="chkRemoveSugar" checked>
-            🧹 自動剔除早期無編號糖鐵線（SHP / Manual Import 共 18 條）與未命名雜訊線（Line xx km / 線條 1）
+            🧹 自動剔除早期無編號糖鐵線（SHP / Manual Import）與未命名雜訊線（Line xx km / 線條 1）
         </label>
     </div>
     
@@ -100,18 +134,28 @@
         <input type="file" id="kmlFile" accept=".kml,.xml" multiple />
     </div>
 
-    <!-- 步驟 3：Word 沿革貼上區 -->
+    <!-- 步驟 3：已存沿革管理面板 + Word 沿革貼上區 -->
     <div class="narrative-section">
-        <div class="narrative-header">
-            <span>📝 步驟 3：貼上 Word 路線沿革文字（支援一次貼 1 至多條路線，自動配對編號與底部註腳）</span>
-            <button type="button" style="background:#fff;border:1px solid #7e57c2;color:#4a148c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;" onclick="document.getElementById('wordNarrativeInput').value='';handleNarrativeInput();">清空文字框</button>
+        <div id="autoFixBanner" class="auto-fix-banner"></div>
+
+        <div class="saved-nar-panel" id="savedNarPanel" style="display:none;">
+            <div class="saved-nar-title">
+                <span id="savedNarCountTitle">📚 目前 data.json 已收錄之路線沿革（0 筆）</span>
+                <span style="font-size:11.5px; color:#666; font-weight:normal;">點選「載回修改」可還原至下方文字框編輯</span>
+            </div>
+            <div class="saved-nar-list" id="savedNarList"></div>
         </div>
-        <textarea id="wordNarrativeInput" placeholder="請直接從 Word 複製貼上（支援單條或多條連續貼上，註腳集中於最下方亦會自動歸位並重編為 [1]）：&#10;&#10;A3 [金山線]&#10;區間：牛稠港/基隆—金山/八斗子&#10;通車日期：（基隆瑪鋉）昭和3年12月30日（基隆金山）昭和5年4月10日&#10;內容概要：&#10;金山線的基隆端設在牛稠港，基隆＝瑪鋉間昭和3年12月30日開通[1]...&#10;&#10;[關廟線]&#10;區間：臺南—崎頂/關廟&#10;內容概要：...最終於昭和12年3月17日最後一日營業[2]。&#10;&#10;[1] 〈基隆瑪鍊間 輕道開通〉，《漢文臺灣日日新報》，1929年1月6日，8版。&#10;[2] 〈私設軌道營業廢止〉，《臺南州報》，第1339號，昭和12年3月25日。"></textarea>
+
+        <div class="narrative-header">
+            <span>📝 步驟 3：新增或修改 Word 路線沿革文字（支援一次貼 1 至多條路線，自動配對編號與底部註腳）</span>
+            <button type="button" class="mini-btn" onclick="document.getElementById('wordNarrativeInput').value='';handleNarrativeInput();">清空文字框</button>
+        </div>
+        <textarea id="wordNarrativeInput" placeholder="請直接從 Word 複製貼上（支援單條或多條連續貼上，註腳集中於最下方亦會自動歸位並重編為 [1]）：&#10;&#10;E10-1 [菁寮線]&#10;區間：後壁—菁寮&#10;通車日期：&#10;內容概要：&#10;關子嶺軌道株式會社於昭和8年左右經營的支線..."></textarea>
         <div id="narrativePreviewBox"></div>
     </div>
 
     <div style="text-align: center;">
-        <button id="narrativeOnlyBtn" class="btn" style="background:#6a1b9a;" disabled onclick="runNarrativeOrCleanUpdate()">📝 僅更新沿革文字（及清理糖鐵）至現有 data.json</button>
+        <button id="narrativeOnlyBtn" class="btn" style="background:#6a1b9a;" disabled onclick="runNarrativeOrCleanUpdate()">📝 儲存沿革變更（及清理糖鐵）至現有 data.json</button>
         <button id="mergeBtn" class="btn" disabled onclick="runMerge()">⚙️ 開始 KML + CSV + 沿革 完整智慧縫合</button>
         <button id="downloadBtn" class="btn" style="display:none; background:#1565c0;" onclick="downloadJSON()">📥 下載最新 data.json</button>
     </div>
@@ -120,16 +164,24 @@
 </div>
 
 <script>
-    // 內建全台 317 組台車編號與參考名對照表（免上傳 CSV 即可自動識別 [關廟線] -> E24 等）
     const DEFAULT_CODE_REF_MAP = {"A1": "三爪子", "A1-1": "三爪子複線", "A1-2": "瑞芳停車場引入", "A2": "金瓜石", "A3": "金山", "A3-1": "金山野柳段", "A3-2": "觀音町", "A4": "錫板", "A4-1": "水碓仔", "A5": "松三", "A6": "深坑", "A6-1": "指南宮", "A7": "十五份", "A8": "南門屈尺", "A8-1": "南門複線", "A9": "古亭村庄大稻埕", "A10": "大稻埕錫口", "A11": "龍匣口", "A12": "頂埔", "A12-1": "新埔", "A12-2": "枋橋", "A12-3": "萬華驛", "A13": "鷺洲新莊", "A13-1": "和尚洲", "A13-2": "橋頭", "A14": "板橋", "A15": "萬華", "A16": "成福", "A16-1": "成福複線", "A16-2": "三角湧", "A17": "中庄", "A17-1": "貨物", "A18": "大湖", "A19": "媽祖田", "A20": "佳園", "A21": "新樹", "A22": "三井(烏來)", "A23": "三井(三峽合流)", "B1": "新莊", "B1-1": "塔寮坑", "B2": "南崁", "B2-1": "北門", "B3": "大溪複線", "B3-1": "大溪單線", "B4": "角板山", "B5": "大園", "B6": "竹圍", "B7": "中壢", "B8": "中壢", "B8-1": "觀音", "B8-2": "龍潭", "B9": "下大堀", "B10": "新屋(中壢)", "B11": "東勢", "B12": "三坑仔", "B13": "楊梅", "B13-1": "下水流", "B14": "大陂", "B15": "伯公岡", "B16": "湖口", "B17": "平關", "B18": "橫崗頭", "B19": "紅關", "B19-1": "紅關複線", "B19-2": "犁頭山", "B20": "新埔輕鐵", "B21": "石門", "B22": "馬武督", "B23": "竹東", "B23-1": "竹東", "B23-2": "新竹單", "B23-3": "鹿寮坑", "B24": "北埔", "B25": "上坪", "B26": "芎林(臺灣軌道)", "B27": "芎林(文林軌道)", "B27-1": "石壁坑竹東", "B28": "芎林(帝國製糖)", "B29": "舊港", "B29-1": "北門", "B29-2": "舊社", "B29-3": "南寮", "B29-4": "舊港岔", "B30": "南寮油車港", "B31": "油車港", "C1": "竹南", "C1-1": "竹南複", "C1-2": "斗煥坪", "C1-3": "大南埔", "C2": "中港街", "C3": "尖山下錦水", "C3-1": "造橋", "C4": "錦水", "C4-1": "二坪岡", "C5": "後攏驛後攏街", "C5-1": "後攏驛崁頭屋", "C5-2": "後攏街大山腳", "C5-3": "後攏街新港", "C6": "公司寮", "C7": "苗栗", "C7-1": "苗栗複線", "C7-2": "苗栗內麻", "C7-3": "出磺坑", "C8": "銅鑼灣福基", "C9": "銅鑼灣山腳", "C10": "日南", "C10-1": "五里牌", "C11": "三叉", "C12": "卓蘭", "D1": "后里", "D3": "大安港", "D4": "甲南", "D5": "四塊厝", "D6": "公館", "D7": "清水", "D7-1": "清水", "D8": "梧棲", "D9": "神崗崎頭", "D10": "神崗", "D11": "東勢", "D11-1": "東勢複線", "D11-2": "葫蘆墩驛", "D11-3": "貯木池", "D12": "水底寮", "D13": "馬力埔", "D14": "牛欄坑", "D15": "中坑坪", "D16": "臺中", "D16-1": "大雅支", "D16-2": "北屯", "D16-3": "三貴城", "D17": "埧雅", "D18": "大雅", "D19": "西屯", "D20": "頭汴坑", "D20-1": "三汴", "D20-2": "廍子", "D20-3": "太平", "D20-4": "芭蕉市場", "D21": "南屯", "D22": "烏日", "D23": "龍井", "D23-1": "海埔厝", "D23-2": "龍目井", "D24": "臺中南投", "D25": "大里", "D26": "霧峰(霧峰宏業)", "D27": "霧峰(霧峰輕鐵)", "D28": "大平", "D28-1": "竹子坑支", "D28-2": "牛角坑支", "D29": "青桐林", "D30": "六股", "D31": "彰草", "D31-1": "八卦山", "D32": "彰化鹿港", "D32-1": "鹿港新營口", "D33": "彰化軌道", "D34": "溪州二林", "D35": "員林鹿港", "D36": "員林", "D36-1": "員林複線", "D36-2": "員林東山", "D36-3": "東山湳雅", "D36-4": "湖水坑支線", "D36-5": "海豐崙支線", "D37": "下見口", "D38": "秀水茄苳腳", "D39": "土城", "D40": "國姓", "D41": "集南", "D41-1": "南投分歧線", "D41-2": "番子吧", "D41-3": "暗坑", "D41-4": "粗坑", "D42": "龍眼林", "D43": "集鹿", "D44": "新高", "D44-1": "貨物", "D45": "埔里", "D45-1": "埔里複線", "D48": "田中央驛田中央街", "D50": "竹山", "D50-1": "東埔蚋複線", "D50-2": "林圯埔", "D50-3": "大坑", "D51": "社寮", "D51-1": "名間", "D52": "車輄寮", "D53": "溪頭", "D54": "名濁", "D55": "西螺", "D56": "內林", "D57": "斗六糖廠", "D58": "土庫", "D59": "埔眉", "E1": "打貓北港", "E2": "新港驛新港街", "E3": "梅山", "E4": "嘉義小梅", "E5": "中埔", "E5-1": "南門西門", "E5-2": "沄水", "E5-3": "三界埔", "E5-4": "石硦", "E6": "觸口", "E6-1": "番路(臺中輕鐵)", "E7": "番路(內外食品)", "E8": "內埔子鹿麻產", "E9": "竹崎輕鐵", "E10": "關子嶺", "E10-1": "菁寮", "E10-2": "後壁", "E10-3": "木屐寮", "E10-4": "仙草埔", "E10-5": "關子嶺溫泉", "E11": "番社", "E12": "六重溪", "E13": "崎子頭", "E13-1": "前大埔", "E14": "烏山頭", "E15": "六甲", "E16": "北門", "E17": "鹽水", "E18": "善化市街", "E19": "善化二重溪", "E19-1": "大內北勢洲", "E20": "玉井", "E21": "大目降", "E21-1": "糖業科", "E21-2": "新市", "E21-3": "虎頭埤", "E22": "安平", "E23": "喜樹", "E23-1": "屠畜場", "E24": "關廟", "E24-1": "東市場", "E25": "番子寮", "E25-1": "麻豆", "E25-2": "麻豆市街", "E25-3": "西港麻豆", "E25-4": "西港番子寮", "E25-5": "鹽水港三崁店", "E25-6": "六塊厝直加弄", "E26": "嘉義公園", "E26-1": "郵局西門", "E27": "台南水道", "F1": "石材", "F2": "路竹", "F3": "燕巢", "F4": "岡山阿蓮", "F4-1": "大岡山", "F5": "赤崁", "F5-1": "彌陀", "F6": "鳳山苓雅寮", "F7": "蕃薯寮楠仔坑", "F8": "舊寮中庄", "F9": "九曲堂驛阿缑", "F10": "阿缑東港", "F10-1": "萬巒四溝水", "F10-2": "打鐵新埤頭", "F11": "東港枋寮", "F11-1": "頂中街海岸", "F11-2": "下中街", "F11-3": "磘仔口竹仔腳", "F12": "麟洛屏東", "F13": "西勢內埔", "F14": "新大路關屏東", "F15": "東港溪洲", "F16": "恆春海口", "F17": "恆春大坂埒", "F18": "六龜里橫山", "F19": "哨船頭鳳山", "G1": "頭圍蘇澳", "G2": "宜蘭蘇澳", "G3": "蘇澳海岸", "G3-1": "蘇澳停車場引入", "G4": "南方澳", "G4-1": "港邊", "G5": "員山", "G5-1": "員山溫泉", "G5-2": "水源地", "G5-3": "深溝", "G6": "叭哩沙", "G6-1": "羅東停車場", "G6-2": "羅東引込", "G6-3": "農庫", "G7": "竹林貯木場", "G8": "竹林二結", "G9": "大洲", "G10": "小南澳", "G11": "利澤簡", "G12": "一百甲", "G13": "功勞", "G13-1": "二結", "H1": "臺東", "H1-1": "水尾", "H2": "南町指導所", "H2-1": "卑南海岸", "H2-2": "卑南社", "H2-3": "南町卑南社", "H2-4": "南町指導所", "H2-5": "新町南町", "H3": "吉野村", "H4": "銅文蘭", "H5": "新城", "H6": "瑞穗溫泉", "I1": "新竹", "I2": "臺中", "I3": "臺南", "I3-1": "嘉義", "I4": "打狗", "I5": "塗葛窟", "I6": "雲林", "I7": "安平", "I8": "鳳山", "I9": "軍用速成"};
 
     let existingData = null;
     let oldPropsMap = {};
-    let savedNarrativesMap = {}; // 儲存自 existingData 讀取與本次貼上的沿革 (code -> narrativeObj)
-    let pastedNarrativesMap = {}; // 本次於文字框貼上的沿革
+    let savedNarrativesMap = {};
+    let pastedNarrativesMap = {};
+    let narrativesModified = false;
     let csvRoutesMap = {};
     let rawKmlTexts = [];
     let finalGeoJson = null;
+
+    function escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
 
     function isLegacySugarOrNoiseRoute(f) {
         const p = f.properties || {};
@@ -150,6 +202,184 @@
         }
         return f;
     }
+
+    // 智慧解析路線編號（支援 E-10 [菁寮線] 自動對齊至子路線 E10-1）
+    function resolveRouteCode(explicitCode, rawName, sectionText, bodyText) {
+        const mBrk = String(rawName || '').match(/^\s*([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*[\[\【]([^\]\】]+)[\]\】]/i);
+        if (mBrk) {
+            explicitCode = mBrk[1];
+            rawName = mBrk[2];
+        } else {
+            const mOnly = String(rawName || '').match(/[\[\【]([^\]\】]+)[\]\】]/);
+            if (mOnly) rawName = mOnly[1];
+        }
+
+        const normCode = explicitCode
+            ? explicitCode.trim().replace(/^([A-Z])-(\d+)/i, '$1$2').toUpperCase()
+            : '';
+        const cleanName = String(rawName || '').trim().replace(/線$/, '').trim();
+
+        if (normCode) {
+            const parentPrefix = normCode.split('-')[0];
+            if (cleanName && DEFAULT_CODE_REF_MAP[normCode] !== cleanName) {
+                for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
+                    if ((code === parentPrefix || code.startsWith(parentPrefix + '-')) && ref === cleanName) {
+                        return code;
+                    }
+                }
+            }
+            return normCode;
+        }
+
+        if (!cleanName) return '';
+        if (DEFAULT_CODE_REF_MAP[cleanName.toUpperCase()]) return cleanName.toUpperCase();
+
+        const contextStr = `${sectionText || ''} ${bodyText || ''}`;
+        if (cleanName === '中壢') return /八塊|更寮腳|青埔|菁埔|桃崁|桃園輕便|桃園軌道/.test(contextStr) ? 'B7' : 'B8';
+        if (cleanName === '東勢') return /中壢|石頭/.test(contextStr) ? 'B11' : 'D11';
+        if (cleanName === '臺中' || cleanName === '台中') return 'D16';
+        if (cleanName === '安平') return 'E22';
+
+        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
+            if (!code.includes('-') && (ref === cleanName || ref === rawName.trim())) return code;
+        }
+        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
+            if (ref === cleanName || ref === rawName.trim()) return code;
+        }
+        for (const [code, prop] of Object.entries(oldPropsMap)) {
+            const pName = String(prop.name || '').replace(/線$/, '').trim();
+            if (pName && pName === cleanName) return code;
+        }
+        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
+            if (!code.includes('-') && (ref.includes(cleanName) || cleanName.includes(ref))) return code;
+        }
+        return rawName.trim();
+    }
+
+    // 自動清洗並修正 existingData 中的舊沿革鍵值（如 "E-10 [菁寮線]" -> "E10-1"）
+    function sanitizeSavedNarratives() {
+        const cleanedMap = {};
+        const fixLogs = [];
+
+        Object.entries(savedNarrativesMap).forEach(([oldKey, nar]) => {
+            if (!nar) return;
+            let rawName = nar.rawName || oldKey;
+            const mBrk = String(rawName).match(/[\[\【]([^\]\】]+)[\]\】]/);
+            const cleanRawName = mBrk ? mBrk[1].trim() : String(rawName).replace(/^[A-Z]-?\d+(?:-\S+)?\s*/i, '').trim();
+
+            const resolvedCode = resolveRouteCode('', oldKey, nar.sectionText, (nar.paragraphs || []).join(' '));
+            const finalCode = resolvedCode || oldKey;
+
+            nar.code = finalCode;
+            nar.rawName = cleanRawName || DEFAULT_CODE_REF_MAP[finalCode] || finalCode;
+            nar.html = buildNarrativeCardHTML(nar);
+            cleanedMap[finalCode] = nar;
+
+            if (finalCode !== oldKey) {
+                fixLogs.push(`🔧 自動糾錯轉正：已將舊沿革鍵值「<b>${escapeHtml(oldKey)}</b>」自動歸戶為標準編號「<b>${escapeHtml(finalCode)} (${escapeHtml(DEFAULT_CODE_REF_MAP[finalCode] || nar.rawName)})</b>」並清除舊鍵值。`);
+                narrativesModified = true;
+            }
+        });
+
+        savedNarrativesMap = cleanedMap;
+        const banner = document.getElementById('autoFixBanner');
+        if (fixLogs.length > 0) {
+            banner.style.display = 'block';
+            banner.innerHTML = fixLogs.join('<br>') + `<div style="margin-top:4px;font-weight:bold;">👉 請點擊下方紫色「📝 儲存沿革變更至現有 data.json」按鈕下載修正後的檔案！</div>`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    // 渲染「📚 已存沿革管理面板」
+    function renderSavedNarrativesPanel() {
+        const panel = document.getElementById('savedNarPanel');
+        const listEl = document.getElementById('savedNarList');
+        const titleEl = document.getElementById('savedNarCountTitle');
+
+        const keys = Object.keys(savedNarrativesMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        if (keys.length === 0) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'block';
+        titleEl.textContent = `📚 目前 data.json 已收錄之路線沿革（共 ${keys.length} 筆）`;
+        listEl.innerHTML = '';
+
+        keys.forEach(code => {
+            const nar = savedNarrativesMap[code];
+            const refName = DEFAULT_CODE_REF_MAP[code] || nar.rawName || '';
+            const pCount = (nar.paragraphs || []).length;
+            const fnCount = (nar.footnotes || []).length;
+            const secInfo = nar.sectionText ? `｜區間：${nar.sectionText}` : '';
+
+            const item = document.createElement('div');
+            item.className = 'saved-nar-item';
+            item.innerHTML = `
+                <div class="saved-nar-info">
+                    <b>📖 [${escapeHtml(code)}] ${escapeHtml(refName)}</b>
+                    <span style="font-size:12px; color:#555;">（${pCount} 段 / 註腳 ${fnCount} 則${escapeHtml(secInfo)}）</span>
+                </div>
+                <div class="saved-nar-actions">
+                    <button type="button" class="mini-btn" onclick="loadNarrativeToTextarea('${escapeHtml(code)}')">✏️ 載回修改</button>
+                    <button type="button" class="mini-btn" onclick="renameNarrativeCode('${escapeHtml(code)}')">🏷️ 改編號</button>
+                    <button type="button" class="mini-btn danger" onclick="deleteNarrativeCode('${escapeHtml(code)}')">🗑️ 刪除</button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        });
+    }
+
+    // 將單筆已存沿革還原為 Word 純文字格式並載入下方輸入框
+    window.loadNarrativeToTextarea = function(code) {
+        const nar = savedNarrativesMap[code];
+        if (!nar) return;
+        const refName = (DEFAULT_CODE_REF_MAP[code] || nar.rawName || code).replace(/線$/, '') + '線';
+        let lines = [];
+        lines.push(`${code} [${refName}]`);
+        lines.push(`區間：${nar.sectionText || ''}`);
+        lines.push(`通車日期：${nar.openDate || ''}`);
+        lines.push(`內容概要：`);
+        (nar.paragraphs || []).forEach(p => lines.push(p));
+        if (nar.footnotes && nar.footnotes.length > 0) {
+            lines.push('');
+            nar.footnotes.forEach(fn => lines.push(`[${fn.num}] ${fn.text}`));
+        }
+        const textarea = document.getElementById('wordNarrativeInput');
+        textarea.value = lines.join('\n');
+        textarea.focus();
+        handleNarrativeInput();
+    };
+
+    // 修改已存沿革的路線編號
+    window.renameNarrativeCode = function(oldCode) {
+        const nar = savedNarrativesMap[oldCode];
+        if (!nar) return;
+        const inputCode = prompt(`請輸入「${oldCode}」的新路線編號（例如 E10-1、A3、E24）：`, oldCode);
+        if (!inputCode || !inputCode.trim()) return;
+        const newCode = inputCode.trim().replace(/^([A-Z])-(\d+)/i, '$1$2').toUpperCase();
+        if (newCode === oldCode) return;
+
+        delete savedNarrativesMap[oldCode];
+        nar.code = newCode;
+        nar.rawName = DEFAULT_CODE_REF_MAP[newCode] || nar.rawName;
+        nar.html = buildNarrativeCardHTML(nar);
+        savedNarrativesMap[newCode] = nar;
+        narrativesModified = true;
+        renderSavedNarrativesPanel();
+        updateActionButtons();
+    };
+
+    // 刪除已存沿革
+    window.deleteNarrativeCode = function(code) {
+        if (!confirm(`確定要從 data.json 中刪除「${code}」的沿革資料嗎？`)) return;
+        delete savedNarrativesMap[code];
+        delete pastedNarrativesMap[code];
+        narrativesModified = true;
+        renderSavedNarrativesPanel();
+        updateActionButtons();
+    };
 
     async function loadOnlineDataJson() {
         const urls = [
@@ -177,7 +407,7 @@
                 Object.assign(savedNarrativesMap, rootObj.narratives);
             }
             const features = rootObj.features || [];
-            let routeCount = 0, sugarCount = 0, stationCount = 0, narCount = 0;
+            let routeCount = 0, sugarCount = 0, stationCount = 0;
             const listContainer = document.getElementById('inventoryList');
             listContainer.innerHTML = '';
 
@@ -195,28 +425,26 @@
 
                 const key = p.route_id || p.name;
                 if (key && !oldPropsMap[key]) oldPropsMap[key] = p;
-                if (p.narrative && p.route_id) {
+                if (p.narrative && p.route_id && !savedNarrativesMap[p.route_id]) {
                     savedNarrativesMap[p.route_id] = p.narrative;
                 }
-                const hasNar = Boolean(
-                    (p.route_id && savedNarrativesMap[p.route_id]) ||
-                    (p.description && p.description.zh && p.description.zh.includes('HGIS_NARRATIVE_START'))
-                );
-                if (hasNar && p.line_type === '主線') narCount++;
 
                 const tag = document.createElement('span');
-                tag.className = isPoint ? 'tag station' : (isSugar ? 'tag sugar' : (hasNar ? 'tag has-nar' : 'tag'));
-                tag.title = isSugar ? '早期無編號糖鐵線／雜訊線（將於匯出時自動剔除）' : (hasNar ? '已建置路線沿革考據' : '');
-                tag.innerHTML = `${isPoint ? '🚉' : (isSugar ? '🗑️' : (hasNar ? '📖' : '🛤️'))} ${rid}${name}${section}`;
+                tag.className = isPoint ? 'tag station' : (isSugar ? 'tag sugar' : 'tag');
+                tag.innerHTML = `${isPoint ? '🚉' : (isSugar ? '🗑️' : '🛤️')} ${rid}${name}${section}`;
                 listContainer.appendChild(tag);
             });
+
+            // 自動清洗轉正非標準編號 (如 E-10 [菁寮線] -> E10-1)
+            sanitizeSavedNarratives();
+            renderSavedNarrativesPanel();
 
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             document.getElementById('inventoryTitle').innerHTML = `
                 <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
                 <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
-                    台車路線 ${routeCount} 筆（含沿革 ${Object.keys(savedNarrativesMap).length || narCount} 組） / 待剔除糖鐵與雜訊 ${sugarCount} 筆 / 車站 ${stationCount} 座
+                    台車路線 ${routeCount} 筆（已收錄沿革 ${Object.keys(savedNarrativesMap).length} 筆） / 待剔除糖鐵與雜訊 ${sugarCount} 筆 / 車站 ${stationCount} 座
                 </span>
             `;
             updateActionButtons();
@@ -228,66 +456,6 @@
             invBox.innerHTML = `<b>⚠️ 無法自動讀取現有 <code>data.json</code></b>（將以全新狀態建立資料庫）。`;
         });
 
-    function escapeHtml(str) {
-        return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    // 根據路線名稱與內文，自動解析對應的台車編號 (如 [關廟線] -> E24, A3 [金山線] -> A3)
-    function resolveRouteCode(explicitCode, rawName, sectionText, bodyText) {
-        if (explicitCode) {
-            return explicitCode.charAt(0).toUpperCase() + explicitCode.slice(1);
-        }
-        const cleanName = String(rawName || '').trim().replace(/線$/, '').trim();
-        if (!cleanName) return '';
-
-        // 若 rawName 本身就是編號 (如 "A3")
-        if (DEFAULT_CODE_REF_MAP[cleanName.toUpperCase()]) return cleanName.toUpperCase();
-
-        // 處理 4 組同名主線之智慧判別
-        const contextStr = `${sectionText || ''} ${bodyText || ''}`;
-        if (cleanName === '中壢') {
-            if (/八塊|更寮腳|青埔|菁埔|桃崁|桃園輕便|桃園軌道/.test(contextStr)) return 'B7';
-            return 'B8';
-        }
-        if (cleanName === '東勢') {
-            if (/葫蘆墩|豐原|東勢角|土牛|大茅埔|白毛|神岡/.test(contextStr)) return 'D11';
-            if (/中壢|石頭/.test(contextStr)) return 'B11';
-            return 'D11';
-        }
-        if (cleanName === '臺中' || cleanName === '台中') return 'D16';
-        if (cleanName === '安平') return 'E22';
-
-        // 1. 先找主線完全相符
-        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
-            if (!code.includes('-') && (ref === cleanName || ref === rawName.trim())) {
-                return code;
-            }
-        }
-        // 2. 再找副線完全相符
-        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
-            if (ref === cleanName || ref === rawName.trim()) {
-                return code;
-            }
-        }
-        // 3. 找現有 data.json 或 CSV 內名稱相符者
-        for (const [code, prop] of Object.entries(oldPropsMap)) {
-            const pName = String(prop.name || '').replace(/線$/, '').trim();
-            if (pName && pName === cleanName) return code;
-        }
-        // 4. 模糊包含比對
-        for (const [code, ref] of Object.entries(DEFAULT_CODE_REF_MAP)) {
-            if (!code.includes('-') && (ref.includes(cleanName) || cleanName.includes(ref))) {
-                return code;
-            }
-        }
-        return rawName.trim();
-    }
-
-    // 解析貼上的 Word 沿革文字（支援多條路線＋底部集中註腳自動歸位與重新編號）
     function parseWordNarrativeText(rawText) {
         const lines = String(rawText || '').split(/\r?\n/);
         const batches = [];
@@ -295,11 +463,11 @@
         let curFootnotes = {};
         let curRoute = null;
 
-        const bracketHeaderRe = /^\s*(?:([A-Z]\d+(?:-[^\s\[\]【】]+)?)\s*)?[\[\【]([^\]\】]+)[\]\】]\s*$/i;
+        // 支援 A3 [金山線]、E-10 [菁寮線]、E10-1 [菁寮線]、[關廟線] 等所有標題格式
+        const bracketHeaderRe = /^\s*(?:([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*)?[\[\【]([^\]\】]+)[\]\】]\s*$/i;
         const fnDefRe = /^\s*[\[\［](\d+)[\]\］][\s\u00a0\u3000]*(.+)$/;
         const fieldLineRe = /^\s*(區間|通車日期|內容概要)\s*[：:]/;
 
-        // 尋找下一個非空行，輔助無括號標題判斷
         const getNextNonEmptyLine = (startIdx) => {
             for (let k = startIdx + 1; k < lines.length; k++) {
                 const s = lines[k].trim();
@@ -312,14 +480,12 @@
             const line = lines[i].replace(/^[\s\u00a0\u3000]+|[\s\u00a0\u3000]+$/g, '');
             if (!line) continue;
 
-            // 1. 檢查是否為底部註腳定義行 [1] ...
             const mFn = fnDefRe.exec(line);
             if (mFn) {
                 curFootnotes[mFn[1]] = mFn[2].trim();
                 continue;
             }
 
-            // 2. 檢查是否為路線標題行（如 A3 [金山線] 或 [關廟線] 或下一行為「區間：」的短標題）
             let isHeader = false;
             let codePart = '';
             let namePart = '';
@@ -338,14 +504,13 @@
             }
 
             if (isHeader) {
-                // 若前一批路線已經收集過底部註腳，先結算前一批
                 if (Object.keys(curFootnotes).length > 0 && curRoutes.length > 0) {
                     batches.push({ routes: curRoutes, footnotes: curFootnotes });
                     curRoutes = [];
                     curFootnotes = {};
                 }
                 if (!codePart) {
-                    const mIn = /^([A-Z]\d+(?:-[^\s]+)?)\s+(.+)$/i.exec(namePart);
+                    const mIn = /^([A-Z]-?\d+(?:-[^\s]+)?)\s+(.+)$/i.exec(namePart);
                     if (mIn) {
                         codePart = mIn[1].trim();
                         namePart = mIn[2].trim();
@@ -364,7 +529,6 @@
 
             if (!curRoute) continue;
 
-            // 3. 解析欄位與內容概要段落
             if (/^區間\s*[：:]/.test(line)) {
                 curRoute.sectionText = line.replace(/^區間\s*[：:]\s*/, '').trim();
             } else if (/^通車日期\s*[：:]/.test(line)) {
@@ -381,7 +545,6 @@
             batches.push({ routes: curRoutes, footnotes: curFootnotes });
         }
 
-        // 將各路線內文引用之 [n] 對應到底部註腳池，並針對每條路線重新由 [1] 編號
         const parsedMap = {};
         batches.forEach(batch => {
             const fnPool = batch.footnotes;
@@ -405,9 +568,10 @@
                 }));
 
                 const code = resolveRouteCode(r.explicitCode, r.rawName, newSec, newParas.join(' '));
+                const cleanTitleName = r.rawName.replace(/^[A-Z]-?\d+(?:-\S+)?\s*/i, '').replace(/[\[\]【】]/g, '').trim();
                 const narrativeObj = {
                     code: code,
-                    rawName: r.rawName,
+                    rawName: cleanTitleName || DEFAULT_CODE_REF_MAP[code] || code,
                     sectionText: newSec,
                     openDate: newOpen,
                     paragraphs: newParas,
@@ -421,7 +585,6 @@
         return parsedMap;
     }
 
-    // 產生內嵌於路線資訊欄的「📖 路線沿革」HTML 卡片（支援點擊/懸停註腳 [1] 高亮跳轉）
     function buildNarrativeCardHTML(nar) {
         if (!nar) return '';
         const fnDict = {};
@@ -430,7 +593,7 @@
         const formatInlineSup = (escapedText) => {
             return escapedText.replace(/\[(\d+)\]/g, (m, num) => {
                 const tip = escapeHtml(fnDict[num] || `註腳 [${num}]`);
-                return `<sup style="color:#1a237e;background:#e8eaf6;padding:0 4px;border-radius:4px;font-weight:bold;cursor:pointer;margin:0 1px;" title="${tip}" onclick="const box=this.closest('.hgis-narrative-card');const target=box&&box.querySelector('[data-fn=\\'${num}\\']');if(target){target.scrollIntoView({behavior:'smooth',block:'nearest'});target.style.backgroundColor='#fff59d';setTimeout(()=>target.style.backgroundColor='transparent',1800);}">[${num}]</sup>`;
+                return `<sup style="color:#1a237e;background:#e8eaf6;padding:0 4px;border-radius:4px;font-weight:bold;cursor:pointer;margin:0 1px;" title="${tip}">[${num}]</sup>`;
             });
         };
 
@@ -454,7 +617,7 @@
         let fnBoxHtml = '';
         if (nar.footnotes && nar.footnotes.length > 0) {
             const fnItems = nar.footnotes.map(f =>
-                `<div data-fn="${f.num}" style="margin-bottom:3px;padding:2px 4px;border-radius:4px;transition:background-color 0.4s;"><span style="color:#1a237e;font-weight:bold;">[${f.num}]</span> ${escapeHtml(f.text)}</div>`
+                `<div data-fn="${f.num}" style="margin-bottom:3px;padding:2px 4px;border-radius:4px;"><span style="color:#1a237e;font-weight:bold;">[${f.num}]</span> ${escapeHtml(f.text)}</div>`
             ).join('');
             fnBoxHtml = `<div style="margin-top:8px;padding-top:6px;border-top:1px dashed #c5cae9;font-size:11.5px;color:#4a5568;line-height:1.5;">${fnItems}</div>`;
         }
@@ -462,7 +625,6 @@
         return `<!--HGIS_NARRATIVE_START--><div class="hgis-narrative-card" style="background:#f8f9fc;border:1px solid #d8def4;border-left:4px solid #1a237e;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#222;line-height:1.68;"><div style="font-weight:bold;color:#1a237e;font-size:13px;margin-bottom:6px;">📖 路線沿革</div>${metaBoxHtml}<div>${parasHtml}</div>${fnBoxHtml}</div><!--HGIS_NARRATIVE_END-->`;
     }
 
-    // 將沿革 HTML 注入或更新至 description.zh（自動替換舊沿革，不重複疊加）
     function injectNarrativeIntoDesc(descZh, narrativeHtml) {
         let cleaned = String(descZh || '').replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '');
         if (!narrativeHtml) return cleaned;
@@ -486,14 +648,14 @@
         const items = Object.values(pastedNarrativesMap);
         if (items.length === 0) {
             previewBox.style.display = 'block';
-            previewBox.innerHTML = `⚠️ 尚未偵測到路線標題（請確認包含如 <code>A3 [金山線]</code> 或 <code>[關廟線]</code> 格式之標題列）。`;
+            previewBox.innerHTML = `⚠️ 尚未偵測到路線標題（請確認包含如 <code>E10-1 [菁寮線]</code> 或 <code>[關廟線]</code> 格式之標題列）。`;
         } else {
             const summaryTags = items.map(it => {
                 const refName = DEFAULT_CODE_REF_MAP[it.code] || it.rawName;
                 return `<span style="display:inline-block;background:#fff;border:1px solid #7e57c2;color:#4a148c;padding:2px 8px;border-radius:12px;margin:2px 4px 2px 0;font-weight:bold;font-size:12px;">📖 ${it.code} ${refName}（${it.paragraphs.length} 段 / 註腳 ${it.footnotes.length} 則）</span>`;
             }).join('');
             previewBox.style.display = 'block';
-            previewBox.innerHTML = `<div><b>✅ 已即時解析出 ${items.length} 條路線沿革（註腳已自動歸位並由 [1] 重編）：</b></div><div style="margin-top:4px;">${summaryTags}</div>`;
+            previewBox.innerHTML = `<div><b>✅ 已即時解析出 ${items.length} 條路線沿革（點擊下方紫色按鈕即可寫入 data.json）：</b></div><div style="margin-top:4px;">${summaryTags}</div>`;
         }
         updateActionButtons();
     }
@@ -503,7 +665,7 @@
     function updateActionButtons() {
         const hasPastedNar = Object.keys(pastedNarrativesMap).length > 0;
         const hasBase = Boolean(existingData);
-        const canQuickUpdate = hasBase && (hasPastedNar || document.getElementById('chkRemoveSugar').checked);
+        const canQuickUpdate = hasBase && (hasPastedNar || narrativesModified || document.getElementById('chkRemoveSugar').checked);
         document.getElementById('narrativeOnlyBtn').disabled = !canQuickUpdate;
 
         if (rawKmlTexts.length > 0 && Object.keys(csvRoutesMap).length > 0) {
@@ -513,11 +675,12 @@
         }
     }
 
-    // 單獨將文字框中的沿革更新至現有 data.json（並依勾選剔除糖鐵與雜訊）
     function runNarrativeOrCleanUpdate() {
         if (!existingData) return;
         const removeSugar = document.getElementById('chkRemoveSugar').checked;
         Object.assign(savedNarrativesMap, pastedNarrativesMap);
+        sanitizeSavedNarratives();
+        renderSavedNarrativesPanel();
 
         const oldFeatures = (existingData.data && existingData.data.features)
             ? existingData.data.features
@@ -525,7 +688,7 @@
 
         const updatedFeatures = [];
         let removedSugarCount = 0;
-        const updatedCodesSet = new Set();
+        const matchedCodesSet = new Set();
         const seenStationKeys = new Set();
 
         oldFeatures.forEach(f => {
@@ -548,29 +711,34 @@
             const pid = p.parent_id || rid;
             const narObj = savedNarrativesMap[rid] || (rid === pid ? savedNarrativesMap[pid] : null);
 
-            // 若無獨立統計之支線(自用)過去誤複製了主線表格，予以清理避免主線更新沿革後造成重複表格
             if (rid !== pid && p.line_type && p.line_type.includes('支線') && (!p.history || p.history.length === 0)) {
                 p.description = {
                     zh: `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${rid} ${p.line_type}</span></div><div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`
                 };
             }
 
+            const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
             if (narObj) {
                 p.narrative = narObj;
-                if (!p.section && narObj.sectionText) {
-                    p.section = narObj.sectionText;
-                }
-                const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
+                if (!p.section && narObj.sectionText) p.section = narObj.sectionText;
                 p.description = { zh: injectNarrativeIntoDesc(oldZh, narObj.html) };
                 p.last_updated = new Date().toISOString().split('T')[0];
-                if (pastedNarrativesMap[rid] || pastedNarrativesMap[pid]) {
-                    updatedCodesSet.add(rid);
-                }
+                matchedCodesSet.add(narObj.code);
+            } else {
+                // 若該路線原本有舊沿革但已被刪除或移至子路線，清除殘留標記
+                delete p.narrative;
+                p.description = { zh: injectNarrativeIntoDesc(oldZh, '') };
             }
+
+            // 檢查該主線是否包含附屬統計子路線（如 E10-1）
+            Object.keys(savedNarrativesMap).forEach(nc => {
+                if (nc.startsWith(pid + '-')) matchedCodesSet.add(nc);
+            });
+
             updatedFeatures.push(f);
         });
 
-        const pendingCodes = Object.keys(pastedNarrativesMap).filter(c => !updatedCodesSet.has(c));
+        const allSavedCodes = Object.keys(savedNarrativesMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
         finalGeoJson = {
             data: {
@@ -585,10 +753,9 @@
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
             <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">
-                🎉 沿革更新與清理完成！目前共 ${updatedFeatures.length} 筆純台車圖資（已自動剔除舊糖鐵與雜訊 ${removedSugarCount} 筆）
+                🎉 沿革更新與清理完成！目前共 ${updatedFeatures.length} 筆純台車圖資（已收錄標準化沿革 ${allSavedCodes.length} 筆）
             </div>
-            <div>✅ <b>已立即掛載至地圖路線之沿革：</b> ${Array.from(updatedCodesSet).map(c => `${c} ${DEFAULT_CODE_REF_MAP[c] || ''}`).join('、') || '無（僅執行清理）'}</div>
-            ${pendingCodes.length > 0 ? `<div style="color:#e65100;margin-top:4px;">📌 <b>已預存入 data.json 記憶庫（待日後匯入該區 KML 時自動掛載）：</b> ${pendingCodes.map(c => `${c} ${DEFAULT_CODE_REF_MAP[c] || ''}`).join('、')}</div>` : ''}
+            <div>📖 <b>目前收錄之標準化沿革清單：</b> ${allSavedCodes.map(c => `<code>${c}</code> ${DEFAULT_CODE_REF_MAP[c] || ''}`).join('、') || '無'}</div>
             <div style="margin-top:8px;">👉 請點擊上方藍色「<b>📥 下載最新 data.json</b>」並覆蓋至 GitHub。</div>
         `;
         document.getElementById('downloadBtn').style.display = 'inline-block';
@@ -791,6 +958,8 @@
         const nameMode = document.querySelector('input[name="nameMode"]:checked').value;
         const removeSugar = document.getElementById('chkRemoveSugar').checked;
         Object.assign(savedNarrativesMap, pastedNarrativesMap);
+        sanitizeSavedNarratives();
+        renderSavedNarrativesPanel();
 
         const parser = new DOMParser();
         const kmlCodesSet = new Set();
@@ -913,7 +1082,6 @@
             const code = grp.code;
             const parentCode = code.split('-')[0];
             const emptyStat = { code: code, refName: DEFAULT_CODE_REF_MAP[code] || DEFAULT_CODE_REF_MAP[parentCode] || code, lastOfficialName: '', section: '', period: '未知', operators: [], routeNames: [], history: [] };
-            // 僅主線或同編號舊線使用 parentCode 統計，避免無統計之支線(自用)誤複製主線表格
             const csvInfo = csvRoutesMap[code] || (code === parentCode ? csvRoutesMap[parentCode] : null) || emptyStat;
 
             if (grp.folderName !== '主線' && mainLinesCoordsMap[parentCode]) {
@@ -946,7 +1114,7 @@
             }
 
             const oldProp = oldPropsMap[code] || {};
-            const narObj = savedNarrativesMap[code] || (code === parentCode ? savedNarrativesMap[parentCode] : null) || oldProp.narrative || null;
+            const narObj = savedNarrativesMap[code] || (code === parentCode ? savedNarrativesMap[parentCode] : null) || null;
 
             let displaySection = csvInfo.section || (narObj && narObj.sectionText) || baseCsv.section || '';
             if (grp.folderName !== '主線') {
@@ -1015,14 +1183,16 @@
                     return;
                 }
                 if (!kmlCodesSet.has(p.route_id) && !kmlParentSet.has(p.parent_id)) {
-                    // 若保留之其他分區路線剛好在本次貼上了新沿革，同步更新其沿革
                     const rid = p.route_id;
                     const pid = p.parent_id || rid;
                     const narObj = savedNarrativesMap[rid] || (rid === pid ? savedNarrativesMap[pid] : null);
+                    const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
                     if (narObj) {
                         p.narrative = narObj;
-                        const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
                         p.description = { zh: injectNarrativeIntoDesc(oldZh, narObj.html) };
+                    } else {
+                        delete p.narrative;
+                        p.description = { zh: injectNarrativeIntoDesc(oldZh, '') };
                     }
                     preservedFeatures.push(f);
                     preservedNames.push(p.route_id ? `${p.route_id} ${p.name}` : p.name);
