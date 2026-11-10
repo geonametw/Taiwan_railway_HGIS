@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HGIS 輕便鐵道 KML + CSV 批次匯入與清理工具 (v9.8 相容版)</title>
+    <title>HGIS 輕便鐵道 KML + CSV 批次匯入與清理工具 (v9.8 自動連線版)</title>
     <style>
         :root {
             --primary: #1a237e;
@@ -24,12 +24,18 @@
             background: #f8f9fc; border: 1px solid #dce1f0; border-radius: 10px;
             padding: 16px 20px; margin-bottom: 18px;
         }
-        .step-title { font-weight: bold; font-size: 16px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .step-title { font-weight: bold; font-size: 16px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
         .file-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
         input[type="file"] {
             background: #fff; border: 1px solid #b0bec5; padding: 8px 12px;
             border-radius: 6px; font-size: 14px; cursor: pointer; flex: 1; min-width: 240px;
         }
+        .status-box {
+            padding: 8px 12px; border-radius: 6px; font-size: 13.5px; font-weight: bold;
+            background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        }
+        .status-box.loading { background: #fff8e1; color: #e65100; border-color: #ffe082; }
+        .status-box.error { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
         .opt-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 14px; }
         .opt-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
@@ -37,6 +43,8 @@
             border: none; border-radius: 8px; padding: 11px 20px; font-size: 15px;
             font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit;
         }
+        .btn-sm { padding: 5px 12px; font-size: 12.5px; border-radius: 6px; background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-sm:hover { background: var(--primary-light); }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { background: #283593; }
         .btn-clean { background: #00695c; color: #fff; }
@@ -50,7 +58,7 @@
             font-size: 13px; white-space: pre-wrap; max-height: 420px; overflow-y: auto; display: none;
         }
         .badge { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-        .hint { font-size: 12.5px; color: #555; margin-top: 4px; }
+        .hint { font-size: 12.5px; color: #555; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -60,10 +68,14 @@
     <!-- 步驟 1 -->
     <div class="step-card">
         <div class="step-title">
-            <span>步驟 1：載入基底 data.json（用於移除糖鐵線、或保留已匯入之北/竹苗台車線）</span>
-            <span class="badge">選填，分區擴充必選</span>
+            <span>步驟 1：基底 data.json（開啟時自動抓取線上最新版）</span>
+            <span class="badge">自動連線載入</span>
         </div>
-        <div class="hint">若要移除早期匯入的 18 條糖鐵線，並保留已完成的北部／竹苗台車線，請先選擇目前的 <code>data.json</code>。</div>
+        <div id="onlineStatusBox" class="status-box loading">
+            <span id="onlineStatusText">⏳ 正在自動抓取線上最新 data.json...</span>
+            <button type="button" class="btn-sm" onclick="fetchOnlineBaseJson()">🔄 重新抓取線上版</button>
+        </div>
+        <div class="hint">💡 若你想改用電腦本機的特定 <code>data.json</code>，才需在下方手動選擇檔案（會優先使用手動選擇的本機檔）：</div>
         <div class="file-row">
             <input type="file" id="baseJsonInput" accept=".json">
         </div>
@@ -92,14 +104,14 @@
             <span>步驟 3：選擇「歷年年報統計表」CSV 檔</span>
             <span class="badge">統計沿革來源</span>
         </div>
-        <div class="hint">支援寬表（1909～1941 歷年欄位）與長表（年份、編號、業者、線名、區間、哩程）兩種 CSV 格式；若基底已有統計且僅做路線增補，亦會自動對齊。</div>
+        <div class="hint">支援寬表（1909～1941 歷年欄位）與長表兩種 CSV 格式；若基底已有統計且僅做路線增補，亦會自動對齊。</div>
         <div class="file-row">
             <input type="file" id="csvInput" accept=".csv">
         </div>
     </div>
 
     <div class="btn-row">
-        <button class="btn-clean" id="cleanOnlyBtn" onclick="runProcess(true)">🧹 僅清理既有 data.json（移除糖鐵線）並準備下載</button>
+        <button class="btn-clean" id="cleanOnlyBtn" onclick="runProcess(true)">🧹 僅清理線上 data.json（移除糖鐵線）並準備下載</button>
         <button class="btn-primary" id="mergeBtn" onclick="runProcess(false)">🚀 執行 KML + CSV 合併轉換</button>
         <button class="btn-download" id="downloadBtn" onclick="downloadResult()">💾 下載最新 data.json</button>
     </div>
@@ -108,7 +120,63 @@
 </div>
 
 <script>
+let onlineBaseJsonData = null;
+let onlineBaseSourceLabel = '';
 let finalOutputData = null;
+
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/geonametw/Taiwan_railway_HGIS/main/data.json';
+const GITHUB_PAGES_URL = 'https://geonametw.github.io/Taiwan_railway_HGIS/data.json';
+
+/* 網頁啟動時自動抓取線上 data.json */
+async function fetchOnlineBaseJson() {
+    const box = document.getElementById('onlineStatusBox');
+    const txt = document.getElementById('onlineStatusText');
+    box.className = 'status-box loading';
+    txt.textContent = '⏳ 正在自動抓取線上最新 data.json...';
+
+    const candidates = [
+        { url: `data.json?t=${Date.now()}`, label: '同目錄線上 data.json' },
+        { url: `${GITHUB_RAW_URL}?t=${Date.now()}`, label: 'GitHub 儲存庫 (main/data.json)' },
+        { url: `${GITHUB_PAGES_URL}?t=${Date.now()}`, label: 'GitHub Pages 線上 data.json' }
+    ];
+
+    for (const item of candidates) {
+        try {
+            const resp = await fetch(item.url, { cache: 'no-store' });
+            if (!resp.ok) continue;
+            const json = await resp.json();
+            const feats = (json.data || json).features;
+            if (Array.isArray(feats)) {
+                onlineBaseJsonData = json;
+                onlineBaseSourceLabel = item.label;
+                box.className = 'status-box';
+                txt.textContent = `🟢 已自動載入線上基底：${item.label}（共 ${feats.length} 筆圖徵）`;
+                return;
+            }
+        } catch (e) {
+            // 嘗試下一個候選網址
+        }
+    }
+
+    onlineBaseJsonData = null;
+    box.className = 'status-box error';
+    txt.textContent = '⚠️ 無法自動連線抓取線上 data.json，請於下方手動選擇本機 data.json 檔案。';
+}
+
+window.addEventListener('DOMContentLoaded', fetchOnlineBaseJson);
+
+document.getElementById('baseJsonInput').addEventListener('change', function() {
+    const box = document.getElementById('onlineStatusBox');
+    const txt = document.getElementById('onlineStatusText');
+    if (this.files && this.files[0]) {
+        box.className = 'status-box';
+        txt.textContent = `📁 已改用本機手動選擇檔案：${this.files[0].name}`;
+    } else if (onlineBaseJsonData) {
+        const feats = (onlineBaseJsonData.data || onlineBaseJsonData).features || [];
+        box.className = 'status-box';
+        txt.textContent = `🟢 已自動載入線上基底：${onlineBaseSourceLabel}（共 ${feats.length} 筆圖徵）`;
+    }
+});
 
 function logReport(lines) {
     const box = document.getElementById('report-box');
@@ -158,7 +226,6 @@ function cleanStationProps(stFeat) {
     delete p._boundRouteIds;
 }
 
-/* 解析 CSV 文字（支援引號內逗號與換行） */
 function parseCSV(text) {
     const rows = [];
     let row = [], cur = '', inQuotes = false;
@@ -186,25 +253,20 @@ function parseCSV(text) {
     return rows;
 }
 
-/* 從編號拆解主線 parent_id，例如 A1-2 -> A1, B4-支線 -> B4 */
 function getParentId(code) {
     const m = String(code || '').trim().match(/^([A-Z]\d+)/i);
     return m ? m[1].toUpperCase() : String(code || '').trim();
 }
 
-/* 解析 CSV 統計資料（同時相容「寬表 1909-1941」與「長表」） */
 function buildCsvStatsRegistry(csvText) {
     const rows = parseCSV(csvText.replace(/^\uFEFF/, ''));
     if (rows.length < 2) return {};
 
-    const registry = {}; // code -> { code, parentId, shortName, yearlyRecords: [{year, op, rn, sec, mi}] }
-
-    // 判斷是寬表（表頭含多個年份如 1909, 1910, 1911...）還是長表
+    const registry = {};
     const header0 = rows[0];
     const header1 = rows[1] || [];
     const yearCols = [];
 
-    // 偵測單層或雙層年份表頭
     for (let c = 0; c < header0.length; c++) {
         const yMatch = header0[c].match(/(19[0-4]\d)/);
         if (yMatch) {
@@ -215,7 +277,6 @@ function buildCsvStatsRegistry(csvText) {
     const isLongTable = yearCols.length < 3;
 
     if (isLongTable) {
-        // 長表模式：找尋「編號/ID、年份、經營者/業者、路線名/線名、區間、里程/哩程」欄位
         const h = header0.map(s => s.trim());
         const idxCode = h.findIndex(s => /編號|id|code|代碼/i.test(s));
         const idxName = h.findIndex(s => /^(名稱|主線名|基準線名|short_name)$/i.test(s));
@@ -251,12 +312,9 @@ function buildCsvStatsRegistry(csvText) {
             registry[code].yearly.push({ year: yr, op, rn, sec, mi });
         }
     } else {
-        // 寬表模式：自動偵測每個年份佔幾欄（通常每年度 4 欄：經營者、路線名、區間、里程，或 3 欄）
-        // 找出資料起始列（跳過表頭列）
         let startRow = 1;
         if (header1.some(s => /經營|業者|區間|里程|哩程|線名/.test(s))) startRow = 2;
 
-        // 建立每個年份對應的 { year, opCol, rnCol, secCol, miCol }
         const yearMap = {};
         for (let c = 0; c < header0.length; c++) {
             const ym = header0[c].match(/(19[0-4]\d)/);
@@ -327,7 +385,6 @@ function buildCsvStatsRegistry(csvText) {
         }
     }
 
-    // 將每年紀錄壓縮成連續相同狀態的 history 區間，並產生 HTML 表格
     Object.values(registry).forEach(item => {
         item.yearly.sort((a, b) => a.year - b.year);
         const history = [];
@@ -397,7 +454,6 @@ function buildHtmlTableFromHistory(history) {
                 </tr></thead><tbody>${rowsHtml}</tbody></table>`;
 }
 
-/* 解析 KML 字串為路線與車站 Features */
 function parseKmlToFeatures(kmlText) {
     const parser = new DOMParser();
     const xml = parser.parseFromString(kmlText, 'text/xml');
@@ -416,7 +472,6 @@ function parseKmlToFeatures(kmlText) {
         const rawName = (pm.getElementsByTagName('name')[0]?.textContent || '').trim();
         const rawDesc = (pm.getElementsByTagName('description')[0]?.textContent || '').trim();
 
-        // 取得上層 Folder 名稱以判斷圖層類別
         let folderName = '';
         let parentNode = pm.parentNode;
         while (parentNode && parentNode.nodeName !== 'Document' && parentNode.nodeName !== 'kml') {
@@ -468,15 +523,11 @@ function parseKmlToFeatures(kmlText) {
             else if (folderName.includes('副線') || rawName.includes('副線')) lineType = '副線';
             else if (folderName.includes('支線') || folderName.includes('自用') || rawName.includes('支線')) lineType = '支線(自用)';
 
-            // 解析 Placemark 名稱中的編號與線名，例如 "C1 竹南" 或 "C1-3" 或 "B4 角板山線"
             let routeId = rawName;
             let routeName = '';
             const matchCode = rawName.match(/^([A-Z]\d+(?:-[^\s]+)?)\s*(.*)$/i);
             if (matchCode) {
-                routeId = matchCode[1].toUpperCase();
-                if (/^[a-z]/i.test(routeId)) {
-                    routeId = routeId.charAt(0).toUpperCase() + routeId.slice(1);
-                }
+                routeId = matchCode[1].charAt(0).toUpperCase() + matchCode[1].slice(1);
                 routeName = (matchCode[2] || '').trim();
             }
             const parentId = getParentId(routeId);
@@ -511,7 +562,7 @@ function parseKmlToFeatures(kmlText) {
 
 async function runProcess(cleanOnly = false) {
     try {
-        const baseFile = document.getElementById('baseJsonInput').files[0];
+        const localBaseFile = document.getElementById('baseJsonInput').files[0];
         const kmlFiles = Array.from(document.getElementById('kmlInput').files);
         const csvFile = document.getElementById('csvInput').files[0];
 
@@ -519,12 +570,24 @@ async function runProcess(cleanOnly = false) {
         const removeUnnamed = document.getElementById('chkRemoveUnnamed').checked;
         const keepExisting = document.getElementById('chkKeepExisting').checked;
 
-        if (cleanOnly && !baseFile) {
-            alert('請先在「步驟 1」選擇現有的 data.json 檔案！');
+        let rawBaseJson = null;
+        let baseLabel = '';
+
+        if (localBaseFile) {
+            const baseText = await readFileAsText(localBaseFile);
+            rawBaseJson = JSON.parse(baseText);
+            baseLabel = `本機檔案 (${localBaseFile.name})`;
+        } else if (onlineBaseJsonData) {
+            rawBaseJson = JSON.parse(JSON.stringify(onlineBaseJsonData));
+            baseLabel = onlineBaseSourceLabel;
+        }
+
+        if (cleanOnly && !rawBaseJson) {
+            alert('尚未載入線上或本機的 data.json！請點擊「重新抓取線上版」或手動選擇檔案。');
             return;
         }
-        if (!cleanOnly && !baseFile && kmlFiles.length === 0) {
-            alert('請至少選擇基底 data.json 或要匯入的 KML 檔！');
+        if (!cleanOnly && !rawBaseJson && kmlFiles.length === 0) {
+            alert('請確認已載入線上 data.json，或選擇要匯入的 KML 檔！');
             return;
         }
 
@@ -534,13 +597,9 @@ async function runProcess(cleanOnly = false) {
         let baseRoutes = [];
         let baseStations = [];
         const existingTailoMap = {};
-        const existingGroupMetaMap = {}; // 保存基底已有的主線名稱與統計，供未重傳 CSV 時沿用
 
-        if (baseFile) {
-            const baseText = await readFileAsText(baseFile);
-            const rawJson = JSON.parse(baseText);
-            const rawFeatures = (rawJson.data || rawJson).features || [];
-
+        if (rawBaseJson) {
+            const rawFeatures = (rawBaseJson.data || rawBaseJson).features || [];
             let removedSugarCount = 0;
             let removedNoiseCount = 0;
 
@@ -553,7 +612,6 @@ async function runProcess(cleanOnly = false) {
                     baseStations.push(f);
                     return;
                 }
-
                 if (removeSugar && isSugarOrLegacyRoute(f)) {
                     removedSugarCount++;
                     return;
@@ -562,25 +620,17 @@ async function runProcess(cleanOnly = false) {
                     removedNoiseCount++;
                     return;
                 }
-
                 const gk = p.parent_id || p.route_id || p.name;
                 if (p.tailo && gk) existingTailoMap[gk] = p.tailo;
-                if (p.route_id) existingGroupMetaMap[p.route_id] = p;
-
                 baseRoutes.push(f);
             });
 
-            report.push(`✅ 已讀取基底 data.json：原始共 ${rawFeatures.length} 筆圖徵`);
+            report.push(`✅ 已讀取基底 [${baseLabel}]：原始共 ${rawFeatures.length} 筆圖徵`);
             if (removeSugar) report.push(`   🧹 已移除早期無編號糖鐵線：${removedSugarCount} 條`);
-            if (removeNoiseCountOrUnnamed(removedNoiseCount)) {
-                report.push(`   🧹 已移除 Google Maps 未命名雜訊線：${removedNoiseCount} 條`);
-            }
+            if (removeUnnamed) report.push(`   🧹 已移除 Google Maps 未命名雜訊線：${removedNoiseCount} 條`);
             report.push(`   📦 基底保留台車路線：${baseRoutes.length} 條｜車站：${baseStations.length} 座`);
         }
 
-        function removeNoiseCountOrUnnamed(c) { return c >= 0; }
-
-        // 若僅清理基底 data.json
         if (cleanOnly) {
             const seenSt = new Set();
             const dedupStations = baseStations.filter(st => {
@@ -597,13 +647,12 @@ async function runProcess(cleanOnly = false) {
                 }
             };
             report.push(`\n🎉 清理完成！共輸出 ${baseRoutes.length} 條台車路線、${dedupStations.length} 座車站。`);
-            report.push(`👉 請點擊上方綠色「💾 下載最新 data.json」按鈕儲存檔案。`);
+            report.push(`👉 請點擊上方綠色「💾 下載最新 data.json」按鈕儲存檔案並上傳至 GitHub。`);
             logReport(report);
             document.getElementById('downloadBtn').style.display = 'inline-block';
             return;
         }
 
-        // 解析 CSV 統計表
         let csvRegistry = {};
         if (csvFile) {
             const csvText = await readFileAsText(csvFile);
@@ -611,7 +660,6 @@ async function runProcess(cleanOnly = false) {
             report.push(`📊 已解析 CSV 統計表：共載入 ${Object.keys(csvRegistry).length} 組路線編號統計`);
         }
 
-        // 解析所有上傳的 KML 檔案
         let newKmlRoutes = [];
         let newKmlStations = [];
         for (const kf of kmlFiles) {
@@ -630,7 +678,6 @@ async function runProcess(cleanOnly = false) {
             }
         }
 
-        // 合併基底路線與新 KML 路線
         const newGroupKeys = new Set(newKmlRoutes.map(r => r.properties.parent_id || r.properties.route_id));
         let mergedRoutes = [];
         if (keepExisting && baseRoutes.length > 0) {
@@ -644,7 +691,6 @@ async function runProcess(cleanOnly = false) {
             mergedRoutes = [...newKmlRoutes];
         }
 
-        // 為所有路線建立家族主線名稱對照表（優先順序：KML 主線名稱 > CSV 主線名稱 > 基底名稱）
         const familyNameMap = {};
         mergedRoutes.forEach(r => {
             const p = r.properties;
@@ -662,7 +708,6 @@ async function runProcess(cleanOnly = false) {
             }
         });
 
-        // 找出每個 parent_id 家族中，有哪些已經有獨立 KML 實體副線（避免重複塞進主線附屬統計，或同時保留）
         const kmlRouteIdsByParent = {};
         mergedRoutes.forEach(r => {
             const pid = r.properties.parent_id;
@@ -670,19 +715,15 @@ async function runProcess(cleanOnly = false) {
             kmlRouteIdsByParent[pid].add(r.properties.route_id);
         });
 
-        // 將 CSV 統計資料組裝進每條路線
         mergedRoutes.forEach(r => {
             const p = r.properties;
             const rid = p.route_id;
             const pid = p.parent_id;
             const ltype = p.line_type || '主線';
 
-            // 繼承台羅拼音
             if (!p.tailo && existingTailoMap[pid]) {
                 p.tailo = existingTailoMap[pid];
             }
-
-            // 決定路線顯示名稱
             if (familyNameMap[pid]) {
                 p.name = familyNameMap[pid];
             } else if (p.name && !p.name.endsWith('線')) {
@@ -706,7 +747,6 @@ async function runProcess(cleanOnly = false) {
                 let descHtml = `<div style="margin-bottom:6px;"><span style="background:#1a237e;color:white;padding:2px 7px;border-radius:4px;font-size:12px;">${rid} ${ltype}</span>${p.operators ? ` <span style="font-size:12px;color:#555;">經營者：${p.operators}</span>` : ''}</div>`;
                 descHtml += chosenStat.tableHtml;
 
-                // 若為家族主線，將沒有獨立 KML 的同家族子統計（如 A1-1）附加為「▸ 附屬統計」
                 if (rid === pid && ltype === '主線') {
                     const subStats = Object.values(csvRegistry).filter(item =>
                         item.parentId === pid &&
@@ -723,7 +763,6 @@ async function runProcess(cleanOnly = false) {
                 p.description = { zh: descHtml };
                 p.last_updated = today;
             } else if (!p.description || !p.description.zh || !p.description.zh.includes('<table')) {
-                // 無年報統計之自用線或舊線
                 const parentSec = (mainStat && mainStat.section) ? mainStat.section : '';
                 p.section = parentSec ? `${parentSec} (${ltype})` : ltype;
                 p.description = {
@@ -733,7 +772,6 @@ async function runProcess(cleanOnly = false) {
             }
         });
 
-        // 合併並去重車站點位
         const rawStations = keepExisting ? [...baseStations, ...newKmlStations] : [...newKmlStations];
         const seenStationKeys = new Set();
         const finalStations = [];
