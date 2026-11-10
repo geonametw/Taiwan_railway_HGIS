@@ -2,16 +2,21 @@
   "data": {
     "type": "FeatureCollection",
     "narratives": {
-      "E-10 [菁寮線]": {
-        "code": "E-10 [菁寮線]",
-        "rawName": "E-10 [菁寮線]",
-        "sectionText": "後壁—菁寮",
+      "E10-1": {
+        "code": "E10-1",
+        "rawName": "菁寮線",
+        "sectionText": "",
         "openDate": "",
         "paragraphs": [
-          "關子嶺軌道株式會社於昭和8年左右經營的支線，長3.4公里。連結後壁車站與菁寮聚落。昭和13年9月27日最後一日營業 ，可歸類為短暫存在的鄉間接駁線。"
+          "關子嶺軌道於昭和8（1933）年左右開始經營，自後壁驛延伸至菁寮部落。昭和13年9月27日最後一日營業[1]，存續時間極短。"
         ],
-        "footnotes": [],
-        "html": "<!--HGIS_NARRATIVE_START--><div class=\"hgis-narrative-card\" style=\"background:#f8f9fc;border:1px solid #d8def4;border-left:4px solid #1a237e;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#222;line-height:1.68;\"><div style=\"font-weight:bold;color:#1a237e;font-size:13px;margin-bottom:6px;\">📖 路線沿革</div><div style=\"background:#eef2ff;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:12px;color:#1a237e;line-height:1.55;\"><div><b>📍 考據區間：</b>後壁—菁寮</div></div><div><p style=\"margin:0 0 0 0;text-align:justify;\">關子嶺軌道株式會社於昭和8年左右經營的支線，長3.4公里。連結後壁車站與菁寮聚落。昭和13年9月27日最後一日營業 ，可歸類為短暫存在的鄉間接駁線。</p></div></div><!--HGIS_NARRATIVE_END-->"
+        "footnotes": [
+          {
+            "num": 1,
+            "text": "〈私設運輸營業軌道廢止〉，《臺南州報》，第1604號，昭和13年10月1日。"
+          }
+        ],
+        "html": "<!--HGIS_NARRATIVE_START--><div class=\"hgis-narrative-card\" style=\"background:#f8f9fc;border:1px solid #d8def4;border-left:4px solid #1a237e;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#222;line-height:1.68;\"><div style=\"font-weight:bold;color:#1a237e;font-size:13px;margin-bottom:6px;\">📖 路線沿革</div><div><p style=\"margin:0 0 0 0;text-align:justify;\">關子嶺軌道於昭和8（1933）年左右開始經營，自後壁驛延伸至菁寮部落。昭和13年9月27日最後一日營業<sup style=\"color:#1a237e;background:#e8eaf6;padding:0 4px;border-radius:4px;font-weight:bold;cursor:pointer;margin:0 1px;\" title=\"〈私設運輸營業軌道廢止〉，《臺南州報》，第1604號，昭和13年10月1日。\">[1]</sup>，存續時間極短。</p></div><div style=\"margin-top:8px;padding-top:6px;border-top:1px dashed #c5cae9;font-size:11.5px;color:#4a5568;line-height:1.5;\"><div data-fn=\"1\" style=\"margin-bottom:3px;padding:2px 4px;border-radius:4px;\"><span style=\"color:#1a237e;font-weight:bold;\">[1]</span> 〈私設運輸營業軌道廢止〉，《臺南州報》，第1604號，昭和13年10月1日。</div></div></div><!--HGIS_NARRATIVE_END-->"
       }
     },
     "features": [
