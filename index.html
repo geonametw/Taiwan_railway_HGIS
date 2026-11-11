@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.9.2</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.9.3</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -202,7 +202,7 @@
             border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
         .drawer-close:hover { background: rgba(255,255,255,0.32); }
-        .drawer-body { padding: 14px 16px 24px; overflow-y: auto; flex: 1; line-height: 1.55; }
+        .drawer-body { padding: 14px 12px 24px; overflow-y: auto; flex: 1; line-height: 1.55; }
         #drawer-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; font-size: 12px; }
         #drawer-summary:empty { display: none; }
         .summary-pill { border-radius: 8px; background: #eef2ff; color: #27316f; padding: 5px 9px; line-height: 1.5; }
@@ -293,16 +293,49 @@
         .clickable-route-badge { cursor: pointer; user-select: none; box-shadow: 0 1px 3px rgba(26,35,126,0.25); }
         .clickable-route-badge:hover { background: #3949ab; }
 
+        /* 電腦與手機統一表格樣式（最佳化欄寬配置：年份縮小、業者/線名/里程不斷行） */
         .active-year-row { background-color: #fff59d !important; font-weight: bold; color: #b71c1c; }
-        #drawer-table-container { overflow-x: auto; overflow-wrap: anywhere; }
-        #drawer-table-container table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
-        #drawer-table-container th { position: sticky; top: -14px; background: #e8eaf6; color: #1a237e; z-index: 2; box-shadow: 0 1px 0 #ccc; padding: 6px 5px; }
-        #drawer-table-container td { padding: 5px 5px; overflow-wrap: anywhere; }
+        #drawer-table-container { overflow-x: auto; }
+        #drawer-table-container table { width: 100%; border-collapse: collapse; font-size: 12px !important; margin-top: 4px; }
+        #drawer-table-container th {
+            position: sticky; top: -14px; background: #e8eaf6; color: #1a237e;
+            z-index: 2; box-shadow: 0 1px 0 #ccc; padding: 5px 4px !important; white-space: nowrap;
+        }
+        #drawer-table-container td { padding: 4px 4px !important; line-height: 1.4; }
+        /* 第 1 欄（年份）：縮小字級與左右內距、強制單行 */
+        #drawer-table-container th:nth-child(1),
+        #drawer-table-container td:nth-child(1) {
+            white-space: nowrap !important; width: 1%; font-size: 11.5px;
+            font-variant-numeric: tabular-nums; padding-left: 3px !important; padding-right: 3px !important;
+        }
+        /* 第 2 欄（業者）：單一業者名稱保持不斷行 */
+        #drawer-table-container th:nth-child(2),
+        #drawer-table-container td:nth-child(2) {
+            word-break: keep-all;
+        }
         .table-op-link {
             color: #4a148c; text-decoration: underline; text-decoration-color: #ba68c8;
             text-underline-offset: 2px; font-weight: bold; cursor: pointer;
+            white-space: nowrap; display: inline-block;
         }
-        .table-op-link:hover { color: #fff; background: #7b1fa2; text-decoration: none; border-radius: 3px; padding: 0 3px; }
+        .table-op-link:hover { color: #fff; background: #7b1fa2; text-decoration: none; border-radius: 3px; padding: 0 2px; }
+        /* 第 3 欄（線名）：保持單行不斷行 */
+        #drawer-table-container th:nth-child(3),
+        #drawer-table-container td:nth-child(3) {
+            white-space: nowrap; word-break: keep-all;
+        }
+        /* 第 4 欄（區間）：彈性分配剩餘空間 */
+        #drawer-table-container th:nth-child(4),
+        #drawer-table-container td:nth-child(4) {
+            word-break: keep-all;
+        }
+        /* 第 5 欄（里程）：強制單行靠右，絕不將小數點斷行 */
+        #drawer-table-container th:nth-child(5),
+        #drawer-table-container td:nth-child(5) {
+            white-space: nowrap !important; word-break: normal !important; overflow-wrap: normal !important;
+            width: 1%; text-align: right; font-variant-numeric: tabular-nums;
+            padding-left: 3px !important; padding-right: 3px !important;
+        }
 
         /* 🔍 全螢幕照片燈箱 */
         #photo-lightbox {
@@ -529,6 +562,10 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        /* ✨ 啟動瞬間先保存網址列 Hash，防止初始化期間被 applyYearFilter 清空 */
+        const initialUrlHash = window.location.hash;
+        let isInitializingHash = true;
+
         const sysTitle = document.getElementById('system-title');
         const yfBar = document.getElementById('year-filter-bar');
         const infoDrawer = document.getElementById('info-drawer');
@@ -540,7 +577,6 @@
         const dropdown = document.getElementById('searchDropdown');
         const clearBtn = document.getElementById('clearBtn');
 
-        // 內建全台 317 組台車編號與參考名稱對照表（供沿革內文自動超連結比對）
         const ROUTE_CODE_REF_MAP = {"A1": "三爪子", "A1-1": "三爪子複線", "A1-2": "瑞芳停車場引入", "A2": "金瓜石", "A3": "金山", "A3-1": "金山野柳段", "A3-2": "觀音町", "A4": "錫板", "A4-1": "水碓仔", "A5": "松三", "A6": "深坑", "A6-1": "指南宮", "A7": "十五份", "A8": "南門屈尺", "A8-1": "南門複線", "A9": "古亭村庄大稻埕", "A10": "大稻埕錫口", "A11": "龍匣口", "A12": "頂埔", "A12-1": "新埔", "A12-2": "枋橋", "A12-3": "萬華驛", "A13": "鷺洲新莊", "A13-1": "和尚洲", "A13-2": "橋頭", "A14": "板橋", "A15": "萬華", "A16": "成福", "A16-1": "成福複線", "A16-2": "三角湧", "A17": "中庄", "A17-1": "貨物", "A18": "大湖", "A19": "媽祖田", "A20": "佳園", "A21": "新樹", "A22": "三井(烏來)", "A23": "三井(三峽合流)", "B1": "新莊", "B1-1": "塔寮坑", "B2": "南崁", "B2-1": "北門", "B3": "大溪複線", "B3-1": "大溪單線", "B4": "角板山", "B5": "大園", "B6": "竹圍", "B7": "中壢", "B8": "中壢", "B8-1": "觀音", "B8-2": "龍潭", "B9": "下大堀", "B10": "新屋(中壢)", "B11": "東勢", "B12": "三坑仔", "B13": "楊梅", "B13-1": "下水流", "B14": "大陂", "B15": "伯公岡", "B16": "湖口", "B17": "平關", "B18": "橫崗頭", "B19": "紅關", "B19-1": "紅關複線", "B19-2": "犁頭山", "B20": "新埔輕鐵", "B21": "石門", "B22": "馬武督", "B23": "竹東", "B23-1": "竹東", "B23-2": "新竹單", "B23-3": "鹿寮坑", "B24": "北埔", "B25": "上坪", "B26": "芎林(臺灣軌道)", "B27": "芎林(文林軌道)", "B27-1": "石壁坑竹東", "B28": "芎林(帝國製糖)", "B29": "舊港", "B29-1": "北門", "B29-2": "舊社", "B29-3": "南寮", "B29-4": "舊港岔", "B30": "南寮油車港", "B31": "油車港", "C1": "竹南", "C1-1": "竹南複", "C1-2": "斗煥坪", "C1-3": "大南埔", "C2": "中港街", "C3": "尖山下錦水", "C3-1": "造橋", "C4": "錦水", "C4-1": "二坪岡", "C5": "後攏驛後攏街", "C5-1": "後攏驛崁頭屋", "C5-2": "後攏街大山腳", "C5-3": "後攏街新港", "C6": "公司寮", "C7": "苗栗", "C7-1": "苗栗複線", "C7-2": "苗栗內麻", "C7-3": "出磺坑", "C8": "銅鑼灣福基", "C9": "銅鑼灣山腳", "C10": "日南", "C10-1": "五里牌", "C11": "三叉", "C12": "卓蘭", "D1": "后里", "D3": "大安港", "D4": "甲南", "D5": "四塊厝", "D6": "公館", "D7": "清水", "D7-1": "清水", "D8": "梧棲", "D9": "神崗崎頭", "D10": "神崗", "D11": "東勢", "D11-1": "東勢複線", "D11-2": "葫蘆墩驛", "D11-3": "貯木池", "D12": "水底寮", "D13": "馬力埔", "D14": "牛欄坑", "D15": "中坑坪", "D16": "臺中", "D16-1": "大雅支", "D16-2": "北屯", "D16-3": "三貴城", "D17": "埧雅", "D18": "大雅", "D19": "西屯", "D20": "頭汴坑", "D20-1": "三汴", "D20-2": "廍子", "D20-3": "太平", "D20-4": "芭蕉市場", "D21": "南屯", "D22": "烏日", "D23": "龍井", "D23-1": "海埔厝", "D23-2": "龍目井", "D24": "臺中南投", "D25": "大里", "D26": "霧峰(霧峰宏業)", "D27": "霧峰(霧峰輕鐵)", "D28": "大平", "D28-1": "竹子坑支", "D28-2": "牛角坑支", "D29": "青桐林", "D30": "六股", "D31": "彰草", "D31-1": "八卦山", "D32": "彰化鹿港", "D32-1": "鹿港新營口", "D33": "彰化軌道", "D34": "溪州二林", "D35": "員林鹿港", "D36": "員林", "D36-1": "員林複線", "D36-2": "員林東山", "D36-3": "東山湳雅", "D36-4": "湖水坑支線", "D36-5": "海豐崙支線", "D37": "下見口", "D38": "秀水茄苳腳", "D39": "土城", "D40": "國姓", "D41": "集南", "D41-1": "南投分歧線", "D41-2": "番子吧", "D41-3": "暗坑", "D41-4": "粗坑", "D42": "龍眼林", "D43": "集鹿", "D44": "新高", "D44-1": "貨物", "D45": "埔里", "D45-1": "埔里複線", "D48": "田中央驛田中央街", "D50": "竹山", "D50-1": "東埔蚋複線", "D50-2": "林圯埔", "D50-3": "大坑", "D51": "社寮", "D51-1": "名間", "D52": "車輄寮", "D53": "溪頭", "D54": "名濁", "D55": "西螺", "D56": "內林", "D57": "斗六糖廠", "D58": "土庫", "D59": "埔眉", "E1": "打貓北港", "E2": "新港驛新港街", "E3": "梅山", "E4": "嘉義小梅", "E5": "中埔", "E5-1": "南門西門", "E5-2": "沄水", "E5-3": "三界埔", "E5-4": "石硦", "E6": "觸口", "E6-1": "番路(臺中輕鐵)", "E7": "番路(內外食品)", "E8": "內埔子鹿麻產", "E9": "竹崎輕鐵", "E10": "關子嶺", "E10-1": "菁寮", "E10-2": "後壁", "E10-3": "木屐寮", "E10-4": "仙草埔", "E10-5": "關子嶺溫泉", "E11": "番社", "E12": "六重溪", "E13": "崎子頭", "E13-1": "前大埔", "E14": "烏山頭", "E15": "六甲", "E16": "北門", "E17": "鹽水", "E18": "善化市街", "E19": "善化二重溪", "E19-1": "大內北勢洲", "E20": "玉井", "E21": "大目降", "E21-1": "糖業科", "E21-2": "新市", "E21-3": "虎頭埤", "E22": "安平", "E23": "喜樹", "E23-1": "屠畜場", "E24": "關廟", "E24-1": "東市場", "E25": "番子寮", "E25-1": "麻豆", "E25-2": "麻豆市街", "E25-3": "西港麻豆", "E25-4": "西港番子寮", "E25-5": "鹽水港三崁店", "E25-6": "六塊厝直加弄", "E26": "嘉義公園", "E26-1": "郵局西門", "E27": "台南水道", "F1": "石材", "F2": "路竹", "F3": "燕巢", "F4": "岡山阿蓮", "F4-1": "大岡山", "F5": "赤崁", "F5-1": "彌陀", "F6": "鳳山苓雅寮", "F7": "蕃薯寮楠仔坑", "F8": "舊寮中庄", "F9": "九曲堂驛阿缑", "F10": "阿缑東港", "F10-1": "萬巒四溝水", "F10-2": "打鐵新埤頭", "F11": "東港枋寮", "F11-1": "頂中街海岸", "F11-2": "下中街", "F11-3": "磘仔口竹仔腳", "F12": "麟洛屏東", "F13": "西勢內埔", "F14": "新大路關屏東", "F15": "東港溪洲", "F16": "恆春海口", "F17": "恆春大坂埒", "F18": "六龜里橫山", "F19": "哨船頭鳳山", "G1": "頭圍蘇澳", "G2": "宜蘭蘇澳", "G3": "蘇澳海岸", "G3-1": "蘇澳停車場引入", "G4": "南方澳", "G4-1": "港邊", "G5": "員山", "G5-1": "員山溫泉", "G5-2": "水源地", "G5-3": "深溝", "G6": "叭哩沙", "G6-1": "羅東停車場", "G6-2": "羅東引込", "G6-3": "農庫", "G7": "竹林貯木場", "G8": "竹林二結", "G9": "大洲", "G10": "小南澳", "G11": "利澤簡", "G12": "一百甲", "G13": "功勞", "G13-1": "二結", "H1": "臺東", "H1-1": "水尾", "H2": "南町指導所", "H2-1": "卑南海岸", "H2-2": "卑南社", "H2-3": "南町卑南社", "H2-4": "南町指導所", "H2-5": "新町南町", "H3": "吉野村", "H4": "銅文蘭", "H5": "新城", "H6": "瑞穗溫泉", "I1": "新竹", "I2": "臺中", "I3": "臺南", "I3-1": "嘉義", "I4": "打狗", "I5": "塗葛窟", "I6": "雲林", "I7": "安平", "I8": "鳳山", "I9": "軍用速成"};
 
         let ROUTE_PHOTO_META = {};
@@ -1141,23 +1177,20 @@
             }
         };
 
-        /* ✨ 跨路線／同家族子路線點擊跳轉核心函式 */
-        window.jumpToRouteById = function(targetCode) {
+        window.jumpToRouteById = function(targetCode, silent = false) {
             if (!targetCode) return;
             const normCode = String(targetCode).trim().toUpperCase();
             const parentKey = normCode.split('-')[0];
 
-            // 1. 若目標屬於目前正在檢視的同一家族（例如從 E10 點擊「菁寮線」跳往 E10-1）
             if (selectedGroupKey === parentKey && familyMembersMap[parentKey]) {
                 const member = familyMembersMap[parentKey].find(m => m.id === normCode);
                 if (member) {
                     window.switchFamilyMember(parentKey, normCode);
-                    showToast(`🛤️ 已切換至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || member.lineType || '' }線」`);
+                    if (!silent) showToast(`🛤️ 已切換至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || member.lineType || '' }線」`);
                     return;
                 }
             }
 
-            // 2. 若目標為其他路線家族或子路線（已載入於地圖）
             const targetFeat = routeByIdMap[normCode] || masterRouteFeatureMap[normCode] || masterRouteFeatureMap[parentKey];
             if (targetFeat) {
                 if (currentDrawerFeature) previousRouteFeature = currentDrawerFeature;
@@ -1166,11 +1199,10 @@
                     const subM = familyMembersMap[parentKey].find(m => m.id === normCode);
                     if (subM) window.switchFamilyMember(parentKey, normCode);
                 }
-                showToast(`🛤️ 已跳轉至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || '' }線」`);
+                if (!silent) showToast(`🛤️ 已跳轉至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || '' }線」`);
                 return;
             }
 
-            // 3. 若該路線尚未匯入 KML 圖資，但已有沿革文字於 globalNarrativesMap
             if (globalNarrativesMap[normCode]) {
                 if (currentDrawerFeature) previousRouteFeature = currentDrawerFeature;
                 const refName = (ROUTE_CODE_REF_MAP[normCode] || globalNarrativesMap[normCode].rawName || normCode).replace(/線$/, '') + '線';
@@ -1188,18 +1220,17 @@
                     }
                 };
                 openRouteDrawer(tempFeat, true);
-                showToast(`📖 已開啟「${ normCode } ${ refName }」沿革`);
-            } else {
+                if (!silent) showToast(`📖 已開啟「${ normCode } ${ refName }」沿革`);
+            } else if (!silent) {
                 showToast(`ℹ️ 「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || '' }線」尚無詳細資料`);
             }
         };
 
-        /* 建立沿革內文自動超連結比對表（優先匹配同家族子路線如 E10-1 菁寮線，再匹配全域路線） */
         function linkifyRouteMentions(escapedText, currentId, groupKey) {
             if (!escapedText) return '';
 
-            const lineNamesToCode = {}; // "菁寮線" -> "E10-1"
-            const bareSubNamesToCode = {}; // "關子嶺溫泉" -> "E10-5" (僅當後接括號或位於引號內時觸發)
+            const lineNamesToCode = {};
+            const bareSubNamesToCode = {};
 
             const isTargetAvailable = (code) => {
                 const pk = code.split('-')[0];
@@ -1220,7 +1251,6 @@
                 }
             };
 
-            // 1. 先註冊同家族的所有子路線與主線
             const famList = familyMembersMap[groupKey] || [];
             famList.forEach(m => {
                 const ref = ROUTE_CODE_REF_MAP[m.id] || m.lineType || '';
@@ -1232,14 +1262,12 @@
                 }
             });
 
-            // 2. 再註冊全台灣其他已存在之路線
             Object.entries(ROUTE_CODE_REF_MAP).forEach(([code, ref]) => {
                 if (!(code === groupKey || code.startsWith(groupKey + '-'))) {
                     registerName(code, ref, false);
                 }
             });
 
-            // 使用 Placeholder 保護已產生的 HTML 標籤，避免二次替換干擾
             const placeholders = [];
             const makeLinkPlaceholder = (code, displayHtml) => {
                 const refTitle = ROUTE_CODE_REF_MAP[code] ? `${code} ${ROUTE_CODE_REF_MAP[code]}線` : code;
@@ -1251,7 +1279,6 @@
 
             let out = escapedText;
 
-            // A. 先處理手動指定語法：[[E10-1|菁寮線]] 或 [[菁寮線]] 或 [[E10-1]]
             out = out.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, p1, p2) => {
                 const key = p1.trim();
                 const upperKey = key.toUpperCase();
@@ -1267,7 +1294,6 @@
                 return makeLinkPlaceholder(targetCode, label);
             });
 
-            // B. 自動匹配所有以「線」結尾的路線名稱（如「菁寮線」、後壁線、木屐寮線、仙草埔線）
             const sortedLineNames = Object.keys(lineNamesToCode).sort((a, b) => b.length - a.length);
             if (sortedLineNames.length > 0) {
                 const escapedKeys = sortedLineNames.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -1278,7 +1304,6 @@
                 });
             }
 
-            // C. 自動匹配同家族未加「線」字、但置於「...」引號內或後接（...）括號的子路線名（如：關子嶺溫泉（關子嶺＝溫泉場））
             const sortedBareNames = Object.keys(bareSubNamesToCode).sort((a, b) => b.length - a.length);
             if (sortedBareNames.length > 0) {
                 const escapedBare = sortedBareNames.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -1289,7 +1314,6 @@
                 });
             }
 
-            // 還原所有超連結標籤
             out = out.replace(/\uE000LNK(\d+)\uE000/g, (m, idx) => placeholders[Number(idx)] || '');
             return out;
         }
@@ -1359,7 +1383,6 @@
                 return ownNar;
             }
 
-            // 若目前在主線，但主線本身尚未建置沿革，則自動顯示該家族下已建置的子路線沿革
             if (currentId === groupKey) {
                 const famList = familyMembersMap[groupKey] || [];
                 let subCardsHtml = '';
@@ -1434,24 +1457,32 @@
             return normalized;
         }
 
+        /* ✨ 統計表格格式化：將 1925–1928 自動縮寫為 1925–28 以節省欄寬 */
         function formatTableHtml(htmlStr) {
             if (!htmlStr) return '';
             let out = htmlStr
                 .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
                 .replace(/(<th[^>]*>)\s*經營者\s*(<\/th>)/g, '$1業者$2')
                 .replace(/(<th[^>]*>)\s*路線名\s*(<\/th>)/g, '$1線名$2');
-            if (currentFilterYear !== 'all') {
-                const yr = parseInt(currentFilterYear, 10);
-                out = out.replace(/<tr>\s*<td([^>]*)>(\d{4})(?:[–~-](\d{4}))?<\/td>/g, (match, tdAttr, y1, y2) => {
-                    const start = parseInt(y1, 10);
-                    const end = y2 ? parseInt(y2, 10) : start;
+
+            out = out.replace(/<tr>\s*<td([^>]*)>(\d{4})(?:[–~-](\d{2,4}))?<\/td>/g, (match, tdAttr, y1, y2) => {
+                const start = parseInt(y1, 10);
+                let end = start;
+                if (y2) {
+                    end = y2.length === 2 ? parseInt(y1.slice(0, 2) + y2, 10) : parseInt(y2, 10);
+                }
+                const fullY2 = String(end);
+                const shortY2 = (y1.slice(0, 2) === fullY2.slice(0, 2)) ? fullY2.slice(2) : fullY2;
+                const compactRange = y2 ? `${y1}–${shortY2}` : `${y1}`;
+
+                if (currentFilterYear !== 'all') {
+                    const yr = parseInt(currentFilterYear, 10);
                     if (yr >= start && yr <= end) {
-                        const rangeText = y2 ? `${y1}–${y2}` : `${y1}`;
-                        return `<tr class="active-year-row"><td${tdAttr}>★ ${rangeText}</td>`;
+                        return `<tr class="active-year-row"><td${tdAttr}>★${compactRange}</td>`;
                     }
-                    return match;
-                });
-            }
+                }
+                return `<tr><td${tdAttr}>${compactRange}</td>`;
+            });
             return out;
         }
 
@@ -1519,12 +1550,12 @@
             const badgeText = currentMember ? currentMember.badgeText : `${p.route_id || groupKey} ${p.line_type || '主線'}`.trim();
             document.getElementById('drawer-badge').textContent = badgeText;
 
-            // 當切換至子路線（如 E10-1 菁寮）時，標題清楚顯示「菁寮線（關子嶺線）」
+            /* ✨ 移除頂端線名後多餘的「（主線名）」括號 */
             const subRefName = ROUTE_CODE_REF_MAP[currentId] || (currentMember && !/^(主線|舊線|副線|支線)/.test(currentMember.lineType) ? currentMember.lineType : '');
             const mainRouteTitle = p.name || '未命名路線';
             if (currentId !== groupKey && subRefName) {
                 const subFullTitle = subRefName.endsWith('線') ? subRefName : `${subRefName}線`;
-                document.getElementById('drawer-title').textContent = `${subFullTitle}（${mainRouteTitle}）`;
+                document.getElementById('drawer-title').textContent = subFullTitle;
             } else {
                 document.getElementById('drawer-title').textContent = mainRouteTitle;
             }
@@ -1626,990 +1657,4 @@
                         if (!map.hasLayer(stLayer)) stLayer.addTo(map);
                         const targetLatLng = stLayer.getLatLng();
                         const targetZoom = Math.max(map.getZoom(), 15);
-                        const isDesktop = window.innerWidth > 960;
-                        const pt = map.project(targetLatLng, targetZoom);
-                        const offsetPt = isDesktop ? L.point(pt.x + getDrawerWidth() / 2, pt.y) : L.point(pt.x, pt.y + window.innerHeight * 0.22);
-                        map.flyTo(map.unproject(offsetPt, targetZoom), targetZoom, { duration: 0.8 });
-                        if (stLayer.getPopup()) setTimeout(() => stLayer.openPopup(), 450);
-                    };
-                    stList.appendChild(chip);
-                });
-            }
-
-            let combinedHtml = '';
-            if (currentMember && currentMember.tableHtml) {
-                combinedHtml += formatTableHtml(currentMember.tableHtml);
-            } else {
-                let rawDesc = (p.description && p.description.zh) ? p.description.zh : "";
-                rawDesc = rawDesc
-                    .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
-                    .replace(/<div style="margin-bottom:6px;"><span style="background:#1a237e;[\s\S]*?<\/div>/, '');
-                combinedHtml += formatTableHtml(rawDesc) || '<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>';
-            }
-
-            const relatedMembers = famList.filter(m => m.id !== currentId && (m.hasTable || m.isMain));
-            relatedMembers.forEach(rm => {
-                const secHint = rm.section ? `<span style="font-weight:normal;font-size:11.5px;color:#555;margin-left:6px;">${rm.section.replace(/\s*\([^)]*\)$/, '')}</span>` : '';
-                const hasSubNar = Boolean(globalNarrativesMap[rm.id]);
-                const narHint = hasSubNar ? `<span style="font-size:11px;color:#6a1b9a;margin-left:6px;cursor:pointer;text-decoration:underline;" onclick="switchFamilyMember('${groupKey}', '${rm.id}')">📖 點此閱讀沿革</span>` : '';
-                combinedHtml += `
-                    <div style="font-weight:bold;font-size:12px;color:#3949ab;margin-top:14px;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;">
-                        <span>▸ 相關路線：</span>
-                        <span class="route-badge clickable-route-badge" style="margin-left:4px;" onclick="switchFamilyMember('${groupKey}', '${rm.id}')" title="點擊切換至此路線資訊欄">${rm.badgeText}</span>
-                        ${secHint}${narHint}
-                    </div>
-                    ${formatTableHtml(rm.tableHtml)}
-                `;
-            });
-
-            document.getElementById('drawer-table-container').innerHTML = combinedHtml || '<div style="color:#777;">尚無詳細沿革紀錄</div>';
-            decorateHistoryTables();
-
-            const summary = document.getElementById('drawer-summary');
-            summary.innerHTML = '';
-
-            const stPill = document.createElement('span');
-            stPill.className = 'summary-pill' + (displayStLayers.length > 0 ? ' clickable' : '');
-            stPill.textContent = displayStLayers.length > 0 ? `🚉 ${displayStLayers.length} 站 ▾` : `🚉 0 站`;
-            if (displayStLayers.length > 0) {
-                stPill.title = '點擊展開／收合沿線車站清單';
-                stPill.tabIndex = 0; stPill.setAttribute('role', 'button');
-                const toggleSt = () => {
-                    const isHidden = stBlock.style.display === 'none';
-                    stBlock.style.display = isHidden ? 'block' : 'none';
-                    stPill.classList.toggle('active', isHidden);
-                    stPill.textContent = `🚉 ${displayStLayers.length} 站 ${isHidden ? '▴' : '▾'}`;
-                };
-                stPill.onclick = toggleSt;
-                stPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSt(); } });
-            }
-            summary.appendChild(stPill);
-
-            const opPill = document.createElement('span');
-            opPill.className = 'summary-pill' + (opsArr.length > 0 ? ' clickable' : '');
-            opPill.textContent = opsArr.length > 0 ? `🏢 ${opsArr.length} 家歷年業者 ▾` : `🏢 0 家歷年業者`;
-            if (opsArr.length > 0) {
-                opPill.title = '點擊展開／收合歷年業者清單';
-                opPill.tabIndex = 0; opPill.setAttribute('role', 'button');
-                const toggleOp = () => {
-                    const isHidden = opsBlock.style.display === 'none';
-                    opsBlock.style.display = isHidden ? 'block' : 'none';
-                    opPill.classList.toggle('active', isHidden);
-                    opPill.textContent = `🏢 ${opsArr.length} 家歷年業者 ${isHidden ? '▴' : '▾'}`;
-                };
-                opPill.onclick = toggleOp;
-                opPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOp(); } });
-            }
-            summary.appendChild(opPill);
-
-            const yrPill = document.createElement('span');
-            yrPill.className = 'summary-pill';
-            yrPill.textContent = currentFilterYear !== 'all' ? `📅 檢視 ${currentFilterYear} 年` : '📅 檢視全部年代';
-            summary.appendChild(yrPill);
-
-            const backOpBtn = document.getElementById('drawer-back-operator-btn');
-            backOpBtn.style.display = previousOperatorName ? 'inline-block' : 'none';
-            backOpBtn.onclick = () => previousOperatorName && filterByOperator(previousOperatorName);
-
-            document.body.classList.add('drawer-open');
-            if (shouldScrollTop) document.getElementById('drawerBody').scrollTo({ top: 0, behavior: 'smooth' });
-            updateUrlHash();
-        }
-
-        function openOperatorDrawer(opName, groupKeys) {
-            currentDrawerFeature = null;
-            selectedGroupKey = null;
-            activeSubRouteId = null;
-            activeRouteName = '';
-            activeRouteSection = '';
-            input.value = '';
-            syncDisplay();
-
-            const matches = Array.from(groupKeys).map(key => ({ key, feature: masterRouteFeatureMap[key] }))
-                .filter(item => Boolean(item.feature))
-                .sort((a, b) => String(a.key).localeCompare(String(b.key), undefined, { numeric: true }));
-            const activeKeys = new Set(allRouteLayers.filter(l => isOperatorRouteMatch(l.feature, opName) &&
-                isRouteFeatureActiveInYear(l.feature, currentFilterYear))
-                .map(l => l.feature.properties.parent_id || l.feature.properties.route_id || l.feature.properties.name));
-
-            document.getElementById('drawer-badge').textContent = '🏢 業者路網';
-            document.getElementById('drawer-title').textContent = opName;
-            document.getElementById('drawer-tailo').textContent = '歷年營業路線總覽';
-            document.getElementById('drawer-section').textContent = currentFilterYear === 'all'
-                ? `歷年收錄 ${matches.length} 條路線` : `${currentFilterYear} 年有營業資料 ${activeKeys.size} 條；歷年收錄 ${matches.length} 條`;
-
-            const backMainBtn = document.getElementById('drawer-back-main-btn');
-            if (previousRouteFeature) {
-                const prevName = (previousRouteFeature.properties && previousRouteFeature.properties.name) || '原路線';
-                backMainBtn.style.display = 'inline-block';
-                backMainBtn.textContent = `↩ 返回 ${prevName}`;
-                backMainBtn.onclick = () => highlightRouteGroup(previousRouteFeature, true, null);
-            } else {
-                backMainBtn.style.display = 'none';
-            }
-
-            document.getElementById('drawer-back-operator-btn').style.display = 'none';
-            document.getElementById('drawer-family-tabs').style.display = 'none';
-            document.getElementById('drawer-photo-box').style.display = 'none';
-            document.getElementById('drawer-ops-block').style.display = 'none';
-            document.getElementById('drawer-stations-block').style.display = 'none';
-            document.getElementById('drawer-narrative-block').style.display = 'none';
-
-            const summary = document.getElementById('drawer-summary');
-            summary.innerHTML = '';
-            ['🟣 紫色：本業者路網', '⚪ 灰色：其他路線', currentFilterYear === 'all' ? '📅 全部年代' : `📅 ${currentFilterYear} 年`].forEach(s => {
-                const pill = document.createElement('span'); pill.className = 'summary-pill'; pill.textContent = s;
-                summary.appendChild(pill);
-            });
-
-            const container = document.getElementById('drawer-table-container');
-            container.innerHTML = '';
-            const intro = document.createElement('p');
-            intro.style.cssText = 'font-size:12px;color:#53627c;line-height:1.6';
-            intro.textContent = '點選下列路線即可查看沿革；亦可隨時返回原路線或業者總覽繼續比較。';
-            container.appendChild(intro);
-
-            const list = document.createElement('div'); list.className = 'operator-route-list';
-            matches.forEach(({ key, feature }) => {
-                const p = feature.properties || {};
-                const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'operator-route-btn';
-                const left = document.createElement('span'); left.textContent = `${key} ${p.name || '未命名路線'}`;
-                const right = document.createElement('small');
-                right.textContent = currentFilterYear === 'all' ? '查看沿革 ›' : (activeKeys.has(key) ? '當年有資料 ›' : '當年無紀錄 ›');
-                btn.append(left, right);
-                btn.addEventListener('click', () => highlightRouteGroup(feature, true, null));
-                list.appendChild(btn);
-            });
-            if (!matches.length) {
-                const noResult = document.createElement('div'); noResult.textContent = '尚無相符路線'; list.appendChild(noResult);
-            }
-            container.appendChild(list);
-            document.body.classList.add('drawer-open');
-            updateUrlHash();
-            document.getElementById('drawerBody').scrollTop = 0;
-        }
-
-        function filterByOperator(opName) {
-            if (currentDrawerFeature) {
-                previousRouteFeature = currentDrawerFeature;
-            }
-            activeOperatorFilter = opName;
-            previousOperatorName = null;
-            selectedGroupKey = null;
-            activeSubRouteId = null;
-            const opBounds = L.latLngBounds();
-            const matchGroupSet = new Set();
-            allRouteLayers.forEach(layer => {
-                if (!isOperatorRouteMatch(layer.feature, opName)) return;
-                const p = layer.feature.properties || {};
-                matchGroupSet.add(p.parent_id || p.route_id || p.name);
-                if (layer.getBounds) opBounds.extend(layer.getBounds());
-            });
-            lastOperatorGroups = matchGroupSet;
-            if (window.innerWidth <= 960) setSearchExpanded(false);
-            document.getElementById('operator-banner-text').textContent = `🏢 ${opName}（歷年 ${matchGroupSet.size} 條）`;
-            opBanner.style.display = 'flex';
-            openOperatorDrawer(opName, matchGroupSet);
-            if (window.innerWidth <= 960) setSheetState('half');
-            applyYearFilter();
-            if (opBounds.isValid()) {
-                map.fitBounds(opBounds, {
-                    paddingTopLeft: [50, 70],
-                    paddingBottomRight: window.innerWidth > 960 ? [Math.min(getDrawerWidth() + 30, window.innerWidth * 0.68), 50] : [50, Math.round(window.innerHeight * 0.55)]
-                });
-            }
-            showToast(`已顯示「${opName}」所轄路線`);
-        }
-
-        function buildStationPopupContent(feature) {
-            const p = feature.properties || {};
-            const boundKeys = p._boundGroupKeys || [];
-            const routeButtons = boundKeys.map(k => {
-                const rName = routeKeyToNameMap[k] || k;
-                return `<span class="route-badge" style="margin-right:4px;margin-top:4px;cursor:pointer;" onclick="selectRouteByGroupKey('${k}')">🛤️ ${rName}</span>`;
-            }).join('');
-            const desc = (p.description && p.description.zh) ? `<div style="margin-top:6px;font-size:12.5px;color:#333;">${p.description.zh}</div>` : '';
-            return `
-                <div style="font-size:15px;font-weight:bold;color:#1a237e;">🚉 ${p.name || '未命名車站'}</div>
-                ${desc}
-                ${routeButtons ? `<div style="margin-top:5px;font-size:12px;color:#555;">點擊查看所屬路線：<br>${routeButtons}</div>` : ''}
-            `;
-        }
-
-        window.selectRouteByGroupKey = function(groupKey) {
-            const targetFeat = masterRouteFeatureMap[groupKey];
-            if (targetFeat) {
-                map.closePopup();
-                highlightRouteGroup(targetFeat, true, null);
-            }
-        };
-
-        function applyYearFilter() {
-            const isAll = (currentFilterYear === 'all');
-            prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= MIN_YEAR;
-            nextYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) >= MAX_YEAR;
-            yearModeSelect.style.display = isAll ? 'none' : 'inline-block';
-            yearResetBtn.style.display = isAll ? 'none' : 'inline-block';
-            updateTitleText();
-            updateUrlHash();
-            updateMapHighlightStyles();
-            updateActiveStateBar();
-
-            if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
-                openRouteDrawer(currentDrawerFeature, false);
-            } else if (activeOperatorFilter && document.body.classList.contains('drawer-open')) {
-                openOperatorDrawer(activeOperatorFilter, lastOperatorGroups);
-            }
-            if (dropdown.style.display === 'block') renderList(input.value);
-        }
-
-        yearSelect.addEventListener('change', function() {
-            currentFilterYear = this.value;
-            map.closePopup();
-            applyYearFilter();
-        });
-        prevYearBtn.addEventListener('click', function() {
-            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) > MIN_YEAR) {
-                yearSelect.value = String(parseInt(currentFilterYear, 10) - 1);
-                yearSelect.dispatchEvent(new Event('change'));
-            }
-        });
-        nextYearBtn.addEventListener('click', function() {
-            if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) < MAX_YEAR) {
-                yearSelect.value = String(parseInt(currentFilterYear, 10) + 1);
-                yearSelect.dispatchEvent(new Event('change'));
-            }
-        });
-        yearModeSelect.addEventListener('change', function() { yearFilterMode = this.value; applyYearFilter(); });
-        yearResetBtn.addEventListener('click', function() { yearSelect.value = 'all'; yearSelect.dispatchEvent(new Event('change')); });
-
-        function getDrawerWidth() {
-            return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-width'), 10) || 390;
-        }
-
-        function updateActiveStateBar() {
-            const bar = document.getElementById('active-state-bar');
-            const parts = [];
-            if (currentFilterYear !== 'all') parts.push(`📅 ${currentFilterYear}`);
-            if (activeOperatorFilter) parts.push(`🏢 ${activeOperatorFilter}`);
-            else if (selectedGroupKey) parts.push(`🛤️ ${routeKeyToNameMap[selectedGroupKey] || selectedGroupKey}`);
-            if (hiddenLineTypes.size) parts.push(`已隱藏：${Array.from(hiddenLineTypes).join('、')}`);
-            if (yearFilterMode === 'dim' && currentFilterYear !== 'all') parts.push('淡化其他年份');
-            if (!showStations) parts.push('車站隱藏');
-            bar.replaceChildren();
-            document.body.classList.toggle('operator-active', Boolean(activeOperatorFilter));
-            if (!parts.length) { bar.classList.remove('visible'); return; }
-            const label = document.createElement('span'); label.id = 'active-state-text'; label.textContent = parts.join(' · ');
-            const reset = document.createElement('button'); reset.className = 'state-reset'; reset.type = 'button';
-            reset.textContent = '重置全部'; reset.title = '清除選取、年代與圖例篩選，返回全圖';
-            reset.addEventListener('click', resetAllView);
-            bar.append(label, reset); bar.classList.add('visible');
-        }
-
-        function resetAllView() {
-            clearRouteSelection();
-            hiddenLineTypes.clear();
-            ['lg-main', 'lg-old', 'lg-sub'].forEach(id => document.getElementById(id).classList.remove('muted'));
-            showStations = true;
-            document.getElementById('lg-st').classList.remove('muted');
-            currentFilterYear = 'all'; yearSelect.value = 'all';
-            yearFilterMode = 'hide'; yearModeSelect.value = 'hide';
-            yfBar.classList.remove('open');
-            document.body.classList.remove('legend-open');
-            legendToggle.setAttribute('aria-expanded', 'false');
-            setSheetState('half');
-            applyYearFilter();
-            if (geojsonLayer && geojsonLayer.getBounds().isValid()) map.fitBounds(geojsonLayer.getBounds());
-            showToast('已恢復全圖與全部年代');
-        }
-        document.getElementById('resetViewBtn').addEventListener('click', resetAllView);
-
-        function ensureRouteNotCoveredByDrawer(groupBounds) {
-            if (!groupBounds || !groupBounds.isValid()) return;
-            const isDesktop = window.innerWidth > 960;
-            const nePt = map.latLngToContainerPoint(groupBounds.getNorthEast());
-            const swPt = map.latLngToContainerPoint(groupBounds.getSouthWest());
-
-            if (isDesktop) {
-                const drawerWidth = getDrawerWidth();
-                const safeRightX = window.innerWidth - drawerWidth - 30;
-                const safeLeftX = 40;
-                if ((nePt.x - swPt.x) > (safeRightX - safeLeftX) * 0.9) {
-                    map.fitBounds(groupBounds, { paddingTopLeft: [50, 70], paddingBottomRight: [drawerWidth + 30, 50] });
-                } else if (nePt.x > safeRightX || swPt.x < safeLeftX) {
-                    map.panBy([((swPt.x + nePt.x) / 2) - ((safeLeftX + safeRightX) / 2), 0], { animate: true, duration: 0.35 });
-                }
-            } else {
-                const safeBottomY = window.innerHeight * 0.44;
-                const safeTopY = 75;
-                if ((swPt.y - nePt.y) > (safeBottomY - safeTopY) * 0.9) {
-                    map.fitBounds(groupBounds, { paddingTopLeft: [40, 75], paddingBottomRight: [40, Math.round(window.innerHeight * 0.54)] });
-                } else if (swPt.y > safeBottomY || nePt.y < safeTopY) {
-                    map.panBy([0, ((nePt.y + swPt.y) / 2) - ((safeTopY + safeBottomY) / 2)], { animate: true, duration: 0.35 });
-                }
-            }
-        }
-
-        function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
-            if (activeOperatorFilter) previousOperatorName = activeOperatorFilter;
-            activeOperatorFilter = null;
-            opBanner.style.display = 'none';
-
-            const targetProps = targetFeature.properties || {};
-            selectedGroupKey = targetProps.parent_id || targetProps.route_id || targetProps.name;
-            activeSubRouteId = targetProps.route_id || targetProps.name;
-
-            setSearchExpanded(window.innerWidth > 960);
-            activeRouteName = targetProps.name || '未命名';
-            activeRouteSection = (targetProps.section || '').replace(/\s*\([^)]*\)$/, '');
-            input.value = activeRouteName;
-            clearBtn.style.display = 'block';
-            syncDisplay();
-
-            openRouteDrawer(targetFeature, true);
-            updateMapHighlightStyles();
-            updateActiveStateBar();
-            if (window.innerWidth <= 960) setSheetState('half');
-
-            let groupBounds = L.latLngBounds();
-            allRouteLayers.forEach(l => {
-                const lp = l.feature.properties || {};
-                const lKey = lp.parent_id || lp.route_id || lp.name;
-                if (lKey === selectedGroupKey && l.getBounds) groupBounds.extend(l.getBounds());
-            });
-
-            if (groupBounds.isValid()) {
-                if (shouldFitBounds) {
-                    const isDesktop = window.innerWidth > 960;
-                    map.fitBounds(groupBounds, {
-                        paddingTopLeft: [50, 70],
-                        paddingBottomRight: isDesktop ? [getDrawerWidth() + 30, 50] : [50, Math.round(window.innerHeight * 0.54)]
-                    });
-                } else {
-                    ensureRouteNotCoveredByDrawer(groupBounds);
-                }
-            }
-        }
-
-        function clearRouteSelection() {
-            selectedGroupKey = null;
-            activeSubRouteId = null;
-            activeOperatorFilter = null;
-            previousOperatorName = null;
-            previousRouteFeature = null;
-            lastOperatorGroups = new Set();
-            currentDrawerFeature = null;
-            activeRouteName = '';
-            activeRouteSection = '';
-            input.value = '';
-            syncDisplay();
-            dropdown.style.display = 'none';
-            input.setAttribute('aria-expanded', 'false');
-            setSearchExpanded(false);
-            clearBtn.style.display = 'none';
-            opBanner.style.display = 'none';
-            document.body.classList.remove('drawer-open');
-            setSheetState('half');
-            applyYearFilter();
-            map.closePopup();
-        }
-
-        function updateUrlHash() {
-            const params = new URLSearchParams();
-            const activeCode = activeSubRouteId || selectedGroupKey;
-            if (activeCode && document.body.classList.contains('drawer-open') && !activeOperatorFilter) {
-                params.set('route', activeCode);
-            } else if (selectedGroupKey) {
-                params.set('route', selectedGroupKey);
-            }
-            if (activeOperatorFilter) params.set('operator', activeOperatorFilter);
-            if (currentFilterYear !== 'all') params.set('year', currentFilterYear);
-            const hashStr = params.toString();
-            history.replaceState(null, '', hashStr ? `#${hashStr}` : window.location.pathname + window.location.search);
-        }
-
-        function copyPermalink() {
-            updateUrlHash();
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast('✅ 已複製專屬路線連結！可直接貼上分享');
-            }).catch(() => {
-                showToast('🔗 請直接複製瀏覽器網址列分享');
-            });
-        }
-
-        function applyInitialUrlHash() {
-            if (!window.location.hash) return;
-            const params = new URLSearchParams(window.location.hash.substring(1));
-            const yr = params.get('year');
-            const rt = params.get('route');
-            const op = params.get('operator');
-
-            if (yr && yr >= MIN_YEAR && yr <= MAX_YEAR) {
-                currentFilterYear = String(yr);
-                yearSelect.value = currentFilterYear;
-                yfBar.classList.add('open');
-                applyYearFilter();
-            }
-            if (op && Array.from(Object.values(familyOperatorsMap)).some(set => set.has(op))) {
-                setTimeout(() => filterByOperator(op), 150);
-            } else if (rt) {
-                setTimeout(() => window.jumpToRouteById(rt), 200);
-            }
-        }
-
-        function extractMetaFromTableHtml(tableHtml) {
-            const rowRegex = /<tr>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/g;
-            const ops = [], secs = [];
-            let m;
-            while ((m = rowRegex.exec(tableHtml)) !== null) {
-                const op = m[2].replace(/<[^>]+>/g, '').trim();
-                const sec = m[4].replace(/<[^>]+>/g, '').trim();
-                if (op && op !== '—') {
-                    op.split('、').map(s => s.trim()).filter(Boolean).forEach(o => {
-                        if (!ops.includes(o)) ops.push(o);
-                    });
-                }
-                if (sec && sec !== '—' && !secs.includes(sec)) secs.push(sec);
-            }
-            const lastSec = secs.length > 0 ? secs[secs.length - 1].replace(/-/g, '＝').replace(/—/g, '＝') : '';
-            return { operators: ops.join('、'), section: lastSec };
-        }
-
-        function buildFamilyRegistry(routeFeaturesList) {
-            const byGroup = {};
-            routeFeaturesList.forEach(f => {
-                const p = f.properties || {};
-                const gk = p.parent_id || p.route_id || p.name;
-                if (!byGroup[gk]) byGroup[gk] = [];
-                byGroup[gk].push(f);
-            });
-
-            Object.keys(byGroup).forEach(gk => {
-                const flist = byGroup[gk];
-                const membersDict = {};
-                const opsSet = new Set();
-                const mainFeat = flist.find(f => f.properties.line_type === '主線') || flist[0];
-                const mainProps = mainFeat.properties || {};
-
-                const splitDesc = (descStr) => {
-                    if (!descStr) return [''];
-                    const withoutNar = descStr.replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '');
-                    const stripped = withoutNar.replace(/^<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '').trim();
-                    return stripped.split(/<div[^>]*>\s*▸\s*(?:附屬統計|相關路線)：\s*([^<]+)<\/div>/);
-                };
-
-                const mainParts = splitDesc((mainProps.description && mainProps.description.zh) || '');
-                const mainTableOnly = mainParts[0] ? mainParts[0].trim() : '';
-
-                flist.forEach(f => {
-                    const p = f.properties || {};
-                    const rid = p.route_id || p.name;
-                    const ltype = p.line_type || '主線';
-                    if (p.operators) p.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
-
-                    const parts = splitDesc((p.description && p.description.zh) || '');
-                    let ownTable = parts[0] ? parts[0].trim() : '';
-                    let hasTable = ownTable.includes('<table');
-                    if (rid !== gk && hasTable && ownTable === mainTableOnly) {
-                        ownTable = '<div style="color:#777;font-size:12px;">（年報無獨立統計資料）</div>';
-                        hasTable = false;
-                    }
-                    const ownMeta = hasTable ? extractMetaFromTableHtml(ownTable) : { operators: '' };
-                    if (ownMeta.operators) {
-                        ownMeta.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
-                    }
-
-                    const existing = membersDict[rid];
-                    const shouldReplace = !existing || (ltype === '主線') || (existing.lineType === '舊線' && ltype !== '舊線');
-                    if (shouldReplace) {
-                        membersDict[rid] = {
-                            id: rid, lineType: ltype, badgeText: `${rid} ${ltype}`.trim(),
-                            section: (p.section || '').replace(/\s*\([^)]*\)$/, ''),
-                            operators: p.operators || ownMeta.operators || '',
-                            tableHtml: ownTable, hasTable: hasTable, feature: f, isMain: (rid === gk)
-                        };
-                        routeByIdMap[rid] = f;
-                    }
-                });
-
-                for (let i = 1; i < mainParts.length; i += 2) {
-                    const subTitle = mainParts[i].trim();
-                    const subTable = (mainParts[i + 1] || '').trim();
-                    const spaceIdx = subTitle.indexOf(' ');
-                    const subCode = spaceIdx > 0 ? subTitle.substring(0, spaceIdx).trim() : subTitle;
-                    const subLabel = spaceIdx > 0 ? subTitle.substring(spaceIdx + 1).trim() : '副線';
-                    const meta = extractMetaFromTableHtml(subTable);
-                    if (meta.operators) meta.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
-
-                    if (!membersDict[subCode]) {
-                        const virtualFeature = {
-                            type: "Feature", _isVirtual: true,
-                            properties: {
-                                route_id: subCode, parent_id: gk, line_type: subLabel, name: mainProps.name,
-                                tailo: mainProps.tailo || '', section: meta.section || subLabel,
-                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable }
-                            },
-                            geometry: mainFeat.geometry
-                        };
-                        membersDict[subCode] = {
-                            id: subCode, lineType: subLabel, badgeText: `${subCode} ${subLabel}`.trim(),
-                            section: meta.section || subLabel, operators: meta.operators,
-                            tableHtml: subTable, hasTable: subTable.includes('<table'), feature: virtualFeature, isMain: false
-                        };
-                        routeByIdMap[subCode] = virtualFeature;
-                    }
-                }
-
-                familyMembersMap[gk] = Object.values(membersDict).sort((a, b) => {
-                    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
-                    return a.id.localeCompare(b.id, undefined, { numeric: true });
-                });
-                familyOperatorsMap[gk] = opsSet;
-            });
-        }
-
-        fetch('data.json?t=' + Date.now())
-            .then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
-            .then(rawData => {
-                const geoData = rawData.data || rawData;
-                const rawNarratives = geoData.narratives || rawData.narratives || {};
-
-                const rawFeatures = geoData.features || [];
-                const seenStations = new Set();
-                const cleanFeatures = rawFeatures.filter(f => {
-                    const p = f.properties || {};
-                    const isPoint = f.geometry && f.geometry.type === "Point";
-                    if (isPoint) {
-                        const coordKey = `${p.name}_${f.geometry.coordinates.join(',')}`;
-                        if (seenStations.has(coordKey)) return false;
-                        seenStations.add(coordKey);
-                        return true;
-                    }
-                    const descText = (p.description && p.description.zh) ? p.description.zh : "";
-                    if (!p.route_id && /^(A\d+(-\d+)?|未命名路線|Line\s+)/i.test(p.name || "") && descText.includes("在此輸入中文歷史描述")) {
-                        return false;
-                    }
-                    return true;
-                });
-
-                const routeFeaturesList = [];
-                const stationFeaturesList = [];
-                const routeGroupSeen = new Set();
-
-                cleanFeatures.forEach(f => {
-                    const p = f.properties || {};
-                    if (f.geometry && f.geometry.type === "Point") {
-                        stationFeaturesList.push(f);
-                        searchableStations.push(f);
-                    } else if (f.geometry) {
-                        f._bbox = getGeometryBBox(f.geometry);
-                        routeFeaturesList.push(f);
-                        const groupKey = p.parent_id || p.route_id || p.name;
-                        if (p.narrative && p.route_id && !rawNarratives[p.route_id]) {
-                            rawNarratives[p.route_id] = p.narrative;
-                        }
-                        if (p.name && !routeKeyToNameMap[groupKey]) routeKeyToNameMap[groupKey] = p.name;
-                        if (!masterRouteFeatureMap[groupKey] || p.line_type === "主線") masterRouteFeatureMap[groupKey] = f;
-                        const descText = (p.description && p.description.zh) ? p.description.zh : "";
-                        if (descText.includes("<table") && (!masterRouteDescMap[groupKey] || p.line_type === "主線")) masterRouteDescMap[groupKey] = descText;
-                        if (p.history && p.history.length > 0 && (!masterRouteHistoryMap[groupKey] || p.line_type === "主線")) masterRouteHistoryMap[groupKey] = p.history;
-                    }
-                });
-
-                buildFamilyRegistry(routeFeaturesList);
-                globalNarrativesMap = normalizeNarrativesRegistry(rawNarratives);
-
-                const BBOX_PAD = 0.003;
-                stationFeaturesList.forEach(st => {
-                    const [px, py] = st.geometry.coordinates;
-                    const boundFeatures = [];
-                    const boundGroupKeys = new Set();
-                    const boundRouteIds = new Set();
-                    let nearestFeature = null, nearestDist = Infinity;
-
-                    routeFeaturesList.forEach(rf => {
-                        const b = rf._bbox;
-                        if (b && (px < b.minX - BBOX_PAD || px > b.maxX + BBOX_PAD || py < b.minY - BBOX_PAD || py > b.maxY + BBOX_PAD)) {
-                            return;
-                        }
-                        const d = minDistToGeometryMeters(px, py, rf.geometry);
-                        if (d < nearestDist) { nearestDist = d; nearestFeature = rf; }
-                        if (d <= 80) {
-                            boundFeatures.push(rf);
-                            const gk = rf.properties.parent_id || rf.properties.route_id || rf.properties.name;
-                            const rid = rf.properties.route_id || rf.properties.name;
-                            if (gk) boundGroupKeys.add(gk);
-                            if (rid) boundRouteIds.add(rid);
-                        }
-                    });
-                    if (!boundFeatures.length && nearestFeature && nearestDist <= 200) {
-                        boundFeatures.push(nearestFeature);
-                        const gk = nearestFeature.properties.parent_id || nearestFeature.properties.route_id || nearestFeature.properties.name;
-                        const rid = nearestFeature.properties.route_id || nearestFeature.properties.name;
-                        if (gk) boundGroupKeys.add(gk);
-                        if (rid) boundRouteIds.add(rid);
-                    }
-                    st.properties._boundRouteFeatures = boundFeatures;
-                    st.properties._boundGroupKeys = Array.from(boundGroupKeys);
-                    st.properties._boundRouteIds = Array.from(boundRouteIds);
-                });
-
-                routeFeaturesList.forEach(f => {
-                    const p = f.properties || {};
-                    const groupKey = p.parent_id || p.route_id || p.name;
-                    if (!routeGroupSeen.has(groupKey) && (p.line_type === "主線" || !p.line_type)) {
-                        routeGroupSeen.add(groupKey);
-                        searchableRoutes.push(f);
-                    }
-                });
-                routeFeaturesList.forEach(f => {
-                    const p = f.properties || {};
-                    const groupKey = p.parent_id || p.route_id || p.name;
-                    if (!routeGroupSeen.has(groupKey)) {
-                        routeGroupSeen.add(groupKey);
-                        searchableRoutes.push(f);
-                    }
-                });
-
-                geojsonLayer = L.geoJSON({ type: "FeatureCollection", features: cleanFeatures }, {
-                    style: feature => getLineStyle(feature, 'none', false),
-                    pointToLayer: function(feature, latlng) {
-                        const canInteract = hasStationHistory(feature);
-                        const marker = L.circleMarker(latlng, Object.assign({}, getStationStyle(feature, false, false), { interactive: canInteract }));
-                        if (feature.properties && feature.properties.name) {
-                            marker.bindTooltip(feature.properties.name, { permanent: true, direction: 'top', className: 'station-label', offset: [0, -5] });
-                        }
-                        return marker;
-                    },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.geometry && feature.geometry.type === "Point") {
-                            allStationLayers.push(layer);
-                            (feature.properties._boundGroupKeys || []).forEach(k => {
-                                if (!groupStationsMap[k]) groupStationsMap[k] = [];
-                                groupStationsMap[k].push(layer);
-                            });
-                            if (hasStationHistory(feature)) {
-                                layer.bindPopup(() => buildStationPopupContent(feature), { className: 'custom-popup', maxWidth: 280 });
-                                layer.on('click', () => { lastFeatureClickTime = Date.now(); });
-                            }
-                        } else {
-                            allRouteLayers.push(layer);
-                            layer.on('click', () => {
-                                lastFeatureClickTime = Date.now();
-                                setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-                                highlightRouteGroup(feature, false, layer);
-                            });
-                        }
-                    }
-                }).addTo(map);
-
-                if (geojsonLayer.getBounds().isValid()) map.fitBounds(geojsonLayer.getBounds());
-                applyYearFilter();
-                applyInitialUrlHash();
-                document.getElementById('app-loading').style.display = 'none';
-            }).catch(err => {
-                console.error('HGIS data error:', err);
-                const box = document.getElementById('app-loading');
-                box.classList.add('load-error');
-                box.innerHTML = '';
-                const label = document.createElement('div'); label.textContent = '⚠️ 地圖資料載入失敗：' + err.message;
-                const hint = document.createElement('div'); hint.style.cssText = 'font-size:12px;font-weight:400;margin-top:5px;';
-                hint.textContent = '請確認 index.html 與 data.json 位於同一資料夾，並透過網站伺服器開啟。';
-                const retry = document.createElement('button'); retry.textContent = '重新載入'; retry.onclick = () => location.reload();
-                box.append(label, hint, retry);
-            });
-
-        function syncDisplay() {
-            const val = input.value;
-            if (val === '') {
-                displayLayer.innerHTML = '<span style="color:#999; font-size:15px;">搜尋路線、編號(A1)、舊稱、業者或車站...</span>';
-                return;
-            }
-            let safeVal = val.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const isFocused = (document.activeElement === input);
-            if (!isFocused && val === activeRouteName && activeRouteSection) {
-                let safeSection = activeRouteSection.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                displayLayer.innerHTML = `${safeVal} <span style="font-size:12px; color:#999; margin-left:5px;">${safeSection}</span>`;
-            } else {
-                displayLayer.innerHTML = safeVal;
-            }
-        }
-
-        input.addEventListener('focus', function() {
-            if (window.innerWidth <= 960 && yfBar.classList.contains('open')) {
-                yfBar.classList.remove('open'); updateTitleText();
-            }
-            if (!searchBox.classList.contains('expanded')) {
-                setSearchExpanded(true);
-                clearBtn.style.display = 'block';
-            }
-            syncDisplay();
-            setTimeout(() => { renderList(input.value); }, 100);
-        });
-
-        searchBox.addEventListener('click', function() {
-            if (!this.classList.contains('expanded')) {
-                setSearchExpanded(true);
-                clearBtn.style.display = 'block';
-                syncDisplay();
-                renderList(input.value);
-            }
-        });
-
-        input.addEventListener('blur', () => syncDisplay());
-
-        function normalizeSearchText(s) {
-            return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-        function compactSearchText(s) {
-            return normalizeSearchText(s).replace(/[-\s]+/g, '');
-        }
-        function addSearchHeader(text, cls = 'search-category') {
-            const head = document.createElement('div'); head.className = cls; head.textContent = text;
-            dropdown.appendChild(head);
-        }
-        function addSearchItem(text, tag, onClick, tagClass = '') {
-            const item = document.createElement('div'); item.className = 'search-item'; item.setAttribute('role', 'option');
-            item.tabIndex = 0;
-            const left = document.createElement('span'); left.textContent = text;
-            item.appendChild(left);
-            if (tag) {
-                const label = document.createElement('span');
-                label.className = 'match-tag' + (tagClass ? ' ' + tagClass : '');
-                label.textContent = tag;
-                item.appendChild(label);
-            }
-            item.addEventListener('click', e => { e.stopPropagation(); onClick(); });
-            item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } });
-            dropdown.appendChild(item);
-            return item;
-        }
-        function closeSearchResults() {
-            dropdown.style.display = 'none';
-            input.setAttribute('aria-expanded', 'false');
-            if (window.innerWidth <= 960 && !input.value.trim()) setSearchExpanded(false);
-            setTimeout(() => { input.blur(); syncDisplay(); }, 0);
-        }
-
-        function renderList(val) {
-            isRenderingList = true;
-            syncDisplay();
-            const rawTrim = String(val || '').trim();
-            const keyword = normalizeSearchText(rawTrim);
-            const compactKey = compactSearchText(rawTrim);
-            dropdown.replaceChildren();
-            clearBtn.style.display = 'block';
-
-            const pool = searchableRoutes.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
-
-            if (!keyword) {
-                if (!pool.length) {
-                    dropdown.style.display = 'none';
-                    input.setAttribute('aria-expanded', 'false');
-                    isRenderingList = false;
-                    return;
-                }
-                dropdown.style.display = 'block';
-                input.setAttribute('aria-expanded', 'true');
-                addSearchItem('🎲 隨機探索一條路線', currentFilterYear === 'all' ? '' : `${currentFilterYear} 年`, () => {
-                    const chosen = pool[Math.floor(Math.random() * pool.length)];
-                    closeSearchResults(); highlightRouteGroup(chosen, true);
-                }).classList.add('random-item');
-
-                const sortedByTailo = pool.slice().sort((a, b) => {
-                    const ta = compactSearchText(a.properties.tailo || a.properties.name || '');
-                    const tb = compactSearchText(b.properties.tailo || b.properties.name || '');
-                    return ta.localeCompare(tb) || String(a.properties.route_id || '').localeCompare(String(b.properties.route_id || ''), undefined, { numeric: true });
-                });
-
-                let currentLetter = '';
-                sortedByTailo.forEach(f => {
-                    const p = f.properties || {};
-                    const cleanTailo = normalizeSearchText(p.tailo || '');
-                    const firstChar = (cleanTailo.match(/[a-z]/i) || ['#'])[0].toUpperCase();
-                    if (firstChar !== currentLetter) {
-                        currentLetter = firstChar;
-                        addSearchHeader(currentLetter, 'search-letter-header');
-                    }
-                    const code = p.parent_id || p.route_id || '';
-                    const section = (p.section || '').replace(/\s*\([^)]*\)$/, '');
-                    addSearchItem(
-                        `${p.name || '未命名'}${section ? '（' + (section.length > 14 ? section.slice(0, 14) + '…' : section) + '）' : ''}`,
-                        code,
-                        () => { closeSearchResults(); highlightRouteGroup(f, true); },
-                        'code'
-                    );
-                });
-                isRenderingList = false;
-                return;
-            }
-
-            const results = [];
-            pool.forEach(f => {
-                const p = f.properties || {};
-                const gk = p.parent_id || p.route_id || '';
-                const code = normalizeSearchText(gk);
-                const name = normalizeSearchText(p.name);
-                const tai = normalizeSearchText(p.tailo);
-                const taiCompact = compactSearchText(p.tailo);
-                const alt = normalizeSearchText(p.alt_names);
-                const ops = normalizeSearchText(p.operators);
-
-                const famList = familyMembersMap[gk] || [];
-                const famNarTexts = [];
-                if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
-                famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
-                const narText = normalizeSearchText(famNarTexts.map(n => [n.sectionText, n.openDate, ...(n.paragraphs || [])].join(' ')).join(' '));
-
-                let rank = 99, matchHint = '';
-
-                if (code === keyword) rank = 0;
-                else if (name === keyword) rank = 1;
-                else if (code.startsWith(keyword)) rank = 2;
-                else if (name.startsWith(keyword)) rank = 3;
-                else if (code.includes(keyword) || name.includes(keyword)) rank = 4;
-                else if (tai.includes(keyword) || (compactKey && taiCompact.includes(compactKey))) {
-                    rank = 5; matchHint = p.tailo || '';
-                } else if (alt.includes(keyword)) {
-                    rank = 5; matchHint = `舊稱: ${p.alt_names}`;
-                } else if (ops.includes(keyword)) {
-                    rank = 6;
-                } else if (narText && narText.includes(keyword)) {
-                    rank = 7; matchHint = '📖 沿革提及';
-                } else return;
-
-                results.push({ f, rank, code: gk, matchHint });
-            });
-            results.sort((a, b) => a.rank - b.rank || String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
-
-            const ops = Array.from(new Set(Object.values(familyOperatorsMap).flatMap(set => Array.from(set))))
-                .filter(op => normalizeSearchText(op).includes(keyword))
-                .sort((a, b) => normalizeSearchText(a) === keyword ? -1 : normalizeSearchText(b) === keyword ? 1 : a.localeCompare(b, 'zh-Hant'))
-                .slice(0, 20);
-
-            const stations = allStationLayers.filter(st =>
-                isStationFeatureActiveInYear(st.feature, currentFilterYear) &&
-                normalizeSearchText(st.feature.properties.name).includes(keyword)).slice(0, 30);
-
-            if (!results.length && !ops.length && !stations.length) {
-                addSearchHeader('沒有符合的結果，請試試舊稱、台羅拼音、編號或業者名稱');
-                dropdown.style.display = 'block';
-                input.setAttribute('aria-expanded', 'true');
-                isRenderingList = false;
-                return;
-            }
-
-            dropdown.style.display = 'block';
-            input.setAttribute('aria-expanded', 'true');
-
-            if (ops.length) {
-                addSearchHeader(`🏢 業者（${ops.length}）`);
-                ops.forEach(op => addSearchItem(`🏢 ${op}`, '查看所轄路線', () => { closeSearchResults(); filterByOperator(op); }));
-            }
-            if (results.length) {
-                addSearchHeader(`🛤️ 路線（${results.length}）`);
-                results.forEach(({ f, matchHint }) => {
-                    const p = f.properties || {};
-                    const section = matchHint || (p.section || '').replace(/\s*\([^)]*\)$/, '');
-                    addSearchItem(
-                        `${p.parent_id || p.route_id || ''} ${p.name || '未命名'}`,
-                        section.length > 24 ? section.slice(0, 24) + '…' : section,
-                        () => { closeSearchResults(); highlightRouteGroup(f, true); }
-                    );
-                });
-            }
-            if (stations.length) {
-                addSearchHeader(`🚉 車站（最多顯示 ${stations.length} 站）`);
-                stations.forEach(stLayer => {
-                    const f = stLayer.feature;
-                    const groupKeys = f.properties._boundGroupKeys || [];
-                    const ids = f.properties._boundRouteIds || [];
-                    addSearchItem(
-                        `🚉 ${f.properties.name || '車站'}`,
-                        groupKeys.length ? (routeKeyToNameMap[groupKeys[0]] || groupKeys[0]) : '',
-                        () => {
-                            closeSearchResults();
-                            if (!showStations) setStationsVisibility(true);
-                            const feat = (ids.length && routeByIdMap[ids[0]]) || (groupKeys.length && masterRouteFeatureMap[groupKeys[0]]);
-                            if (feat) highlightRouteGroup(feat, false);
-                            if (!map.hasLayer(stLayer)) stLayer.addTo(map);
-                            const pt = map.project(stLayer.getLatLng(), 15);
-                            const shift = window.innerWidth > 960 ? L.point(pt.x + getDrawerWidth() / 2, pt.y) : L.point(pt.x, pt.y + window.innerHeight * 0.22);
-                            map.flyTo(map.unproject(shift, 15), 15, { duration: 0.8 });
-                            if (stLayer.getPopup()) setTimeout(() => stLayer.openPopup(), 450);
-                        },
-                        'st'
-                    );
-                });
-            }
-            isRenderingList = false;
-        }
-
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                dropdown.style.display = 'none';
-                input.setAttribute('aria-expanded', 'false');
-                input.blur();
-                if (!input.value.trim()) setSearchExpanded(false);
-                return;
-            }
-            if (e.key === 'ArrowDown' && dropdown.style.display === 'block') {
-                e.preventDefault();
-                const first = dropdown.querySelector('.search-item');
-                if (first) first.focus();
-            }
-        });
-
-        dropdown.addEventListener('keydown', e => {
-            if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(e.key)) return;
-            e.preventDefault();
-            if (e.key === 'Escape') { input.focus(); dropdown.style.display = 'none'; return; }
-            const options = Array.from(dropdown.querySelectorAll('.search-item'));
-            const i = options.indexOf(document.activeElement);
-            const next = options[Math.max(0, Math.min(options.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
-            if (next) next.focus();
-        });
-
-        input.oninput = function() {
-            if (this.value !== activeRouteName) { activeRouteName = ''; activeRouteSection = ''; }
-            syncDisplay();
-            renderList(this.value);
-        };
-
-        clearBtn.onclick = function(e) {
-            e.stopPropagation();
-            if (input.value.length > 0 || selectedGroupKey !== null || activeOperatorFilter !== null) {
-                clearRouteSelection();
-                if (window.innerWidth > 960) input.focus();
-            } else {
-                setSearchExpanded(false);
-                dropdown.style.display = 'none';
-                this.style.display = 'none';
-            }
-        };
-
-        document.addEventListener('click', function(e) {
-            if (!searchBox.contains(e.target)) {
-                dropdown.style.display = 'none';
-                input.setAttribute('aria-expanded', 'false');
-                if (input.value.trim() === '') setSearchExpanded(false);
-            }
-        });
-
-        map.on('click', function() {
-            if (Date.now() - lastFeatureClickTime < 250) return;
-            dropdown.style.display = 'none';
-            input.setAttribute('aria-expanded', 'false');
-            if (selectedGroupKey !== null || activeOperatorFilter !== null) {
-                clearRouteSelection();
-            } else if (input.value.trim() === '') {
-                setSearchExpanded(false);
-            }
-        });
-
-        dropdown.addEventListener('scroll', function() {
-            if (!isRenderingList) input.blur();
-        }, { passive: true });
-    </script>
-</body>
-</html>
+                        const is
