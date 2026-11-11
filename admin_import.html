@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 沿革 智慧縫合神器 v2.3 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 沿革 智慧縫合神器 v2.4 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
         .container { max-width: 920px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -67,7 +67,7 @@
         }
 
         #wordNarrativeInput {
-            width: 100%; height: 175px; box-sizing: border-box; border: 1px solid #9575cd;
+            width: 100%; height: 185px; box-sizing: border-box; border: 1px solid #9575cd;
             border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.55;
             font-family: inherit; resize: vertical; background: #fff;
         }
@@ -93,12 +93,12 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML 圖資 + CSV 統計表 + Word 沿革 智慧縫合器 v2.3</h2>
+    <h2>🗺️ KML 圖資 + CSV 統計表 + Word 沿革 智慧縫合器 v2.4</h2>
     <div class="status warning">
-        <b>💡 v2.3 升級重點：</b><br>
-        1. <b>自動糾錯清洗（Auto-Sanitize）</b>：載入 <code>data.json</code> 時，自動將誤存之非標準編號（如 <code>E-10 [菁寮線]</code>）轉正為 <code>E10-1</code> 並移除殘留舊鍵值。<br>
-        2. <b>已存沿革管理面板</b>：可隨時檢視目前已收錄的沿革，支援「<b>✏️ 載回修改</b>」、「<b>🏷️ 改編號</b>」與「<b>🗑️ 刪除</b>」。<br>
-        3. <b>主線／子路線智慧歸戶</b>：貼上 <code>E-10 [菁寮線]</code> 或 <code>[菁寮線]</code> 時，自動比對 317 組編號表並精準歸戶至子路線 <code>E10-1</code>。
+        <b>💡 v2.4 升級重點：</b><br>
+        1. <b>Word 剪貼簿富文本（HTML）直接攔截</b>：從 Word 複製帶有上標註腳的內文直接貼入下方文字框時，自動從剪貼簿底层提取隱藏的 <code>[1]</code>、<code>[2]</code> 與頁尾註腳清單，跟貼在 Gemini 完全一樣！<br>
+        2. <b>自動糾錯清洗（Auto-Sanitize）</b>：載入 <code>data.json</code> 時，自動將非標準編號（如 <code>E-10 [菁寮線]</code>）轉正為 <code>E10-1</code> 並移除殘留舊鍵值。<br>
+        3. <b>已存沿革管理面板</b>：支援「<b>✏️ 載回修改</b>」、「<b>🏷️ 改編號</b>」與「<b>🗑️ 刪除</b>」。
     </div>
 
     <div id="inventoryBox" class="inventory-box">
@@ -147,10 +147,10 @@
         </div>
 
         <div class="narrative-header">
-            <span>📝 步驟 3：新增或修改 Word 路線沿革文字（支援一次貼 1 至多條路線，自動配對編號與底部註腳）</span>
+            <span>📝 步驟 3：直接從 Word 複製貼上路線沿革（自動連同 Word 頁尾註腳一併帶入！）</span>
             <button type="button" class="mini-btn" onclick="document.getElementById('wordNarrativeInput').value='';handleNarrativeInput();">清空文字框</button>
         </div>
-        <textarea id="wordNarrativeInput" placeholder="請直接從 Word 複製貼上（支援單條或多條連續貼上，註腳集中於最下方亦會自動歸位並重編為 [1]）：&#10;&#10;E10-1 [菁寮線]&#10;區間：後壁—菁寮&#10;通車日期：&#10;內容概要：&#10;關子嶺軌道株式會社於昭和8年左右經營的支線..."></textarea>
+        <textarea id="wordNarrativeInput" placeholder="直接從 Word 選取標題與內文按 Ctrl+V 貼上，系統會自動抓取 Word 隱藏的頁尾註腳 [1]、[2]...（無須手動複製頁尾註腳！）：&#10;&#10;E10 [關子嶺線]&#10;臺南執業律師高城萬七，於明治44（1911）申請敷設關仔嶺線..."></textarea>
         <div id="narrativePreviewBox"></div>
     </div>
 
@@ -203,7 +203,92 @@
         return f;
     }
 
-    // 智慧解析路線編號（支援 E-10 [菁寮線] 自動對齊至子路線 E10-1）
+    /* ✨ v2.4 核心升級：攔截 Word 剪貼簿的 text/html，自動取出上標註腳與頁尾註腳清單 */
+    function extractTextFromWordClipboardHtml(htmlStr) {
+        let s = String(htmlStr || '')
+            .replace(/<head[\s\S]*?<\/head>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<xml[\s\S]*?<\/xml>/gi, '')
+            .replace(/<!--\[if gte mso[\s\S]*?<!\[endif\]-->/gi, '')
+            .replace(/<!--\[if !supportFootnotes\]-->/gi, '')
+            .replace(/<!\[if !supportFootnotes\]>/gi, '')
+            .replace(/<!--\[endif\]-->/gi, '')
+            .replace(/<!\[endif\]>/gi, '')
+            .replace(/<br\s*\/?>/gi, '\uE000');
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(s, 'text/html');
+
+        // 處理 Word 註腳連結 (<a href="#_ftn1" name="_ftnref1">)
+        doc.querySelectorAll('a').forEach(a => {
+            const href = a.getAttribute('href') || '';
+            const name = a.getAttribute('name') || '';
+            const style = a.getAttribute('style') || '';
+            const m = (href + ' ' + name).match(/_(?:ftn|edn)(?:ref)?(\d+)/i)
+                   || style.match(/mso-footnote-id:\s*(?:ftn|edn)(\d+)/i);
+            if (m) {
+                const fnNum = m[1];
+                const rawTxt = (a.textContent || '').replace(/\s+/g, '');
+                if (!rawTxt) {
+                    a.textContent = `[${fnNum}]`;
+                } else if (/^\d+$/.test(rawTxt)) {
+                    a.textContent = `[${rawTxt}]`;
+                }
+            }
+        });
+
+        // 處理一般上標數字 (如 <sup>106</sup>)
+        doc.querySelectorAll('sup, span.MsoFootnoteReference').forEach(el => {
+            const rawTxt = (el.textContent || '').replace(/\s+/g, '');
+            if (/^\d+$/.test(rawTxt)) {
+                el.textContent = `[${rawTxt}]`;
+            }
+        });
+
+        // 在區塊元素結尾加上換行標記 \uE000
+        doc.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, tr').forEach(blk => {
+            blk.appendChild(doc.createTextNode('\uE000'));
+        });
+
+        let rawText = (doc.body ? doc.body.textContent : doc.documentElement.textContent) || '';
+        // 移除 Word HTML 原始碼中每 76 字元自動斷行的無效 \r\n
+        rawText = rawText.replace(/[\r\n]+\s*/g, '');
+
+        const lines = [];
+        rawText.split('\uE000').forEach(line => {
+            let clean = line.replace(/^[\s\u00a0\u3000]+|[\s\u00a0\u3000]+$/g, '');
+            if (!clean) return;
+            // 美化底部註腳開頭格式為 "[1] 內容"
+            clean = clean.replace(/^\[(\d+)\]\s*/, '[$1] ');
+            lines.push(clean);
+        });
+
+        return lines.join('\n');
+    }
+
+    document.getElementById('wordNarrativeInput').addEventListener('paste', function(e) {
+        const cb = e.clipboardData || window.clipboardData;
+        if (!cb) return;
+        const htmlData = cb.getData('text/html');
+        // 若剪貼簿含有 Word 富文本、註腳或段落標籤（且非純程式碼區塊），自動執行 HTML 註腳提取
+        if (htmlData && /mso-|_ftn|_edn|MsoNormal|MsoFootnote|<sup|<p[\s>]/i.test(htmlData) && !/<pre[\s>]/i.test(htmlData)) {
+            const extracted = extractTextFromWordClipboardHtml(htmlData);
+            if (extracted && extracted.trim()) {
+                e.preventDefault();
+                const start = this.selectionStart || 0;
+                const end = this.selectionEnd || 0;
+                const before = this.value.substring(0, start);
+                const after = this.value.substring(end);
+                const prefix = (before.length > 0 && !before.endsWith('\n')) ? '\n\n' : '';
+                const insertText = prefix + extracted;
+                this.value = before + insertText + after;
+                this.selectionStart = this.selectionEnd = start + insertText.length;
+                handleNarrativeInput();
+            }
+        }
+    });
+
     function resolveRouteCode(explicitCode, rawName, sectionText, bodyText) {
         const mBrk = String(rawName || '').match(/^\s*([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*[\[\【]([^\]\】]+)[\]\】]/i);
         if (mBrk) {
@@ -256,7 +341,6 @@
         return rawName.trim();
     }
 
-    // 自動清洗並修正 existingData 中的舊沿革鍵值（如 "E-10 [菁寮線]" -> "E10-1"）
     function sanitizeSavedNarratives() {
         const cleanedMap = {};
         const fixLogs = [];
@@ -291,7 +375,6 @@
         }
     }
 
-    // 渲染「📚 已存沿革管理面板」
     function renderSavedNarrativesPanel() {
         const panel = document.getElementById('savedNarPanel');
         const listEl = document.getElementById('savedNarList');
@@ -331,16 +414,15 @@
         });
     }
 
-    // 將單筆已存沿革還原為 Word 純文字格式並載入下方輸入框
     window.loadNarrativeToTextarea = function(code) {
         const nar = savedNarrativesMap[code];
         if (!nar) return;
         const refName = (DEFAULT_CODE_REF_MAP[code] || nar.rawName || code).replace(/線$/, '') + '線';
         let lines = [];
         lines.push(`${code} [${refName}]`);
-        lines.push(`區間：${nar.sectionText || ''}`);
-        lines.push(`通車日期：${nar.openDate || ''}`);
-        lines.push(`內容概要：`);
+        if (nar.sectionText) lines.push(`區間：${nar.sectionText}`);
+        if (nar.openDate) lines.push(`通車日期：${nar.openDate}`);
+        if (nar.sectionText || nar.openDate) lines.push(`內容概要：`);
         (nar.paragraphs || []).forEach(p => lines.push(p));
         if (nar.footnotes && nar.footnotes.length > 0) {
             lines.push('');
@@ -352,7 +434,6 @@
         handleNarrativeInput();
     };
 
-    // 修改已存沿革的路線編號
     window.renameNarrativeCode = function(oldCode) {
         const nar = savedNarrativesMap[oldCode];
         if (!nar) return;
@@ -371,7 +452,6 @@
         updateActionButtons();
     };
 
-    // 刪除已存沿革
     window.deleteNarrativeCode = function(code) {
         if (!confirm(`確定要從 data.json 中刪除「${code}」的沿革資料嗎？`)) return;
         delete savedNarrativesMap[code];
@@ -435,7 +515,6 @@
                 listContainer.appendChild(tag);
             });
 
-            // 自動清洗轉正非標準編號 (如 E-10 [菁寮線] -> E10-1)
             sanitizeSavedNarratives();
             renderSavedNarrativesPanel();
 
@@ -463,8 +542,8 @@
         let curFootnotes = {};
         let curRoute = null;
 
-        // 支援 A3 [金山線]、E-10 [菁寮線]、E10-1 [菁寮線]、[關廟線] 等所有標題格式
         const bracketHeaderRe = /^\s*(?:([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*)?[\[\【]([^\]\】]+)[\]\】]\s*$/i;
+        const codeTitleRe = /^\s*([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s+([^\s，。、；：！？]{1,18})\s*$/i;
         const fnDefRe = /^\s*[\[\［](\d+)[\]\］][\s\u00a0\u3000]*(.+)$/;
         const fieldLineRe = /^\s*(區間|通車日期|內容概要)\s*[：:]/;
 
@@ -491,10 +570,15 @@
             let namePart = '';
 
             const mHdr = bracketHeaderRe.exec(line);
+            const mCodeTitle = !mHdr ? codeTitleRe.exec(line) : null;
             if (mHdr) {
                 isHeader = true;
                 codePart = (mHdr[1] || '').trim();
                 namePart = (mHdr[2] || '').trim();
+            } else if (mCodeTitle) {
+                isHeader = true;
+                codePart = (mCodeTitle[1] || '').trim();
+                namePart = (mCodeTitle[2] || '').trim();
             } else if (!fieldLineRe.test(line) && line.length <= 28) {
                 const nextLine = getNextNonEmptyLine(i);
                 if (/^(區間|通車日期)\s*[：:]/.test(nextLine)) {
@@ -648,7 +732,7 @@
         const items = Object.values(pastedNarrativesMap);
         if (items.length === 0) {
             previewBox.style.display = 'block';
-            previewBox.innerHTML = `⚠️ 尚未偵測到路線標題（請確認包含如 <code>E10-1 [菁寮線]</code> 或 <code>[關廟線]</code> 格式之標題列）。`;
+            previewBox.innerHTML = `⚠️ 尚未偵測到路線標題（請確認第一行包含如 <code>E10 [關子嶺線]</code> 或 <code>[關廟線]</code> 格式之標題列）。`;
         } else {
             const summaryTags = items.map(it => {
                 const refName = DEFAULT_CODE_REF_MAP[it.code] || it.rawName;
@@ -688,7 +772,6 @@
 
         const updatedFeatures = [];
         let removedSugarCount = 0;
-        const matchedCodesSet = new Set();
         const seenStationKeys = new Set();
 
         oldFeatures.forEach(f => {
@@ -723,17 +806,10 @@
                 if (!p.section && narObj.sectionText) p.section = narObj.sectionText;
                 p.description = { zh: injectNarrativeIntoDesc(oldZh, narObj.html) };
                 p.last_updated = new Date().toISOString().split('T')[0];
-                matchedCodesSet.add(narObj.code);
             } else {
-                // 若該路線原本有舊沿革但已被刪除或移至子路線，清除殘留標記
                 delete p.narrative;
                 p.description = { zh: injectNarrativeIntoDesc(oldZh, '') };
             }
-
-            // 檢查該主線是否包含附屬統計子路線（如 E10-1）
-            Object.keys(savedNarrativesMap).forEach(nc => {
-                if (nc.startsWith(pid + '-')) matchedCodesSet.add(nc);
-            });
 
             updatedFeatures.push(f);
         });
