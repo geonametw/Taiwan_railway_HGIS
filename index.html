@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v9.9</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v9.9.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -228,10 +228,15 @@
         #drawer-photo-img { width: 100%; max-height: 240px; object-fit: cover; display: block; cursor: zoom-in; }
         .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.68); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
 
-        /* 📖 路線沿革專屬區塊樣式 */
+        /* 📖 路線沿革與內文跨路線超連結樣式 */
         .narrative-card {
             background: #f8f9fc; border: 1px solid #d8def4; border-left: 4px solid var(--primary);
             border-radius: 8px; padding: 11px 13px; font-size: 13.5px; color: #222; line-height: 1.72;
+            margin-bottom: 8px;
+        }
+        .narrative-sub-header {
+            font-weight: bold; color: var(--primary); font-size: 12.5px; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 6px;
         }
         .narrative-meta-box {
             background: #eef2ff; border-radius: 6px; padding: 7px 10px; margin-bottom: 9px;
@@ -239,6 +244,14 @@
         }
         .narrative-para { margin: 0 0 8px 0; text-align: justify; }
         .narrative-para:last-child { margin-bottom: 0; }
+        .narrative-route-link {
+            color: #1565c0; font-weight: bold; text-decoration: underline;
+            text-decoration-color: #64b5f6; text-underline-offset: 3px;
+            cursor: pointer; padding: 0 2px; border-radius: 3px; transition: 0.15s;
+        }
+        .narrative-route-link:hover {
+            background: #1a237e; color: #fff; text-decoration: none;
+        }
         .fn-sup {
             color: #1a237e; background: #e8eaf6; border: 1px solid #c5cae9;
             padding: 0 4px; border-radius: 4px; font-weight: bold; font-size: 11px;
@@ -280,7 +293,6 @@
         .clickable-route-badge { cursor: pointer; user-select: none; box-shadow: 0 1px 3px rgba(26,35,126,0.25); }
         .clickable-route-badge:hover { background: #3949ab; }
 
-        /* 電腦與手機統一表格樣式 */
         .active-year-row { background-color: #fff59d !important; font-weight: bold; color: #b71c1c; }
         #drawer-table-container { overflow-x: auto; overflow-wrap: anywhere; }
         #drawer-table-container table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
@@ -493,9 +505,9 @@
                 <div class="chip-list" id="drawer-stations-list"></div>
             </div>
 
-            <!-- 📖 路線沿革區塊（自動讀取 narratives 顯示） -->
+            <!-- 📖 路線沿革區塊 -->
             <div class="info-block-plain" id="drawer-narrative-block" style="display:none;">
-                <div class="info-block-title"><span>📖 路線沿革</span></div>
+                <div class="info-block-title"><span id="drawer-narrative-title">📖 路線沿革</span></div>
                 <div id="drawer-narrative-container"></div>
             </div>
 
@@ -528,9 +540,12 @@
         const dropdown = document.getElementById('searchDropdown');
         const clearBtn = document.getElementById('clearBtn');
 
+        // 內建全台 317 組台車編號與參考名稱對照表（供沿革內文自動超連結比對）
+        const ROUTE_CODE_REF_MAP = {"A1": "三爪子", "A1-1": "三爪子複線", "A1-2": "瑞芳停車場引入", "A2": "金瓜石", "A3": "金山", "A3-1": "金山野柳段", "A3-2": "觀音町", "A4": "錫板", "A4-1": "水碓仔", "A5": "松三", "A6": "深坑", "A6-1": "指南宮", "A7": "十五份", "A8": "南門屈尺", "A8-1": "南門複線", "A9": "古亭村庄大稻埕", "A10": "大稻埕錫口", "A11": "龍匣口", "A12": "頂埔", "A12-1": "新埔", "A12-2": "枋橋", "A12-3": "萬華驛", "A13": "鷺洲新莊", "A13-1": "和尚洲", "A13-2": "橋頭", "A14": "板橋", "A15": "萬華", "A16": "成福", "A16-1": "成福複線", "A16-2": "三角湧", "A17": "中庄", "A17-1": "貨物", "A18": "大湖", "A19": "媽祖田", "A20": "佳園", "A21": "新樹", "A22": "三井(烏來)", "A23": "三井(三峽合流)", "B1": "新莊", "B1-1": "塔寮坑", "B2": "南崁", "B2-1": "北門", "B3": "大溪複線", "B3-1": "大溪單線", "B4": "角板山", "B5": "大園", "B6": "竹圍", "B7": "中壢", "B8": "中壢", "B8-1": "觀音", "B8-2": "龍潭", "B9": "下大堀", "B10": "新屋(中壢)", "B11": "東勢", "B12": "三坑仔", "B13": "楊梅", "B13-1": "下水流", "B14": "大陂", "B15": "伯公岡", "B16": "湖口", "B17": "平關", "B18": "橫崗頭", "B19": "紅關", "B19-1": "紅關複線", "B19-2": "犁頭山", "B20": "新埔輕鐵", "B21": "石門", "B22": "馬武督", "B23": "竹東", "B23-1": "竹東", "B23-2": "新竹單", "B23-3": "鹿寮坑", "B24": "北埔", "B25": "上坪", "B26": "芎林(臺灣軌道)", "B27": "芎林(文林軌道)", "B27-1": "石壁坑竹東", "B28": "芎林(帝國製糖)", "B29": "舊港", "B29-1": "北門", "B29-2": "舊社", "B29-3": "南寮", "B29-4": "舊港岔", "B30": "南寮油車港", "B31": "油車港", "C1": "竹南", "C1-1": "竹南複", "C1-2": "斗煥坪", "C1-3": "大南埔", "C2": "中港街", "C3": "尖山下錦水", "C3-1": "造橋", "C4": "錦水", "C4-1": "二坪岡", "C5": "後攏驛後攏街", "C5-1": "後攏驛崁頭屋", "C5-2": "後攏街大山腳", "C5-3": "後攏街新港", "C6": "公司寮", "C7": "苗栗", "C7-1": "苗栗複線", "C7-2": "苗栗內麻", "C7-3": "出磺坑", "C8": "銅鑼灣福基", "C9": "銅鑼灣山腳", "C10": "日南", "C10-1": "五里牌", "C11": "三叉", "C12": "卓蘭", "D1": "后里", "D3": "大安港", "D4": "甲南", "D5": "四塊厝", "D6": "公館", "D7": "清水", "D7-1": "清水", "D8": "梧棲", "D9": "神崗崎頭", "D10": "神崗", "D11": "東勢", "D11-1": "東勢複線", "D11-2": "葫蘆墩驛", "D11-3": "貯木池", "D12": "水底寮", "D13": "馬力埔", "D14": "牛欄坑", "D15": "中坑坪", "D16": "臺中", "D16-1": "大雅支", "D16-2": "北屯", "D16-3": "三貴城", "D17": "埧雅", "D18": "大雅", "D19": "西屯", "D20": "頭汴坑", "D20-1": "三汴", "D20-2": "廍子", "D20-3": "太平", "D20-4": "芭蕉市場", "D21": "南屯", "D22": "烏日", "D23": "龍井", "D23-1": "海埔厝", "D23-2": "龍目井", "D24": "臺中南投", "D25": "大里", "D26": "霧峰(霧峰宏業)", "D27": "霧峰(霧峰輕鐵)", "D28": "大平", "D28-1": "竹子坑支", "D28-2": "牛角坑支", "D29": "青桐林", "D30": "六股", "D31": "彰草", "D31-1": "八卦山", "D32": "彰化鹿港", "D32-1": "鹿港新營口", "D33": "彰化軌道", "D34": "溪州二林", "D35": "員林鹿港", "D36": "員林", "D36-1": "員林複線", "D36-2": "員林東山", "D36-3": "東山湳雅", "D36-4": "湖水坑支線", "D36-5": "海豐崙支線", "D37": "下見口", "D38": "秀水茄苳腳", "D39": "土城", "D40": "國姓", "D41": "集南", "D41-1": "南投分歧線", "D41-2": "番子吧", "D41-3": "暗坑", "D41-4": "粗坑", "D42": "龍眼林", "D43": "集鹿", "D44": "新高", "D44-1": "貨物", "D45": "埔里", "D45-1": "埔里複線", "D48": "田中央驛田中央街", "D50": "竹山", "D50-1": "東埔蚋複線", "D50-2": "林圯埔", "D50-3": "大坑", "D51": "社寮", "D51-1": "名間", "D52": "車輄寮", "D53": "溪頭", "D54": "名濁", "D55": "西螺", "D56": "內林", "D57": "斗六糖廠", "D58": "土庫", "D59": "埔眉", "E1": "打貓北港", "E2": "新港驛新港街", "E3": "梅山", "E4": "嘉義小梅", "E5": "中埔", "E5-1": "南門西門", "E5-2": "沄水", "E5-3": "三界埔", "E5-4": "石硦", "E6": "觸口", "E6-1": "番路(臺中輕鐵)", "E7": "番路(內外食品)", "E8": "內埔子鹿麻產", "E9": "竹崎輕鐵", "E10": "關子嶺", "E10-1": "菁寮", "E10-2": "後壁", "E10-3": "木屐寮", "E10-4": "仙草埔", "E10-5": "關子嶺溫泉", "E11": "番社", "E12": "六重溪", "E13": "崎子頭", "E13-1": "前大埔", "E14": "烏山頭", "E15": "六甲", "E16": "北門", "E17": "鹽水", "E18": "善化市街", "E19": "善化二重溪", "E19-1": "大內北勢洲", "E20": "玉井", "E21": "大目降", "E21-1": "糖業科", "E21-2": "新市", "E21-3": "虎頭埤", "E22": "安平", "E23": "喜樹", "E23-1": "屠畜場", "E24": "關廟", "E24-1": "東市場", "E25": "番子寮", "E25-1": "麻豆", "E25-2": "麻豆市街", "E25-3": "西港麻豆", "E25-4": "西港番子寮", "E25-5": "鹽水港三崁店", "E25-6": "六塊厝直加弄", "E26": "嘉義公園", "E26-1": "郵局西門", "E27": "台南水道", "F1": "石材", "F2": "路竹", "F3": "燕巢", "F4": "岡山阿蓮", "F4-1": "大岡山", "F5": "赤崁", "F5-1": "彌陀", "F6": "鳳山苓雅寮", "F7": "蕃薯寮楠仔坑", "F8": "舊寮中庄", "F9": "九曲堂驛阿缑", "F10": "阿缑東港", "F10-1": "萬巒四溝水", "F10-2": "打鐵新埤頭", "F11": "東港枋寮", "F11-1": "頂中街海岸", "F11-2": "下中街", "F11-3": "磘仔口竹仔腳", "F12": "麟洛屏東", "F13": "西勢內埔", "F14": "新大路關屏東", "F15": "東港溪洲", "F16": "恆春海口", "F17": "恆春大坂埒", "F18": "六龜里橫山", "F19": "哨船頭鳳山", "G1": "頭圍蘇澳", "G2": "宜蘭蘇澳", "G3": "蘇澳海岸", "G3-1": "蘇澳停車場引入", "G4": "南方澳", "G4-1": "港邊", "G5": "員山", "G5-1": "員山溫泉", "G5-2": "水源地", "G5-3": "深溝", "G6": "叭哩沙", "G6-1": "羅東停車場", "G6-2": "羅東引込", "G6-3": "農庫", "G7": "竹林貯木場", "G8": "竹林二結", "G9": "大洲", "G10": "小南澳", "G11": "利澤簡", "G12": "一百甲", "G13": "功勞", "G13-1": "二結", "H1": "臺東", "H1-1": "水尾", "H2": "南町指導所", "H2-1": "卑南海岸", "H2-2": "卑南社", "H2-3": "南町卑南社", "H2-4": "南町指導所", "H2-5": "新町南町", "H3": "吉野村", "H4": "銅文蘭", "H5": "新城", "H6": "瑞穗溫泉", "I1": "新竹", "I2": "臺中", "I3": "臺南", "I3-1": "嘉義", "I4": "打狗", "I5": "塗葛窟", "I6": "雲林", "I7": "安平", "I8": "鳳山", "I9": "軍用速成"};
+
         let ROUTE_PHOTO_META = {};
         let currentPhotoMeta = { caption: '', source: '', link: '' };
-        let globalNarrativesMap = {}; // 儲存自 data.json 載入的 narratives 字典
+        let globalNarrativesMap = {};
 
         fetch('photos/meta.json?t=' + Date.now())
             .then(r => r.ok ? r.json() : {})
@@ -1109,17 +1124,16 @@
         }
         function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
 
-        /* 註腳雙向平滑跳轉與高亮 */
-        window.jumpToFootnote = function(num) {
-            const target = document.getElementById(`nar-fn-item-${num}`);
+        window.jumpToFootnote = function(prefix, num) {
+            const target = document.getElementById(`nar-fn-item-${prefix}-${num}`);
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 target.style.backgroundColor = '#fff59d';
                 setTimeout(() => { target.style.backgroundColor = 'transparent'; }, 1800);
             }
         };
-        window.jumpToFnRef = function(num) {
-            const target = document.getElementById(`nar-fn-ref-${num}`);
+        window.jumpToFnRef = function(prefix, num) {
+            const target = document.getElementById(`nar-fn-ref-${prefix}-${num}`);
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 target.style.backgroundColor = '#fff59d';
@@ -1127,47 +1141,187 @@
             }
         };
 
-        /* 渲染「📖 路線沿革」區塊 */
-        function renderRouteNarrative(feature, groupKey, currentId) {
-            const narBlock = document.getElementById('drawer-narrative-block');
-            const narContainer = document.getElementById('drawer-narrative-container');
-            narContainer.innerHTML = '';
+        /* ✨ 跨路線／同家族子路線點擊跳轉核心函式 */
+        window.jumpToRouteById = function(targetCode) {
+            if (!targetCode) return;
+            const normCode = String(targetCode).trim().toUpperCase();
+            const parentKey = normCode.split('-')[0];
 
-            const p = feature.properties || {};
-            const masterFeat = masterRouteFeatureMap[groupKey];
-            const narObj = p.narrative
-                || globalNarrativesMap[currentId]
-                || (currentId === groupKey ? globalNarrativesMap[groupKey] : null)
-                || globalNarrativesMap[groupKey]
-                || (masterFeat && masterFeat.properties && masterFeat.properties.narrative)
-                || null;
-
-            if (!narObj) {
-                narBlock.style.display = 'none';
-                return null;
+            // 1. 若目標屬於目前正在檢視的同一家族（例如從 E10 點擊「菁寮線」跳往 E10-1）
+            if (selectedGroupKey === parentKey && familyMembersMap[parentKey]) {
+                const member = familyMembersMap[parentKey].find(m => m.id === normCode);
+                if (member) {
+                    window.switchFamilyMember(parentKey, normCode);
+                    showToast(`🛤️ 已切換至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || member.lineType || '' }線」`);
+                    return;
+                }
             }
 
+            // 2. 若目標為其他路線家族或子路線（已載入於地圖）
+            const targetFeat = routeByIdMap[normCode] || masterRouteFeatureMap[normCode] || masterRouteFeatureMap[parentKey];
+            if (targetFeat) {
+                if (currentDrawerFeature) previousRouteFeature = currentDrawerFeature;
+                highlightRouteGroup(targetFeat, true, null);
+                if (normCode !== parentKey && familyMembersMap[parentKey]) {
+                    const subM = familyMembersMap[parentKey].find(m => m.id === normCode);
+                    if (subM) window.switchFamilyMember(parentKey, normCode);
+                }
+                showToast(`🛤️ 已跳轉至「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || '' }線」`);
+                return;
+            }
+
+            // 3. 若該路線尚未匯入 KML 圖資，但已有沿革文字於 globalNarrativesMap
+            if (globalNarrativesMap[normCode]) {
+                if (currentDrawerFeature) previousRouteFeature = currentDrawerFeature;
+                const refName = (ROUTE_CODE_REF_MAP[normCode] || globalNarrativesMap[normCode].rawName || normCode).replace(/線$/, '') + '線';
+                const tempFeat = {
+                    type: 'Feature',
+                    _isVirtual: true,
+                    properties: {
+                        route_id: normCode,
+                        parent_id: parentKey,
+                        line_type: '待匯入圖資',
+                        name: refName,
+                        section: globalNarrativesMap[normCode].sectionText || '',
+                        narrative: globalNarrativesMap[normCode],
+                        description: { zh: '' }
+                    }
+                };
+                openRouteDrawer(tempFeat, true);
+                showToast(`📖 已開啟「${ normCode } ${ refName }」沿革`);
+            } else {
+                showToast(`ℹ️ 「${ normCode } ${ ROUTE_CODE_REF_MAP[normCode] || '' }線」尚無詳細資料`);
+            }
+        };
+
+        /* 建立沿革內文自動超連結比對表（優先匹配同家族子路線如 E10-1 菁寮線，再匹配全域路線） */
+        function linkifyRouteMentions(escapedText, currentId, groupKey) {
+            if (!escapedText) return '';
+
+            const lineNamesToCode = {}; // "菁寮線" -> "E10-1"
+            const bareSubNamesToCode = {}; // "關子嶺溫泉" -> "E10-5" (僅當後接括號或位於引號內時觸發)
+
+            const isTargetAvailable = (code) => {
+                const pk = code.split('-')[0];
+                return Boolean(routeByIdMap[code] || masterRouteFeatureMap[code] || masterRouteFeatureMap[pk] || globalNarrativesMap[code]);
+            };
+
+            const registerName = (code, rawName, isSameFamily) => {
+                if (!code || code === currentId || !rawName) return;
+                if (!isTargetAvailable(code)) return;
+                const clean = String(rawName).trim().replace(/線$/, '').trim();
+                if (!clean || clean.length < 2 || /^(主|舊|副|支|未命名)/.test(clean)) return;
+                const withLine = clean + '線';
+                if (isSameFamily || !lineNamesToCode[withLine]) {
+                    lineNamesToCode[withLine] = code;
+                }
+                if (isSameFamily && code !== groupKey) {
+                    bareSubNamesToCode[clean] = code;
+                }
+            };
+
+            // 1. 先註冊同家族的所有子路線與主線
+            const famList = familyMembersMap[groupKey] || [];
+            famList.forEach(m => {
+                const ref = ROUTE_CODE_REF_MAP[m.id] || m.lineType || '';
+                registerName(m.id, ref, true);
+            });
+            Object.entries(ROUTE_CODE_REF_MAP).forEach(([code, ref]) => {
+                if (code === groupKey || code.startsWith(groupKey + '-')) {
+                    registerName(code, ref, true);
+                }
+            });
+
+            // 2. 再註冊全台灣其他已存在之路線
+            Object.entries(ROUTE_CODE_REF_MAP).forEach(([code, ref]) => {
+                if (!(code === groupKey || code.startsWith(groupKey + '-'))) {
+                    registerName(code, ref, false);
+                }
+            });
+
+            // 使用 Placeholder 保護已產生的 HTML 標籤，避免二次替換干擾
+            const placeholders = [];
+            const makeLinkPlaceholder = (code, displayHtml) => {
+                const refTitle = ROUTE_CODE_REF_MAP[code] ? `${code} ${ROUTE_CODE_REF_MAP[code]}線` : code;
+                const tag = `<a href="javascript:void(0)" class="narrative-route-link" onclick="jumpToRouteById('${code}')" title="點擊切換至「${escapeHtml(refTitle)}」路線資訊欄">${displayHtml}</a>`;
+                const token = `\uE000LNK${placeholders.length}\uE000`;
+                placeholders.push(tag);
+                return token;
+            };
+
+            let out = escapedText;
+
+            // A. 先處理手動指定語法：[[E10-1|菁寮線]] 或 [[菁寮線]] 或 [[E10-1]]
+            out = out.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, p1, p2) => {
+                const key = p1.trim();
+                const upperKey = key.toUpperCase();
+                let targetCode = '';
+                if (ROUTE_CODE_REF_MAP[upperKey] || routeByIdMap[upperKey] || globalNarrativesMap[upperKey]) {
+                    targetCode = upperKey;
+                } else {
+                    const cleanK = key.replace(/線$/, '').trim();
+                    targetCode = lineNamesToCode[cleanK + '線'] || bareSubNamesToCode[cleanK] || '';
+                }
+                if (!targetCode) return p2 || p1;
+                const label = p2 ? p2.trim() : (ROUTE_CODE_REF_MAP[targetCode] ? ROUTE_CODE_REF_MAP[targetCode].replace(/線$/, '') + '線' : key);
+                return makeLinkPlaceholder(targetCode, label);
+            });
+
+            // B. 自動匹配所有以「線」結尾的路線名稱（如「菁寮線」、後壁線、木屐寮線、仙草埔線）
+            const sortedLineNames = Object.keys(lineNamesToCode).sort((a, b) => b.length - a.length);
+            if (sortedLineNames.length > 0) {
+                const escapedKeys = sortedLineNames.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                const lineRe = new RegExp(`(${escapedKeys.join('|')})`, 'g');
+                out = out.replace(lineRe, (match) => {
+                    const code = lineNamesToCode[match];
+                    return code ? makeLinkPlaceholder(code, match) : match;
+                });
+            }
+
+            // C. 自動匹配同家族未加「線」字、但置於「...」引號內或後接（...）括號的子路線名（如：關子嶺溫泉（關子嶺＝溫泉場））
+            const sortedBareNames = Object.keys(bareSubNamesToCode).sort((a, b) => b.length - a.length);
+            if (sortedBareNames.length > 0) {
+                const escapedBare = sortedBareNames.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                const bareRe = new RegExp(`(${escapedBare.join('|')})(?=[（\\(」』])`, 'g');
+                out = out.replace(bareRe, (match) => {
+                    const code = bareSubNamesToCode[match];
+                    return code ? makeLinkPlaceholder(code, match) : match;
+                });
+            }
+
+            // 還原所有超連結標籤
+            out = out.replace(/\uE000LNK(\d+)\uE000/g, (m, idx) => placeholders[Number(idx)] || '');
+            return out;
+        }
+
+        function buildSingleNarrativeCardHtml(narObj, prefix = 'main', subBadgeTitle = '', currentId = '', groupKey = '') {
+            if (!narObj) return '';
             const fnDict = {};
             (narObj.footnotes || []).forEach(f => { fnDict[f.num] = f.text; });
 
             const seenRefNums = new Set();
-            const formatInlineSup = (escapedStr) => {
-                return escapedStr.replace(/\[(\d+)\]/g, (m, num) => {
+            const formatInline = (rawStr) => {
+                const escaped = escapeHtml(rawStr);
+                const withRouteLinks = linkifyRouteMentions(escaped, currentId, groupKey);
+                return withRouteLinks.replace(/\[(\d+)\]/g, (m, num) => {
                     const tip = escapeHtml(fnDict[num] || `註腳 [${num}]`);
-                    const idAttr = !seenRefNums.has(num) ? `id="nar-fn-ref-${num}"` : '';
+                    const idAttr = !seenRefNums.has(num) ? `id="nar-fn-ref-${prefix}-${num}"` : '';
                     seenRefNums.add(num);
-                    return `<sup ${idAttr} class="fn-sup" title="${tip}" onclick="jumpToFootnote(${num})">[${num}]</sup>`;
+                    return `<sup ${idAttr} class="fn-sup" title="${tip}" onclick="jumpToFootnote('${prefix}', ${num})">[${num}]</sup>`;
                 });
             };
 
             let cardHtml = `<div class="narrative-card">`;
+            if (subBadgeTitle) {
+                cardHtml += `<div class="narrative-sub-header"><span class="route-badge">${escapeHtml(subBadgeTitle)}</span></div>`;
+            }
             if (narObj.sectionText || narObj.openDate) {
                 cardHtml += `<div class="narrative-meta-box">`;
                 if (narObj.sectionText) {
-                    cardHtml += `<div><b>📍 考據區間：</b>${formatInlineSup(escapeHtml(narObj.sectionText))}</div>`;
+                    cardHtml += `<div><b>📍 考據區間：</b>${formatInline(narObj.sectionText)}</div>`;
                 }
                 if (narObj.openDate) {
-                    cardHtml += `<div><b>🗓️ 通車日期：</b>${formatInlineSup(escapeHtml(narObj.openDate))}</div>`;
+                    cardHtml += `<div><b>🗓️ 通車日期：</b>${formatInline(narObj.openDate)}</div>`;
                 }
                 cardHtml += `</div>`;
             }
@@ -1175,7 +1329,7 @@
             if (Array.isArray(narObj.paragraphs) && narObj.paragraphs.length > 0) {
                 cardHtml += `<div>`;
                 narObj.paragraphs.forEach(para => {
-                    cardHtml += `<p class="narrative-para">${formatInlineSup(escapeHtml(para))}</p>`;
+                    cardHtml += `<p class="narrative-para">${formatInline(para)}</p>`;
                 });
                 cardHtml += `</div>`;
             }
@@ -1183,15 +1337,101 @@
             if (Array.isArray(narObj.footnotes) && narObj.footnotes.length > 0) {
                 cardHtml += `<div class="narrative-fn-box">`;
                 narObj.footnotes.forEach(fn => {
-                    cardHtml += `<div id="nar-fn-item-${fn.num}" class="narrative-fn-item"><span class="fn-back" onclick="jumpToFnRef(${fn.num})" title="點擊跳回內文引用處">[${fn.num}] ↩</span>${escapeHtml(fn.text)}</div>`;
+                    cardHtml += `<div id="nar-fn-item-${prefix}-${fn.num}" class="narrative-fn-item"><span class="fn-back" onclick="jumpToFnRef('${prefix}', ${fn.num})" title="點擊跳回內文引用處">[${fn.num}] ↩</span>${escapeHtml(fn.text)}</div>`;
                 });
                 cardHtml += `</div>`;
             }
             cardHtml += `</div>`;
+            return cardHtml;
+        }
 
-            narContainer.innerHTML = cardHtml;
-            narBlock.style.display = 'block';
-            return narObj;
+        function renderRouteNarrative(feature, groupKey, currentId) {
+            const narBlock = document.getElementById('drawer-narrative-block');
+            const narContainer = document.getElementById('drawer-narrative-container');
+            narContainer.innerHTML = '';
+
+            const p = feature.properties || {};
+            const ownNar = globalNarrativesMap[currentId] || (currentId === groupKey ? p.narrative : null) || null;
+
+            if (ownNar) {
+                narContainer.innerHTML = buildSingleNarrativeCardHtml(ownNar, `top-${currentId}`, '', currentId, groupKey);
+                narBlock.style.display = 'block';
+                return ownNar;
+            }
+
+            // 若目前在主線，但主線本身尚未建置沿革，則自動顯示該家族下已建置的子路線沿革
+            if (currentId === groupKey) {
+                const famList = familyMembersMap[groupKey] || [];
+                let subCardsHtml = '';
+                famList.forEach(m => {
+                    if (m.id !== groupKey && globalNarrativesMap[m.id]) {
+                        subCardsHtml += buildSingleNarrativeCardHtml(globalNarrativesMap[m.id], `top-${m.id}`, m.badgeText, m.id, groupKey);
+                    }
+                });
+                if (subCardsHtml) {
+                    narContainer.innerHTML = subCardsHtml;
+                    narBlock.style.display = 'block';
+                    return null;
+                }
+            }
+
+            narBlock.style.display = 'none';
+            return null;
+        }
+
+        function normalizeNarrativesRegistry(rawNarratives) {
+            const normalized = {};
+            if (!rawNarratives || typeof rawNarratives !== 'object') return normalized;
+
+            Object.entries(rawNarratives).forEach(([rawKey, val]) => {
+                if (!val) return;
+                let targetCode = rawKey.trim();
+
+                if (routeByIdMap[targetCode] || familyMembersMap[targetCode] || ROUTE_CODE_REF_MAP[targetCode]) {
+                    normalized[targetCode] = val;
+                    return;
+                }
+
+                let codeHint = '';
+                let nameHint = '';
+                const mBrk = targetCode.match(/^\s*([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*[\[\【]([^\]\】]+)[\]\】]/i);
+                if (mBrk) {
+                    codeHint = mBrk[1].replace(/^([A-Z])-(\d+)/i, '$1$2').toUpperCase();
+                    nameHint = mBrk[2].replace(/線$/, '').trim();
+                } else {
+                    const mOnlyBrk = targetCode.match(/[\[\【]([^\]\】]+)[\]\】]/);
+                    if (mOnlyBrk) nameHint = mOnlyBrk[1].replace(/線$/, '').trim();
+                    const mCodeOnly = targetCode.match(/^([A-Z])-?(\d+(?:-\S+)?)$/i);
+                    if (mCodeOnly) codeHint = (mCodeOnly[1] + mCodeOnly[2]).toUpperCase();
+                }
+
+                if (codeHint) {
+                    const parentKey = codeHint.split('-')[0];
+                    if (nameHint && ROUTE_CODE_REF_MAP[codeHint] !== nameHint) {
+                        for (const [k, v] of Object.entries(ROUTE_CODE_REF_MAP)) {
+                            if ((k === parentKey || k.startsWith(parentKey + '-')) && v === nameHint) {
+                                targetCode = k;
+                                val.code = targetCode;
+                                normalized[targetCode] = val;
+                                return;
+                            }
+                        }
+                    }
+                    targetCode = codeHint;
+                } else if (nameHint) {
+                    for (const [k, v] of Object.entries(ROUTE_CODE_REF_MAP)) {
+                        if (v === nameHint) {
+                            targetCode = k;
+                            break;
+                        }
+                    }
+                }
+
+                val.code = targetCode;
+                normalized[targetCode] = val;
+            });
+
+            return normalized;
         }
 
         function formatTableHtml(htmlStr) {
@@ -1278,7 +1518,16 @@
 
             const badgeText = currentMember ? currentMember.badgeText : `${p.route_id || groupKey} ${p.line_type || '主線'}`.trim();
             document.getElementById('drawer-badge').textContent = badgeText;
-            document.getElementById('drawer-title').textContent = p.name || '未命名路線';
+
+            // 當切換至子路線（如 E10-1 菁寮）時，標題清楚顯示「菁寮線（關子嶺線）」
+            const subRefName = ROUTE_CODE_REF_MAP[currentId] || (currentMember && !/^(主線|舊線|副線|支線)/.test(currentMember.lineType) ? currentMember.lineType : '');
+            const mainRouteTitle = p.name || '未命名路線';
+            if (currentId !== groupKey && subRefName) {
+                const subFullTitle = subRefName.endsWith('線') ? subRefName : `${subRefName}線`;
+                document.getElementById('drawer-title').textContent = `${subFullTitle}（${mainRouteTitle}）`;
+            } else {
+                document.getElementById('drawer-title').textContent = mainRouteTitle;
+            }
             document.getElementById('drawer-tailo').textContent = p.tailo || '';
 
             const backMainBtn = document.getElementById('drawer-back-main-btn');
@@ -1286,11 +1535,21 @@
                 backMainBtn.style.display = 'inline-block';
                 backMainBtn.textContent = `↩ 返回 ${mainMember.badgeText}`;
                 backMainBtn.onclick = () => window.switchFamilyMember(groupKey, mainMember.id);
+            } else if (previousRouteFeature && previousRouteFeature !== feature) {
+                const prevProps = previousRouteFeature.properties || {};
+                const prevCode = prevProps.route_id || '';
+                const prevLabel = prevProps.name || prevCode || '原路線';
+                backMainBtn.style.display = 'inline-block';
+                backMainBtn.textContent = `↩ 返回 ${prevCode} ${prevLabel}`;
+                backMainBtn.onclick = () => {
+                    const target = previousRouteFeature;
+                    previousRouteFeature = null;
+                    highlightRouteGroup(target, true, null);
+                };
             } else {
                 backMainBtn.style.display = 'none';
             }
 
-            /* 渲染 📖 路線沿革區塊 */
             const activeNarObj = renderRouteNarrative(feature, groupKey, currentId);
 
             const rawSec = (currentMember && currentMember.section) ? currentMember.section : (p.section || (activeNarObj && activeNarObj.sectionText) || '');
@@ -1298,7 +1557,7 @@
             document.getElementById('drawer-section').textContent = cleanSec ? `區間：${cleanSec}` : '';
 
             const famTabsBox = document.getElementById('drawer-family-tabs');
-            const tabCandidates = famList.filter(m => m.isMain || m.hasTable);
+            const tabCandidates = famList.filter(m => m.isMain || m.hasTable || Boolean(globalNarrativesMap[m.id]));
             if (tabCandidates.length > 1) {
                 famTabsBox.style.display = 'flex';
                 famTabsBox.innerHTML = '';
@@ -1391,11 +1650,13 @@
             const relatedMembers = famList.filter(m => m.id !== currentId && (m.hasTable || m.isMain));
             relatedMembers.forEach(rm => {
                 const secHint = rm.section ? `<span style="font-weight:normal;font-size:11.5px;color:#555;margin-left:6px;">${rm.section.replace(/\s*\([^)]*\)$/, '')}</span>` : '';
+                const hasSubNar = Boolean(globalNarrativesMap[rm.id]);
+                const narHint = hasSubNar ? `<span style="font-size:11px;color:#6a1b9a;margin-left:6px;cursor:pointer;text-decoration:underline;" onclick="switchFamilyMember('${groupKey}', '${rm.id}')">📖 點此閱讀沿革</span>` : '';
                 combinedHtml += `
                     <div style="font-weight:bold;font-size:12px;color:#3949ab;margin-top:14px;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;">
                         <span>▸ 相關路線：</span>
-                        <span class="route-badge clickable-route-badge" style="margin-left:4px;" onclick="switchFamilyMember('${groupKey}', '${rm.id}')" title="點擊切換至此路線">${rm.badgeText}</span>
-                        ${secHint}
+                        <span class="route-badge clickable-route-badge" style="margin-left:4px;" onclick="switchFamilyMember('${groupKey}', '${rm.id}')" title="點擊切換至此路線資訊欄">${rm.badgeText}</span>
+                        ${secHint}${narHint}
                     </div>
                     ${formatTableHtml(rm.tableHtml)}
                 `;
@@ -1792,8 +2053,7 @@
             if (op && Array.from(Object.values(familyOperatorsMap)).some(set => set.has(op))) {
                 setTimeout(() => filterByOperator(op), 150);
             } else if (rt) {
-                const targetFeat = routeByIdMap[rt] || masterRouteFeatureMap[rt];
-                if (targetFeat) setTimeout(() => highlightRouteGroup(targetFeat, true, null), 200);
+                setTimeout(() => window.jumpToRouteById(rt), 200);
             }
         }
 
@@ -1831,7 +2091,6 @@
                 const mainFeat = flist.find(f => f.properties.line_type === '主線') || flist[0];
                 const mainProps = mainFeat.properties || {};
 
-                /* 剝除內嵌沿革標記與標題徽章，確保統計表格與附屬統計純淨拆解 */
                 const splitDesc = (descStr) => {
                     if (!descStr) return [''];
                     const withoutNar = descStr.replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '');
@@ -1888,8 +2147,7 @@
                             properties: {
                                 route_id: subCode, parent_id: gk, line_type: subLabel, name: mainProps.name,
                                 tailo: mainProps.tailo || '', section: meta.section || subLabel,
-                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable },
-                                narrative: globalNarrativesMap[subCode] || null
+                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable }
                             },
                             geometry: mainFeat.geometry
                         };
@@ -1910,16 +2168,11 @@
             });
         }
 
-        /* 使用動態時間戳確保每次重整皆載入最新 data.json 與 narratives */
         fetch('data.json?t=' + Date.now())
             .then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
             .then(rawData => {
                 const geoData = rawData.data || rawData;
-                if (geoData.narratives && typeof geoData.narratives === 'object') {
-                    globalNarrativesMap = geoData.narratives;
-                } else if (rawData.narratives && typeof rawData.narratives === 'object') {
-                    globalNarrativesMap = rawData.narratives;
-                }
+                const rawNarratives = geoData.narratives || rawData.narratives || {};
 
                 const rawFeatures = geoData.features || [];
                 const seenStations = new Set();
@@ -1952,8 +2205,8 @@
                         f._bbox = getGeometryBBox(f.geometry);
                         routeFeaturesList.push(f);
                         const groupKey = p.parent_id || p.route_id || p.name;
-                        if (p.narrative && p.route_id && !globalNarrativesMap[p.route_id]) {
-                            globalNarrativesMap[p.route_id] = p.narrative;
+                        if (p.narrative && p.route_id && !rawNarratives[p.route_id]) {
+                            rawNarratives[p.route_id] = p.narrative;
                         }
                         if (p.name && !routeKeyToNameMap[groupKey]) routeKeyToNameMap[groupKey] = p.name;
                         if (!masterRouteFeatureMap[groupKey] || p.line_type === "主線") masterRouteFeatureMap[groupKey] = f;
@@ -1964,6 +2217,7 @@
                 });
 
                 buildFamilyRegistry(routeFeaturesList);
+                globalNarrativesMap = normalizeNarrativesRegistry(rawNarratives);
 
                 const BBOX_PAD = 0.003;
                 stationFeaturesList.forEach(st => {
@@ -2200,8 +2454,12 @@
                 const taiCompact = compactSearchText(p.tailo);
                 const alt = normalizeSearchText(p.alt_names);
                 const ops = normalizeSearchText(p.operators);
-                const narObj = p.narrative || globalNarrativesMap[gk] || null;
-                const narText = narObj ? normalizeSearchText([narObj.sectionText, narObj.openDate, ...(narObj.paragraphs || [])].join(' ')) : '';
+
+                const famList = familyMembersMap[gk] || [];
+                const famNarTexts = [];
+                if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
+                famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
+                const narText = normalizeSearchText(famNarTexts.map(n => [n.sectionText, n.openDate, ...(n.paragraphs || [])].join(' ')).join(' '));
 
                 let rank = 99, matchHint = '';
 
@@ -2308,7 +2566,7 @@
             if (e.key === 'Escape') { input.focus(); dropdown.style.display = 'none'; return; }
             const options = Array.from(dropdown.querySelectorAll('.search-item'));
             const i = options.indexOf(document.activeElement);
-            const next = options[Math.max(0, Math.min(options.length-1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+            const next = options[Math.max(0, Math.min(options.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
             if (next) next.focus();
         });
 
