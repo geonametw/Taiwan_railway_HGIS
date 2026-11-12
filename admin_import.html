@@ -3,86 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 沿革 智慧縫合神器 v2.4 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 沿革 + 軌距 智慧縫合神器 v2.5 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
-        .container { max-width: 920px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .container { max-width: 940px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-top: 0; text-align: center; }
-        
         .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 8px; padding: 15px; margin-bottom: 18px; display: none; }
         .inventory-header { font-size: 15px; font-weight: bold; color: #1a237e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; padding: 4px 2px; }
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 4px 2px; }
         .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 3px 9px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; }
         .tag.station { border-color: #4dd0e1; color: #006064; background: #e0f7fa; }
         .tag.sugar { border-color: #ef5350; color: #c62828; background: #ffebee; text-decoration: line-through; }
-        .tag.has-nar { border-color: #8e24aa; background: #f3e5f5; color: #4a148c; }
         .tag-sec { font-size: 11px; color: #777; font-weight: normal; margin-left: 4px; }
-
         .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px; }
         .upload-area { display: block; border: 2px dashed #3949ab; padding: 20px 15px; border-radius: 10px; background: #f8f9fa; text-align: center; cursor: pointer; transition: 0.2s; }
         .upload-area:hover { background: #e8eaf6; }
         .upload-area.loaded { border-color: #2e7d32; background: #e8f5e9; }
         input[type="file"] { display: none; }
 
-        .narrative-section {
-            background: #faf8ff; border: 2px solid #b39ddb; border-radius: 10px;
-            padding: 16px 18px; margin-bottom: 18px;
-        }
-        .narrative-header {
-            font-size: 15px; font-weight: bold; color: #4a148c; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-        }
+        /* 📏 軌距視覺化快填面板樣式 */
+        .gauge-section { background: #fffdf7; border: 2px solid #ffb74d; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+        .gauge-header { font-size: 15px; font-weight: bold; color: #e65100; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .gauge-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; background: #fff3e0; padding: 8px 12px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
+        .brush-group { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .brush-btn { border: 1px solid #fb8c00; background: #fff; color: #e65100; border-radius: 14px; padding: 3px 10px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit; }
+        .brush-btn:hover { background: #ffe0b2; }
+        .brush-btn.active { background: #e65100; color: #fff; border-color: #bf3600; box-shadow: 0 2px 5px rgba(230,81,0,0.3); }
+        .region-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; align-items: center; }
+        .reg-tab { border: 1px solid #ddd; background: #f5f5f5; color: #555; border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .reg-tab.active { background: #1a237e; color: #fff; border-color: #1a237e; }
+        .gauge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 7px; max-height: 230px; overflow-y: auto; padding: 4px 2px; }
+        .gauge-card { display: flex; align-items: center; justify-content: space-between; gap: 6px; background: #fff; border: 1px solid #d0d7de; border-radius: 7px; padding: 5px 8px; font-size: 12.5px; transition: 0.15s; }
+        .gauge-card.has-val { background: #fff8e1; border-color: #ffa000; }
+        .gauge-card.brush-mode { cursor: pointer; }
+        .gauge-card.brush-mode:hover { border-color: #e65100; background: #ffe0b2; }
+        .gauge-card-label { font-weight: bold; color: #1a237e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .gauge-input { width: 58px; border: 1px solid #b0bec5; border-radius: 5px; padding: 3px 5px; font-size: 12.5px; font-weight: bold; color: #bf360c; text-align: right; background: #fff; }
+        .gauge-input:focus { outline: 2px solid #fb8c00; border-color: transparent; }
 
-        /* 📚 已存沿革管理面板 */
-        .saved-nar-panel {
-            background: #fff; border: 1px solid #d1c4e9; border-radius: 8px;
-            padding: 10px 12px; margin-bottom: 12px;
-        }
-        .saved-nar-title {
-            font-size: 13px; font-weight: bold; color: #4a148c; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .saved-nar-list {
-            display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto;
-        }
-        .saved-nar-item {
-            display: flex; justify-content: space-between; align-items: center; gap: 8px;
-            background: #f3e5f5; border: 1px solid #ce93d8; border-radius: 6px;
-            padding: 6px 10px; font-size: 13px; flex-wrap: wrap;
-        }
+        .narrative-section { background: #faf8ff; border: 2px solid #b39ddb; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+        .narrative-header { font-size: 15px; font-weight: bold; color: #4a148c; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .saved-nar-panel { background: #fff; border: 1px solid #d1c4e9; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+        .saved-nar-title { font-size: 13px; font-weight: bold; color: #4a148c; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .saved-nar-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+        .saved-nar-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #f3e5f5; border: 1px solid #ce93d8; border-radius: 6px; padding: 6px 10px; font-size: 13px; flex-wrap: wrap; }
         .saved-nar-info { flex: 1; min-width: 220px; color: #222; }
         .saved-nar-actions { display: flex; gap: 5px; flex-shrink: 0; }
-        .mini-btn {
-            border: 1px solid #9575cd; background: #fff; color: #4a148c;
-            border-radius: 5px; padding: 3px 8px; font-size: 12px; font-weight: bold;
-            cursor: pointer; transition: 0.15s; font-family: inherit;
-        }
+        .mini-btn { border: 1px solid #9575cd; background: #fff; color: #4a148c; border-radius: 5px; padding: 3px 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.15s; font-family: inherit; }
         .mini-btn:hover { background: #4a148c; color: #fff; }
         .mini-btn.danger { border-color: #e57373; color: #c62828; }
         .mini-btn.danger:hover { background: #c62828; color: #fff; }
-
-        .auto-fix-banner {
-            background: #fff8e1; border-left: 4px solid #ffa000; color: #e65100;
-            padding: 8px 12px; border-radius: 4px; font-size: 12.5px; margin-bottom: 10px; display: none;
-        }
-
-        #wordNarrativeInput {
-            width: 100%; height: 185px; box-sizing: border-box; border: 1px solid #9575cd;
-            border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.55;
-            font-family: inherit; resize: vertical; background: #fff;
-        }
+        .auto-fix-banner { background: #fff8e1; border-left: 4px solid #ffa000; color: #e65100; padding: 8px 12px; border-radius: 4px; font-size: 12.5px; margin-bottom: 10px; display: none; }
+        #wordNarrativeInput { width: 100%; height: 170px; box-sizing: border-box; border: 1px solid #9575cd; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; line-height: 1.55; font-family: inherit; resize: vertical; background: #fff; }
         #wordNarrativeInput:focus { outline: 2px solid #5e35b1; }
-        #narrativePreviewBox {
-            margin-top: 10px; padding: 10px 12px; background: #ede7f6; border-radius: 6px;
-            font-size: 13px; color: #311b92; display: none; line-height: 1.6;
-        }
-
+        #narrativePreviewBox { margin-top: 10px; padding: 10px 12px; background: #ede7f6; border-radius: 6px; font-size: 13px; color: #311b92; display: none; line-height: 1.6; }
         .options-bar { background: #fafafa; border: 1px solid #e0e0e0; padding: 10px 15px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap; }
-        
         .btn { background: #2e7d32; color: white; border: none; padding: 13px 24px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: inline-block; margin: 4px; font-family: inherit; }
         .btn:hover { background: #1b5e20; transform: translateY(-2px); }
         .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; transform: none; }
-        
         .status { margin-top: 20px; font-size: 14px; padding: 15px; border-radius: 8px; display: none; line-height: 1.6; }
         .success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
         .warning { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; margin-bottom: 18px; display: block; }
@@ -93,12 +71,12 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML 圖資 + CSV 統計表 + Word 沿革 智慧縫合器 v2.4</h2>
+    <h2>🗺️ KML 圖資 + CSV 統計表 + 軌距 + Word 沿革 智慧縫合器 v2.5</h2>
     <div class="status warning">
-        <b>💡 v2.4 升級重點：</b><br>
-        1. <b>Word 剪貼簿富文本（HTML）直接攔截</b>：從 Word 複製帶有上標註腳的內文直接貼入下方文字框時，自動從剪貼簿底层提取隱藏的 <code>[1]</code>、<code>[2]</code> 與頁尾註腳清單，跟貼在 Gemini 完全一樣！<br>
-        2. <b>自動糾錯清洗（Auto-Sanitize）</b>：載入 <code>data.json</code> 時，自動將非標準編號（如 <code>E-10 [菁寮線]</code>）轉正為 <code>E10-1</code> 並移除殘留舊鍵值。<br>
-        3. <b>已存沿革管理面板</b>：支援「<b>✏️ 載回修改</b>」、「<b>🏷️ 改編號</b>」與「<b>🗑️ 刪除</b>」。
+        <b>💡 v2.5 升級重點（新增軌距 Gauge 視覺化管理）：</b><br>
+        1. <b>📏 軌距（gauge）視覺化快填面板</b>：可直接輸入數字、使用「<b>常用軌距筆刷</b>（點一下路線即填入 495 / 762 等）」，或一鍵將未填路線批次設為 495，100% 免手改 JSON！<br>
+        2. <b>Word 沿革同步支援 `軌距：`</b>：在步驟 3 貼上文字時若寫入 <code>軌距：495</code>，亦會自動轉為數值並存入該路線。<br>
+        3. <b>永久記憶庫</b>：所有設定之軌距與沿革皆永久保存於 <code>data.json</code>，日後重跑 KML + CSV 縫合自動繼承。
     </div>
 
     <div id="inventoryBox" class="inventory-box">
@@ -123,15 +101,55 @@
     <div class="upload-grid">
         <label class="upload-area" id="csvDrop" for="csvFile">
             <div style="font-size: 30px; margin-bottom: 6px;">📊</div>
-            <div id="csvText" style="font-size: 15px; font-weight: bold; color: #3949ab;">步驟 1：選擇 CSV 屬性資料表<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車編號表.csv，僅更新沿革時免選)</span></div>
+            <div id="csvText" style="font-size: 15px; font-weight: bold; color: #3949ab;">步驟 1：選擇 CSV 屬性資料表<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車編號表.csv，僅更新軌距/沿革時免選)</span></div>
         </label>
         <input type="file" id="csvFile" accept=".csv" />
 
         <label class="upload-area" id="kmlDrop" for="kmlFile">
             <div style="font-size: 30px; margin-bottom: 6px;">📂</div>
-            <div id="kmlText" style="font-size: 15px; font-weight: bold; color: #3949ab;">步驟 2：選擇 KML 路線圖資（可多選）<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車地圖A/B/C/D/E...kml，僅更新沿革時免選)</span></div>
+            <div id="kmlText" style="font-size: 15px; font-weight: bold; color: #3949ab;">步驟 2：選擇 KML 路線圖資（可多選）<br><span style="font-size:12px; color:#666; font-weight:normal;">(台車地圖A/B/C/D/E...kml，僅更新軌距/沿革時免選)</span></div>
         </label>
         <input type="file" id="kmlFile" accept=".kml,.xml" multiple />
+    </div>
+
+    <!-- 📏 新增：軌距（Gauge）視覺化快填面板 -->
+    <div class="gauge-section">
+        <div class="gauge-header">
+            <span id="gaugePanelTitle">📏 路線軌距（gauge）視覺化快填面板（已設定 0 條）</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="gaugeSearchInput" placeholder="🔍 搜尋編號或線名..." style="border:1px solid #ffb74d; border-radius:6px; padding:4px 8px; font-size:12.5px; width:150px;" oninput="renderGaugeGrid()">
+                <button type="button" class="mini-btn" style="border-color:#e65100; color:#e65100;" onclick="batchFillEmptyGauges()">⚡ 將目前畫面「未填」全設為 495</button>
+            </div>
+        </div>
+
+        <div class="gauge-toolbar">
+            <div class="brush-group">
+                <span>🖌️ <b>點選即填筆刷</b>：</span>
+                <button type="button" class="brush-btn active" data-brush="" onclick="setGaugeBrush('')">⌨️ 手動輸入</button>
+                <button type="button" class="brush-btn" data-brush="495" onclick="setGaugeBrush(495)">495 (1尺6寸3分)</button>
+                <button type="button" class="brush-btn" data-brush="508" onclick="setGaugeBrush(508)">508 (20吋)</button>
+                <button type="button" class="brush-btn" data-brush="545" onclick="setGaugeBrush(545)">545 (1尺8寸)</button>
+                <button type="button" class="brush-btn" data-brush="610" onclick="setGaugeBrush(610)">610 (2呎)</button>
+                <button type="button" class="brush-btn" data-brush="762" onclick="setGaugeBrush(762)">762 (2呎6吋)</button>
+                <button type="button" class="brush-btn" data-brush="1067" onclick="setGaugeBrush(1067)">1067</button>
+                <button type="button" class="brush-btn" data-brush="clear" onclick="setGaugeBrush('clear')">橡皮擦(清除)</button>
+            </div>
+        </div>
+
+        <div class="region-tabs" id="gaugeRegionTabs">
+            <button type="button" class="reg-tab active" data-reg="EXISTING" onclick="setGaugeRegion('EXISTING')">📦 已在 data.json 之路線</button>
+            <button type="button" class="reg-tab" data-reg="A" onclick="setGaugeRegion('A')">A 台北</button>
+            <button type="button" class="reg-tab" data-reg="B" onclick="setGaugeRegion('B')">B 桃竹苗</button>
+            <button type="button" class="reg-tab" data-reg="C" onclick="setGaugeRegion('C')">C 竹苗中</button>
+            <button type="button" class="reg-tab" data-reg="D" onclick="setGaugeRegion('D')">D 中彰投雲</button>
+            <button type="button" class="reg-tab" data-reg="E" onclick="setGaugeRegion('E')">E 嘉南</button>
+            <button type="button" class="reg-tab" data-reg="F" onclick="setGaugeBrushRegion('F')">F 高屏</button>
+            <button type="button" class="reg-tab" data-reg="G" onclick="setGaugeRegion('G')">G 宜蘭</button>
+            <button type="button" class="reg-tab" data-reg="H" onclick="setGaugeRegion('H')">H 花東</button>
+            <button type="button" class="reg-tab" data-reg="I" onclick="setGaugeRegion('I')">I 軍用</button>
+        </div>
+
+        <div class="gauge-grid" id="gaugeGridContainer"></div>
     </div>
 
     <!-- 步驟 3：已存沿革管理面板 + Word 沿革貼上區 -->
@@ -147,16 +165,16 @@
         </div>
 
         <div class="narrative-header">
-            <span>📝 步驟 3：直接從 Word 複製貼上路線沿革（自動連同 Word 頁尾註腳一併帶入！）</span>
+            <span>📝 步驟 3：直接從 Word 複製貼上路線沿革（自動帶入頁尾註腳；亦可寫 `軌距：495`）</span>
             <button type="button" class="mini-btn" onclick="document.getElementById('wordNarrativeInput').value='';handleNarrativeInput();">清空文字框</button>
         </div>
-        <textarea id="wordNarrativeInput" placeholder="直接從 Word 選取標題與內文按 Ctrl+V 貼上，系統會自動抓取 Word 隱藏的頁尾註腳 [1]、[2]...（無須手動複製頁尾註腳！）：&#10;&#10;E10 [關子嶺線]&#10;臺南執業律師高城萬七，於明治44（1911）申請敷設關仔嶺線..."></textarea>
+        <textarea id="wordNarrativeInput" placeholder="直接從 Word 選取標題與內文按 Ctrl+V 貼上，系統會自動抓取 Word 隱藏的頁尾註腳 [1]、[2]...（若寫「軌距：495」亦會自動寫入 gauge 屬性）：&#10;&#10;E10 [關子嶺線]&#10;軌距：762&#10;臺南執業律師高城萬七，於明治44（1911）申請敷設關仔嶺線..."></textarea>
         <div id="narrativePreviewBox"></div>
     </div>
 
     <div style="text-align: center;">
-        <button id="narrativeOnlyBtn" class="btn" style="background:#6a1b9a;" disabled onclick="runNarrativeOrCleanUpdate()">📝 儲存沿革變更（及清理糖鐵）至現有 data.json</button>
-        <button id="mergeBtn" class="btn" disabled onclick="runMerge()">⚙️ 開始 KML + CSV + 沿革 完整智慧縫合</button>
+        <button id="narrativeOnlyBtn" class="btn" style="background:#6a1b9a;" disabled onclick="runNarrativeOrCleanUpdate()">📝 儲存軌距與沿革變更（及清理糖鐵）至現有 data.json</button>
+        <button id="mergeBtn" class="btn" disabled onclick="runMerge()">⚙️ 開始 KML + CSV + 軌距 + 沿革 完整智慧縫合</button>
         <button id="downloadBtn" class="btn" style="display:none; background:#1565c0;" onclick="downloadJSON()">📥 下載最新 data.json</button>
     </div>
 
@@ -168,19 +186,20 @@
 
     let existingData = null;
     let oldPropsMap = {};
+    let existingRouteCodesSet = new Set();
     let savedNarrativesMap = {};
     let pastedNarrativesMap = {};
+    let savedGaugesMap = {}; // code -> Number (例如 "A1": 495)
+    let currentGaugeBrush = '';
+    let currentGaugeRegion = 'EXISTING';
     let narrativesModified = false;
+    let gaugesModified = false;
     let csvRoutesMap = {};
     let rawKmlTexts = [];
     let finalGeoJson = null;
 
     function escapeHtml(str) {
-        return String(str || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function isLegacySugarOrNoiseRoute(f) {
@@ -203,7 +222,131 @@
         return f;
     }
 
-    /* ✨ v2.4 核心升級：攔截 Word 剪貼簿的 text/html，自動取出上標註腳與頁尾註腳清單 */
+    /* ✨ 軌距（Gauge）視覺化面板管理邏輯 */
+    window.setGaugeBrush = function(brushVal) {
+        currentGaugeBrush = brushVal;
+        document.querySelectorAll('.brush-btn').forEach(btn => {
+            btn.classList.toggle('active', String(btn.getAttribute('data-brush')) === String(brushVal));
+        });
+        renderGaugeGrid();
+    };
+
+    window.setGaugeRegion = function(reg) {
+        currentGaugeRegion = reg;
+        document.querySelectorAll('#gaugeRegionTabs .reg-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-reg') === reg);
+        });
+        renderGaugeGrid();
+    };
+    window.setGaugeBrushRegion = window.setGaugeRegion;
+
+    function getFilteredGaugeCodes() {
+        const kw = (document.getElementById('gaugeSearchInput').value || '').trim().toLowerCase();
+        const allCodes = Object.keys(DEFAULT_CODE_REF_MAP);
+        // 加入現有 data.json 中可能不在預設表的自訂支線代碼
+        existingRouteCodesSet.forEach(c => { if (!allCodes.includes(c)) allCodes.push(c); });
+
+        return allCodes.filter(code => {
+            if (currentGaugeRegion === 'EXISTING') {
+                const parentCode = code.split('-')[0];
+                if (!existingRouteCodesSet.has(code) && !existingRouteCodesSet.has(parentCode) && savedGaugesMap[code] === undefined) {
+                    return false;
+                }
+            } else {
+                if (!code.toUpperCase().startsWith(currentGaugeRegion)) return false;
+            }
+            if (kw) {
+                const ref = (DEFAULT_CODE_REF_MAP[code] || (oldPropsMap[code] && oldPropsMap[code].name) || '').toLowerCase();
+                return code.toLowerCase().includes(kw) || ref.includes(kw);
+            }
+            return true;
+        }).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+
+    function updateGaugeCountTitle() {
+        const count = Object.keys(savedGaugesMap).filter(k => savedGaugesMap[k] !== undefined && savedGaugesMap[k] !== null && savedGaugesMap[k] !== '').length;
+        document.getElementById('gaugePanelTitle').textContent = `📏 路線軌距（gauge）視覺化快填面板（目前已設定 ${count} 條）`;
+    }
+
+    window.onGaugeInputChange = function(code, rawVal) {
+        const trimmed = String(rawVal || '').trim();
+        if (!trimmed) {
+            delete savedGaugesMap[code];
+        } else {
+            const num = Number(trimmed);
+            if (!isNaN(num) && num > 0) {
+                savedGaugesMap[code] = num;
+            }
+        }
+        gaugesModified = true;
+        updateGaugeCountTitle();
+        updateActionButtons();
+        const card = document.getElementById(`gcard-${code}`);
+        if (card) card.classList.toggle('has-val', Boolean(savedGaugesMap[code]));
+    };
+
+    window.onGaugeCardClick = function(code, evt) {
+        if (currentGaugeBrush === '') return;
+        if (evt.target && evt.target.tagName === 'INPUT') return;
+        const inputEl = document.getElementById(`ginput-${code}`);
+        if (currentGaugeBrush === 'clear') {
+            delete savedGaugesMap[code];
+            if (inputEl) inputEl.value = '';
+        } else {
+            const num = Number(currentGaugeBrush);
+            savedGaugesMap[code] = num;
+            if (inputEl) inputEl.value = num;
+        }
+        gaugesModified = true;
+        updateGaugeCountTitle();
+        updateActionButtons();
+        const card = document.getElementById(`gcard-${code}`);
+        if (card) card.classList.toggle('has-val', Boolean(savedGaugesMap[code]));
+    };
+
+    window.batchFillEmptyGauges = function() {
+        const codes = getFilteredGaugeCodes();
+        let filled = 0;
+        codes.forEach(code => {
+            if (savedGaugesMap[code] === undefined || savedGaugesMap[code] === null || savedGaugesMap[code] === '') {
+                savedGaugesMap[code] = 495;
+                filled++;
+            }
+        });
+        if (filled > 0) {
+            gaugesModified = true;
+            renderGaugeGrid();
+            updateActionButtons();
+        }
+    };
+
+    function renderGaugeGrid() {
+        const container = document.getElementById('gaugeGridContainer');
+        container.innerHTML = '';
+        updateGaugeCountTitle();
+
+        const codes = getFilteredGaugeCodes();
+        if (codes.length === 0) {
+            container.innerHTML = `<div style="grid-column: 1 / -1; color:#777; font-size:13px; padding:8px;">無符合條件之路線（可點擊上方 A～I 分區標籤檢視全台路線）。</div>`;
+            return;
+        }
+
+        const isBrush = (currentGaugeBrush !== '');
+        codes.forEach(code => {
+            const refName = DEFAULT_CODE_REF_MAP[code] || (oldPropsMap[code] && oldPropsMap[code].name) || '';
+            const val = savedGaugesMap[code] !== undefined && savedGaugesMap[code] !== null ? savedGaugesMap[code] : '';
+            const card = document.createElement('div');
+            card.id = `gcard-${code}`;
+            card.className = 'gauge-card' + (val !== '' ? ' has-val' : '') + (isBrush ? ' brush-mode' : '');
+            card.onclick = (e) => window.onGaugeCardClick(code, e);
+            card.innerHTML = `
+                <span class="gauge-card-label" title="${escapeHtml(code + ' ' + refName)}">${escapeHtml(code)} <span style="font-weight:normal;color:#444;">${escapeHtml(refName)}</span></span>
+                <input type="number" step="any" id="ginput-${escapeHtml(code)}" class="gauge-input" placeholder="mm" value="${escapeHtml(val)}" oninput="onGaugeInputChange('${escapeHtml(code)}', this.value)">
+            `;
+            container.appendChild(card);
+        });
+    }
+
     function extractTextFromWordClipboardHtml(htmlStr) {
         let s = String(htmlStr || '')
             .replace(/<head[\s\S]*?<\/head>/gi, '')
@@ -220,7 +363,6 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(s, 'text/html');
 
-        // 處理 Word 註腳連結 (<a href="#_ftn1" name="_ftnref1">)
         doc.querySelectorAll('a').forEach(a => {
             const href = a.getAttribute('href') || '';
             const name = a.getAttribute('name') || '';
@@ -230,36 +372,27 @@
             if (m) {
                 const fnNum = m[1];
                 const rawTxt = (a.textContent || '').replace(/\s+/g, '');
-                if (!rawTxt) {
-                    a.textContent = `[${fnNum}]`;
-                } else if (/^\d+$/.test(rawTxt)) {
-                    a.textContent = `[${rawTxt}]`;
-                }
+                if (!rawTxt) a.textContent = `[${fnNum}]`;
+                else if (/^\d+$/.test(rawTxt)) a.textContent = `[${rawTxt}]`;
             }
         });
 
-        // 處理一般上標數字 (如 <sup>106</sup>)
         doc.querySelectorAll('sup, span.MsoFootnoteReference').forEach(el => {
             const rawTxt = (el.textContent || '').replace(/\s+/g, '');
-            if (/^\d+$/.test(rawTxt)) {
-                el.textContent = `[${rawTxt}]`;
-            }
+            if (/^\d+$/.test(rawTxt)) el.textContent = `[${rawTxt}]`;
         });
 
-        // 在區塊元素結尾加上換行標記 \uE000
         doc.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, tr').forEach(blk => {
             blk.appendChild(doc.createTextNode('\uE000'));
         });
 
         let rawText = (doc.body ? doc.body.textContent : doc.documentElement.textContent) || '';
-        // 移除 Word HTML 原始碼中每 76 字元自動斷行的無效 \r\n
         rawText = rawText.replace(/[\r\n]+\s*/g, '');
 
         const lines = [];
         rawText.split('\uE000').forEach(line => {
             let clean = line.replace(/^[\s\u00a0\u3000]+|[\s\u00a0\u3000]+$/g, '');
             if (!clean) return;
-            // 美化底部註腳開頭格式為 "[1] 內容"
             clean = clean.replace(/^\[(\d+)\]\s*/, '[$1] ');
             lines.push(clean);
         });
@@ -271,7 +404,6 @@
         const cb = e.clipboardData || window.clipboardData;
         if (!cb) return;
         const htmlData = cb.getData('text/html');
-        // 若剪貼簿含有 Word 富文本、註腳或段落標籤（且非純程式碼區塊），自動執行 HTML 註腳提取
         if (htmlData && /mso-|_ftn|_edn|MsoNormal|MsoFootnote|<sup|<p[\s>]/i.test(htmlData) && !/<pre[\s>]/i.test(htmlData)) {
             const extracted = extractTextFromWordClipboardHtml(htmlData);
             if (extracted && extracted.trim()) {
@@ -369,7 +501,7 @@
         const banner = document.getElementById('autoFixBanner');
         if (fixLogs.length > 0) {
             banner.style.display = 'block';
-            banner.innerHTML = fixLogs.join('<br>') + `<div style="margin-top:4px;font-weight:bold;">👉 請點擊下方紫色「📝 儲存沿革變更至現有 data.json」按鈕下載修正後的檔案！</div>`;
+            banner.innerHTML = fixLogs.join('<br>') + `<div style="margin-top:4px;font-weight:bold;">👉 請點擊下方紫色「📝 儲存軌距與沿革變更至現有 data.json」按鈕下載修正後的檔案！</div>`;
         } else {
             banner.style.display = 'none';
         }
@@ -396,13 +528,14 @@
             const pCount = (nar.paragraphs || []).length;
             const fnCount = (nar.footnotes || []).length;
             const secInfo = nar.sectionText ? `｜區間：${nar.sectionText}` : '';
+            const gInfo = savedGaugesMap[code] ? `｜軌距：${savedGaugesMap[code]}mm` : '';
 
             const item = document.createElement('div');
             item.className = 'saved-nar-item';
             item.innerHTML = `
                 <div class="saved-nar-info">
                     <b>📖 [${escapeHtml(code)}] ${escapeHtml(refName)}</b>
-                    <span style="font-size:12px; color:#555;">（${pCount} 段 / 註腳 ${fnCount} 則${escapeHtml(secInfo)}）</span>
+                    <span style="font-size:12px; color:#555;">（${pCount} 段 / 註腳 ${fnCount} 則${escapeHtml(secInfo)}${escapeHtml(gInfo)}）</span>
                 </div>
                 <div class="saved-nar-actions">
                     <button type="button" class="mini-btn" onclick="loadNarrativeToTextarea('${escapeHtml(code)}')">✏️ 載回修改</button>
@@ -421,8 +554,9 @@
         let lines = [];
         lines.push(`${code} [${refName}]`);
         if (nar.sectionText) lines.push(`區間：${nar.sectionText}`);
+        if (savedGaugesMap[code]) lines.push(`軌距：${savedGaugesMap[code]}`);
         if (nar.openDate) lines.push(`通車日期：${nar.openDate}`);
-        if (nar.sectionText || nar.openDate) lines.push(`內容概要：`);
+        if (nar.sectionText || nar.openDate || savedGaugesMap[code]) lines.push(`內容概要：`);
         (nar.paragraphs || []).forEach(p => lines.push(p));
         if (nar.footnotes && nar.footnotes.length > 0) {
             lines.push('');
@@ -486,6 +620,12 @@
             if (rootObj.narratives && typeof rootObj.narratives === 'object') {
                 Object.assign(savedNarrativesMap, rootObj.narratives);
             }
+            if (rootObj.gauges && typeof rootObj.gauges === 'object') {
+                Object.entries(rootObj.gauges).forEach(([k, v]) => {
+                    const num = Number(v);
+                    if (!isNaN(num) && num > 0) savedGaugesMap[k] = num;
+                });
+            }
             const features = rootObj.features || [];
             let routeCount = 0, sugarCount = 0, stationCount = 0;
             const listContainer = document.getElementById('inventoryList');
@@ -501,12 +641,20 @@
 
                 if (isPoint) stationCount++;
                 else if (isSugar) sugarCount++;
-                else routeCount++;
+                else {
+                    routeCount++;
+                    if (p.route_id) existingRouteCodesSet.add(p.route_id);
+                    if (p.parent_id) existingRouteCodesSet.add(p.parent_id);
+                }
 
                 const key = p.route_id || p.name;
                 if (key && !oldPropsMap[key]) oldPropsMap[key] = p;
                 if (p.narrative && p.route_id && !savedNarrativesMap[p.route_id]) {
                     savedNarrativesMap[p.route_id] = p.narrative;
+                }
+                if (p.gauge !== undefined && p.gauge !== null && p.gauge !== '' && p.route_id) {
+                    const gNum = Number(p.gauge);
+                    if (!isNaN(gNum) && gNum > 0) savedGaugesMap[p.route_id] = gNum;
                 }
 
                 const tag = document.createElement('span');
@@ -517,18 +665,20 @@
 
             sanitizeSavedNarratives();
             renderSavedNarrativesPanel();
+            renderGaugeGrid();
 
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             document.getElementById('inventoryTitle').innerHTML = `
                 <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
                 <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
-                    台車路線 ${routeCount} 筆（已收錄沿革 ${Object.keys(savedNarrativesMap).length} 筆） / 待剔除糖鐵與雜訊 ${sugarCount} 筆 / 車站 ${stationCount} 座
+                    台車路線 ${routeCount} 筆（已設軌距 ${Object.keys(savedGaugesMap).length} 筆 / 沿革 ${Object.keys(savedNarrativesMap).length} 筆） / 車站 ${stationCount} 座
                 </span>
             `;
             updateActionButtons();
         })
         .catch(err => {
+            renderGaugeGrid();
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             invBox.className = 'status error';
@@ -545,7 +695,7 @@
         const bracketHeaderRe = /^\s*(?:([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s*)?[\[\【]([^\]\】]+)[\]\】]\s*$/i;
         const codeTitleRe = /^\s*([A-Z]-?\d+(?:-[^\s\[\]【】]+)?)\s+([^\s，。、；：！？]{1,18})\s*$/i;
         const fnDefRe = /^\s*[\[\［](\d+)[\]\］][\s\u00a0\u3000]*(.+)$/;
-        const fieldLineRe = /^\s*(區間|通車日期|內容概要)\s*[：:]/;
+        const fieldLineRe = /^\s*(區間|軌距|通車日期|內容概要)\s*[：:]/;
 
         const getNextNonEmptyLine = (startIdx) => {
             for (let k = startIdx + 1; k < lines.length; k++) {
@@ -581,7 +731,7 @@
                 namePart = (mCodeTitle[2] || '').trim();
             } else if (!fieldLineRe.test(line) && line.length <= 28) {
                 const nextLine = getNextNonEmptyLine(i);
-                if (/^(區間|通車日期)\s*[：:]/.test(nextLine)) {
+                if (/^(區間|軌距|通車日期)\s*[：:]/.test(nextLine)) {
                     isHeader = true;
                     namePart = line;
                 }
@@ -604,6 +754,7 @@
                     explicitCode: codePart,
                     rawName: namePart,
                     sectionText: '',
+                    gaugeNum: null,
                     openDate: '',
                     paragraphs: []
                 };
@@ -615,6 +766,10 @@
 
             if (/^區間\s*[：:]/.test(line)) {
                 curRoute.sectionText = line.replace(/^區間\s*[：:]\s*/, '').trim();
+            } else if (/^軌距\s*[：:]/.test(line)) {
+                const gRaw = line.replace(/^軌距\s*[：:]\s*/, '').trim();
+                const gMatch = gRaw.match(/(\d+(?:\.\d+)?)/);
+                if (gMatch) curRoute.gaugeNum = Number(gMatch[1]);
             } else if (/^通車日期\s*[：:]/.test(line)) {
                 curRoute.openDate = line.replace(/^通車日期\s*[：:]\s*/, '').trim();
             } else if (/^內容概要\s*[：:]/.test(line)) {
@@ -652,6 +807,10 @@
                 }));
 
                 const code = resolveRouteCode(r.explicitCode, r.rawName, newSec, newParas.join(' '));
+                if (r.gaugeNum !== null && !isNaN(r.gaugeNum)) {
+                    savedGaugesMap[code] = r.gaugeNum;
+                    gaugesModified = true;
+                }
                 const cleanTitleName = r.rawName.replace(/^[A-Z]-?\d+(?:-\S+)?\s*/i, '').replace(/[\[\]【】]/g, '').trim();
                 const narrativeObj = {
                     code: code,
@@ -661,6 +820,7 @@
                     paragraphs: newParas,
                     footnotes: resolvedFootnotes
                 };
+                if (r.gaugeNum !== null) narrativeObj.gauge = r.gaugeNum;
                 narrativeObj.html = buildNarrativeCardHTML(narrativeObj);
                 parsedMap[code] = narrativeObj;
             });
@@ -684,12 +844,8 @@
         let metaBoxHtml = '';
         if (nar.sectionText || nar.openDate) {
             metaBoxHtml += `<div style="background:#eef2ff;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:12px;color:#1a237e;line-height:1.55;">`;
-            if (nar.sectionText) {
-                metaBoxHtml += `<div><b>📍 考據區間：</b>${formatInlineSup(escapeHtml(nar.sectionText))}</div>`;
-            }
-            if (nar.openDate) {
-                metaBoxHtml += `<div><b>🗓️ 通車日期：</b>${formatInlineSup(escapeHtml(nar.openDate))}</div>`;
-            }
+            if (nar.sectionText) metaBoxHtml += `<div><b>📍 考據區間：</b>${formatInlineSup(escapeHtml(nar.sectionText))}</div>`;
+            if (nar.openDate) metaBoxHtml += `<div><b>🗓️ 通車日期：</b>${formatInlineSup(escapeHtml(nar.openDate))}</div>`;
             metaBoxHtml += `</div>`;
         }
 
@@ -729,6 +885,7 @@
             return;
         }
         pastedNarrativesMap = parseWordNarrativeText(raw);
+        renderGaugeGrid();
         const items = Object.values(pastedNarrativesMap);
         if (items.length === 0) {
             previewBox.style.display = 'block';
@@ -736,7 +893,8 @@
         } else {
             const summaryTags = items.map(it => {
                 const refName = DEFAULT_CODE_REF_MAP[it.code] || it.rawName;
-                return `<span style="display:inline-block;background:#fff;border:1px solid #7e57c2;color:#4a148c;padding:2px 8px;border-radius:12px;margin:2px 4px 2px 0;font-weight:bold;font-size:12px;">📖 ${it.code} ${refName}（${it.paragraphs.length} 段 / 註腳 ${it.footnotes.length} 則）</span>`;
+                const gBadge = savedGaugesMap[it.code] ? ` / 軌距 ${savedGaugesMap[it.code]}mm` : '';
+                return `<span style="display:inline-block;background:#fff;border:1px solid #7e57c2;color:#4a148c;padding:2px 8px;border-radius:12px;margin:2px 4px 2px 0;font-weight:bold;font-size:12px;">📖 ${it.code} ${refName}（${it.paragraphs.length} 段 / 註腳 ${it.footnotes.length} 則${gBadge}）</span>`;
             }).join('');
             previewBox.style.display = 'block';
             previewBox.innerHTML = `<div><b>✅ 已即時解析出 ${items.length} 條路線沿革（點擊下方紫色按鈕即可寫入 data.json）：</b></div><div style="margin-top:4px;">${summaryTags}</div>`;
@@ -749,7 +907,7 @@
     function updateActionButtons() {
         const hasPastedNar = Object.keys(pastedNarrativesMap).length > 0;
         const hasBase = Boolean(existingData);
-        const canQuickUpdate = hasBase && (hasPastedNar || narrativesModified || document.getElementById('chkRemoveSugar').checked);
+        const canQuickUpdate = hasBase && (hasPastedNar || narrativesModified || gaugesModified || document.getElementById('chkRemoveSugar').checked);
         document.getElementById('narrativeOnlyBtn').disabled = !canQuickUpdate;
 
         if (rawKmlTexts.length > 0 && Object.keys(csvRoutesMap).length > 0) {
@@ -765,6 +923,7 @@
         Object.assign(savedNarrativesMap, pastedNarrativesMap);
         sanitizeSavedNarratives();
         renderSavedNarrativesPanel();
+        renderGaugeGrid();
 
         const oldFeatures = (existingData.data && existingData.data.features)
             ? existingData.data.features
@@ -772,6 +931,7 @@
 
         const updatedFeatures = [];
         let removedSugarCount = 0;
+        let gaugeAppliedCount = 0;
         const seenStationKeys = new Set();
 
         oldFeatures.forEach(f => {
@@ -793,6 +953,14 @@
             const rid = p.route_id;
             const pid = p.parent_id || rid;
             const narObj = savedNarrativesMap[rid] || (rid === pid ? savedNarrativesMap[pid] : null);
+            const gaugeVal = (savedGaugesMap[rid] !== undefined) ? savedGaugesMap[rid] : ((savedGaugesMap[pid] !== undefined) ? savedGaugesMap[pid] : null);
+
+            if (gaugeVal !== null && !isNaN(Number(gaugeVal))) {
+                p.gauge = Number(gaugeVal);
+                gaugeAppliedCount++;
+            } else {
+                delete p.gauge;
+            }
 
             if (rid !== pid && p.line_type && p.line_type.includes('支線') && (!p.history || p.history.length === 0)) {
                 p.description = {
@@ -819,6 +987,7 @@
         finalGeoJson = {
             data: {
                 type: "FeatureCollection",
+                gauges: savedGaugesMap,
                 narratives: savedNarrativesMap,
                 features: updatedFeatures
             }
@@ -829,7 +998,7 @@
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
             <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">
-                🎉 沿革更新與清理完成！目前共 ${updatedFeatures.length} 筆純台車圖資（已收錄標準化沿革 ${allSavedCodes.length} 筆）
+                🎉 軌距與沿革更新完成！目前共 ${updatedFeatures.length} 筆純台車圖資（已套用軌距之路線段 ${gaugeAppliedCount} 筆｜標準化沿革 ${allSavedCodes.length} 筆）
             </div>
             <div>📖 <b>目前收錄之標準化沿革清單：</b> ${allSavedCodes.map(c => `<code>${c}</code> ${DEFAULT_CODE_REF_MAP[c] || ''}`).join('、') || '無'}</div>
             <div style="margin-top:8px;">👉 請點擊上方藍色「<b>📥 下載最新 data.json</b>」並覆蓋至 GitHub。</div>
@@ -842,14 +1011,9 @@
         let cur = '', inQuotes = false;
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
-            if (ch === '"') {
-                inQuotes = !inQuotes;
-            } else if (ch === ',' && !inQuotes) {
-                result.push(cur.trim());
-                cur = '';
-            } else {
-                cur += ch;
-            }
+            if (ch === '"') inQuotes = !inQuotes;
+            else if (ch === ',' && !inQuotes) { result.push(cur.trim()); cur = ''; }
+            else cur += ch;
         }
         result.push(cur.trim());
         return result;
@@ -882,7 +1046,15 @@
             const refName = cols[1];
             const attrType = cols[2];
 
-            if (!code || code === '編號' || !['經營者', '路線名', '區間', '里程'].includes(attrType)) return;
+            if (!code || code === '編號') return;
+            if (attrType === '軌距') {
+                for (let i = 3; i < cols.length; i++) {
+                    const gMatch = String(cols[i] || '').match(/(\d+(?:\.\d+)?)/);
+                    if (gMatch) { savedGaugesMap[code] = Number(gMatch[1]); break; }
+                }
+                return;
+            }
+            if (!['經營者', '路線名', '區間', '里程'].includes(attrType)) return;
 
             if (!rawMatrix[code]) {
                 rawMatrix[code] = { code: code, refName: refName || code, rows: { '經營者': {}, '路線名': {}, '區間': {}, '里程': {} } };
@@ -940,6 +1112,7 @@
                 history: history
             };
         });
+        renderGaugeGrid();
     }
 
     document.getElementById('kmlFile').addEventListener('change', function(e) {
@@ -986,9 +1159,7 @@
         }
         html += `</div>`;
 
-        if (narrativeHtml) {
-            html += narrativeHtml;
-        }
+        if (narrativeHtml) html += narrativeHtml;
 
         const renderTable = (title, histArr) => {
             if (!histArr || histArr.length === 0) return '';
@@ -1015,16 +1186,11 @@
             return t;
         };
 
-        if (mainCsv.history.length > 0) {
-            html += renderTable('', mainCsv.history);
-        } else {
-            html += `<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`;
-        }
+        if (mainCsv.history.length > 0) html += renderTable('', mainCsv.history);
+        else html += `<div style="color:#777;font-size:12px;">（年報無統計資料之專用線／待考路線）</div>`;
 
         subCsvList.forEach(sub => {
-            if (sub.history.length > 0) {
-                html += renderTable(`附屬統計：${sub.code} ${sub.refName}`, sub.history);
-            }
+            if (sub.history.length > 0) html += renderTable(`附屬統計：${sub.code} ${sub.refName}`, sub.history);
         });
 
         return html;
@@ -1036,6 +1202,7 @@
         Object.assign(savedNarrativesMap, pastedNarrativesMap);
         sanitizeSavedNarratives();
         renderSavedNarrativesPanel();
+        renderGaugeGrid();
 
         const parser = new DOMParser();
         const kmlCodesSet = new Set();
@@ -1098,18 +1265,12 @@
                             unnamedBranches.push({ folderName, lineCoords });
                         } else {
                             const codeMatch = rawCode.match(/^([A-Z]\d+(?:-[^\s]+)?)/i);
-                            if (codeMatch) {
-                                rawCode = codeMatch[1].charAt(0).toUpperCase() + codeMatch[1].slice(1);
-                            }
+                            if (codeMatch) rawCode = codeMatch[1].charAt(0).toUpperCase() + codeMatch[1].slice(1);
                             kmlCodesSet.add(rawCode);
                             const groupKey = `${rawCode}__${folderName}`;
-                            if (!groupedLines[groupKey]) {
-                                groupedLines[groupKey] = { code: rawCode, folderName: folderName, coordsList: [] };
-                            }
+                            if (!groupedLines[groupKey]) groupedLines[groupKey] = { code: rawCode, folderName: folderName, coordsList: [] };
                             groupedLines[groupKey].coordsList.push(lineCoords);
-                            if (folderName === "主線") {
-                                mainLinesCoordsMap[rawCode.split('-')[0]] = groupedLines[groupKey].coordsList;
-                            }
+                            if (folderName === "主線") mainLinesCoordsMap[rawCode.split('-')[0]] = groupedLines[groupKey].coordsList;
                         }
                     }
                 }
@@ -1121,18 +1282,13 @@
             let bestDist = Infinity;
             Object.keys(mainLinesCoordsMap).forEach(mCode => {
                 const d = minDistCoordsListKm([ub.lineCoords], mainLinesCoordsMap[mCode]);
-                if (d < bestDist) {
-                    bestDist = d;
-                    bestParent = mCode;
-                }
+                if (d < bestDist) { bestDist = d; bestParent = mCode; }
             });
             if (bestParent === "未命名") return;
             const autoCode = `${bestParent}-支線`;
             kmlCodesSet.add(autoCode);
             const groupKey = `${autoCode}__${ub.folderName}`;
-            if (!groupedLines[groupKey]) {
-                groupedLines[groupKey] = { code: autoCode, folderName: ub.folderName, coordsList: [] };
-            }
+            if (!groupedLines[groupKey]) groupedLines[groupKey] = { code: autoCode, folderName: ub.folderName, coordsList: [] };
             groupedLines[groupKey].coordsList.push(ub.lineCoords);
         });
 
@@ -1167,30 +1323,28 @@
                     let closestDist = distToAssigned;
                     Object.keys(mainLinesCoordsMap).forEach(mCode => {
                         const d = minDistCoordsListKm(grp.coordsList, mainLinesCoordsMap[mCode]);
-                        if (d < closestDist) {
-                            closestDist = d;
-                            closestCode = mCode;
-                        }
+                        if (d < closestDist) { closestDist = d; closestCode = mCode; }
                     });
                     if (closestCode !== parentCode) {
                         const closestName = csvRoutesMap[closestCode] ? csvRoutesMap[closestCode].refName : closestCode;
-                        mismatchWarnings.push(`⚠️ <b>疑似錯標警告</b>：KML 中的 <b>${code} [${grp.folderName}]</b> 距離 ${parentCode} 主線達 <b>${distToAssigned.toFixed(1)} km</b>，但距離 <b>${closestCode} (${closestName}) 主線</b>僅 <b>${closestDist.toFixed(2)} km</b>！請檢查 KML 是否標錯編號。`);
+                        mismatchWarnings.push(`⚠️ <b>疑似錯標警告</b>：KML 中的 <b>${code} [${grp.folderName}]</b> 距離 ${parentCode} 主線達 <b>${distToAssigned.toFixed(1)} km</b>，但距離 <b>${closestCode} (${closestName}) 主線</b>僅 <b>${closestDist.toFixed(2)} km</b>！`);
                     }
                 }
             }
 
             const baseCsv = csvRoutesMap[parentCode] || csvInfo;
             let displayName = baseCsv.refName;
-            if (nameMode === 'ref_line') {
-                displayName = baseCsv.refName.endsWith('線') ? baseCsv.refName : (baseCsv.refName + '線');
-            } else if (nameMode === 'code_ref') {
-                displayName = `${parentCode} ${baseCsv.refName}`;
-            } else if (nameMode === 'last_official') {
-                displayName = baseCsv.lastOfficialName || (baseCsv.refName + '線');
-            }
+            if (nameMode === 'ref_line') displayName = baseCsv.refName.endsWith('線') ? baseCsv.refName : (baseCsv.refName + '線');
+            else if (nameMode === 'code_ref') displayName = `${parentCode} ${baseCsv.refName}`;
+            else if (nameMode === 'last_official') displayName = baseCsv.lastOfficialName || (baseCsv.refName + '線');
 
             const oldProp = oldPropsMap[code] || {};
             const narObj = savedNarrativesMap[code] || (code === parentCode ? savedNarrativesMap[parentCode] : null) || null;
+            const gaugeVal = (savedGaugesMap[code] !== undefined)
+                ? savedGaugesMap[code]
+                : ((savedGaugesMap[parentCode] !== undefined)
+                    ? savedGaugesMap[parentCode]
+                    : ((oldProp.gauge !== undefined && oldProp.gauge !== null && oldProp.gauge !== '') ? Number(oldProp.gauge) : null));
 
             let displaySection = csvInfo.section || (narObj && narObj.sectionText) || baseCsv.section || '';
             if (grp.folderName !== '主線') {
@@ -1220,6 +1374,7 @@
                 source: "KML + CSV 107版",
                 last_updated: new Date().toISOString().split('T')[0]
             };
+            if (gaugeVal !== null && !isNaN(gaugeVal)) featProps.gauge = Number(gaugeVal);
             if (narObj) featProps.narrative = narObj;
 
             mergedRouteFeatures.push({
@@ -1228,7 +1383,7 @@
                 geometry: geom
             });
 
-            matchedReport.push(`${code} [${grp.folderName}] ➔ <b>${displayName}</b> ${narObj ? '📖' : ''} <span style="color:#666;">(${displaySection || '無區間'})</span>`);
+            matchedReport.push(`${code} [${grp.folderName}] ➔ <b>${displayName}</b> ${gaugeVal ? `📏${gaugeVal}mm` : ''} ${narObj ? '📖' : ''} <span style="color:#666;">(${displaySection || '無區間'})</span>`);
         });
 
         const preservedFeatures = [];
@@ -1262,6 +1417,10 @@
                     const rid = p.route_id;
                     const pid = p.parent_id || rid;
                     const narObj = savedNarrativesMap[rid] || (rid === pid ? savedNarrativesMap[pid] : null);
+                    const gVal = (savedGaugesMap[rid] !== undefined) ? savedGaugesMap[rid] : ((savedGaugesMap[pid] !== undefined) ? savedGaugesMap[pid] : null);
+                    if (gVal !== null && !isNaN(Number(gVal))) p.gauge = Number(gVal);
+                    else delete p.gauge;
+
                     const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
                     if (narObj) {
                         p.narrative = narObj;
@@ -1280,6 +1439,7 @@
         finalGeoJson = {
             data: {
                 type: "FeatureCollection",
+                gauges: savedGaugesMap,
                 narratives: savedNarrativesMap,
                 features: allFeatures
             }
@@ -1295,10 +1455,10 @@
 
         statusDiv.innerHTML = `
             <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">
-                🎉 縫合完成！目前資料庫總計 ${allFeatures.length} 筆圖資（本次新增/更新路線 ${mergedRouteFeatures.length} 筆、車站 ${stationFeatures.length} 座、沿革記憶庫 ${Object.keys(savedNarrativesMap).length} 組｜已剔除糖鐵與雜訊 ${removedSugarCount} 筆）
+                🎉 縫合完成！目前資料庫總計 ${allFeatures.length} 筆圖資（本次新增/更新路線 ${mergedRouteFeatures.length} 筆、車站 ${stationFeatures.length} 座、已設軌距 ${Object.keys(savedGaugesMap).length} 筆、沿革 ${Object.keys(savedNarrativesMap).length} 組）
             </div>
             ${warnHtml}
-            <b>📌 本次縫合之台車路線清冊（標有 📖 代表含路線沿革）：</b><br>
+            <b>📌 本次縫合之台車路線清冊：</b><br>
             <div style="max-height:200px; overflow-y:auto; background:white; padding:10px; border-radius:6px; border:1px solid #c8e6c9; margin-top:6px; font-size:13px;">
                 ${matchedReport.join('<br>')}
             </div>
