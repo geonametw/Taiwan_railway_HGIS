@@ -1,6 +1,25 @@
 {
   "data": {
     "type": "FeatureCollection",
+    "gauges": {
+      "F17": 762,
+      "F6": 610,
+      "F13": 610,
+      "D54": 610,
+      "D45": 610,
+      "D45-1": 610,
+      "D41": 610,
+      "C1": 610,
+      "C1-1": 610,
+      "C1-2": 610,
+      "C1-3": 610,
+      "C2": 610,
+      "A1": 545,
+      "A3": 545,
+      "A3-1": 545,
+      "A3-2": 545,
+      "A5": 610
+    },
     "narratives": {
       "E10-1": {
         "code": "E10-1",
@@ -130,7 +149,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "LineString",
@@ -250,7 +270,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "LineString",
@@ -1098,7 +1119,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "LineString",
@@ -1196,7 +1218,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "MultiLineString",
@@ -3837,7 +3860,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -7119,7 +7143,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "LineString",
@@ -10651,7 +10676,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 545
         },
         "geometry": {
           "type": "LineString",
@@ -13928,7 +13954,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-05"
+          "last_updated": "2026-11-05",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -75723,7 +75750,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-08"
+          "last_updated": "2026-11-08",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -77987,7 +78015,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-08"
+          "last_updated": "2026-11-08",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -80024,7 +80053,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-08"
+          "last_updated": "2026-11-08",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -99136,7 +99166,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-10"
+          "last_updated": "2026-11-10",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -106601,7 +106632,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-10"
+          "last_updated": "2026-11-10",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -111995,7 +112027,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-10"
+          "last_updated": "2026-11-10",
+          "gauge": 610
         },
         "geometry": {
           "type": "LineString",
@@ -114245,7 +114278,8 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-10"
+          "last_updated": "2026-11-10",
+          "gauge": 762
         },
         "geometry": {
           "type": "LineString",
@@ -146999,7 +147033,7 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-11",
+          "last_updated": "2026-11-13",
           "narrative": {
             "code": "E25",
             "rawName": "番子寮線",
@@ -155617,7 +155651,7 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-11",
+          "last_updated": "2026-11-13",
           "narrative": {
             "code": "E10",
             "rawName": "關子嶺線",
@@ -170141,7 +170175,7 @@
             }
           ],
           "source": "KML + CSV 107版",
-          "last_updated": "2026-11-11",
+          "last_updated": "2026-11-13",
           "narrative": {
             "code": "E25",
             "rawName": "番子寮線",
