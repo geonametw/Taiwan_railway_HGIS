@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v10.0</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v10.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a237e; --primary-light: #e8eaf6; --accent: #ff7800; --drawer-width: 390px; }
@@ -343,7 +343,7 @@
         let currentPhotoMeta = { caption: '', source: '', link: '' };
         let globalNarrativesMap = {};
 
-        /* ✨ v10.0：格式化軌距（gauge）顯示字串 */
+        /* ✨ v10.2：格式化軌距（gauge）顯示字串 */
         function formatGaugeText(val) {
             if (val === undefined || val === null || val === '') return '';
             const num = Number(val);
@@ -1338,7 +1338,7 @@
 
             const activeNarObj = renderRouteNarrative(feature, groupKey, currentId);
 
-            /* ✨ v10.0：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
+            /* ✨ v10.2：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
             const rawGauge = (currentMember && currentMember.gauge !== undefined && currentMember.gauge !== null && currentMember.gauge !== '')
                 ? currentMember.gauge
                 : ((p.gauge !== undefined && p.gauge !== null && p.gauge !== '')
@@ -2214,10 +2214,17 @@
             const head = document.createElement('div'); head.className = cls; head.textContent = text;
             dropdown.appendChild(head);
         }
-        function addSearchItem(text, tag, onClick, tagClass = '') {
+        function addSearchItem(text, tag, onClick, tagClass = '', subText = '') {
             const item = document.createElement('div'); item.className = 'search-item'; item.setAttribute('role', 'option');
             item.tabIndex = 0;
-            const left = document.createElement('span'); left.textContent = text;
+            const left = document.createElement('span');
+            left.textContent = text;
+            if (subText) {
+                const subSpan = document.createElement('span');
+                subSpan.style.cssText = 'font-size:12px; color:#999; margin-left:6px; font-weight:normal;';
+                subSpan.textContent = subText;
+                left.appendChild(subSpan);
+            }
             item.appendChild(left);
             if (tag) {
                 const label = document.createElement('span');
@@ -2279,11 +2286,13 @@
                     }
                     const code = p.parent_id || p.route_id || '';
                     const section = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+                    const shortSec = section ? (section.length > 16 ? section.slice(0, 16) + '…' : section) : '';
                     addSearchItem(
-                        `${p.name || '未命名'}${section ? '（' + (section.length > 14 ? section.slice(0, 14) + '…' : section) + '）' : ''}`,
+                        p.name || '未命名',
                         code,
                         () => { closeSearchResults(); highlightRouteGroup(f, true); },
-                        'code'
+                        'code',
+                        shortSec
                     );
                 });
                 isRenderingList = false;
@@ -2359,11 +2368,16 @@
                 addSearchHeader(`🛤️ 路線（${results.length}）`);
                 results.forEach(({ f, matchHint }) => {
                     const p = f.properties || {};
-                    const section = matchHint || (p.section || '').replace(/\s*\([^)]*\)$/, '');
+                    const code = p.parent_id || p.route_id || '';
+                    const rawSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+                    const sub = matchHint ? (rawSec ? `${rawSec} · ${matchHint}` : matchHint) : rawSec;
+                    const shortSub = sub.length > 22 ? sub.slice(0, 22) + '…' : sub;
                     addSearchItem(
-                        `${p.parent_id || p.route_id || ''} ${p.name || '未命名'}`,
-                        section.length > 24 ? section.slice(0, 24) + '…' : section,
-                        () => { closeSearchResults(); highlightRouteGroup(f, true); }
+                        p.name || '未命名',
+                        code,
+                        () => { closeSearchResults(); highlightRouteGroup(f, true); },
+                        'code',
+                        shortSub
                     );
                 });
             }
