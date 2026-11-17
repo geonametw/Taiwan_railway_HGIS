@@ -44,10 +44,6 @@
         .match-tag.code { background: #e8eaf6; color: #1a237e; font-weight: bold; }
         .match-tag.st { background: #e0f7fa; color: #006064; }
         #mobile-legend-toggle { display: none; }
-        #active-state-bar { position: absolute; top: 72px; left: 15px; z-index: 999; display: none; max-width: min(550px, 65vw); border-radius: 9px; background: rgba(255,255,255,0.97); box-shadow: 0 2px 10px rgba(0,0,0,0.14); padding: 7px 10px; font-size: 12px; color: #24314d; align-items: center; gap: 8px; }
-        #active-state-bar.visible { display: flex; }
-        #active-state-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .state-reset { font-size: 12px; color: #1a237e; background: #e8eaf6; border: 0; border-radius: 6px; padding: 4px 8px; white-space: nowrap; cursor: pointer; font-weight: bold; }
         #app-loading { position: absolute; z-index: 1100; top: 50%; left: 50%; transform: translate(-50%,-50%); border-radius: 12px; padding: 15px 22px; background: rgba(255,255,255,0.96); color: #1a237e; box-shadow: 0 3px 18px rgba(0,0,0,0.15); font-weight: 700; max-width: 85vw; text-align: center; }
         #app-loading.load-error { max-width: 420px; line-height: 1.6; }
         #app-loading button { background: #1a237e; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; margin-top: 7px; cursor: pointer; }
@@ -144,8 +140,7 @@
         .lightbox-source-link:hover { color: #fff59d; }
         #lightbox-close { position: absolute; top: 20px; right: 25px; background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; }
         #toast-msg { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(33,33,33,0.95); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; z-index: 3500; display: none; box-shadow: 0 4px 14px rgba(0,0,0,0.35); white-space: nowrap; pointer-events: none; }
-        .station-label { background: rgba(255, 255, 255, 0.88); border: 1px solid #7986cb; color: #1a237e; font-weight: bold; font-size: 11px; padding: 1px 5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); display: none; pointer-events: none; white-space: nowrap; }
-        #map.zoom-labels .station-label { display: block; }
+        .station-label { background: rgba(255, 255, 255, 0.9); border: 1px solid #7986cb; color: #1a237e; font-weight: bold; font-size: 11px; padding: 1px 5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); pointer-events: none; white-space: nowrap; will-change: transform; }
         .leaflet-control-layers { font-family: inherit; border-radius: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px; }
         .leaflet-right { transition: right 0.32s cubic-bezier(0.25, 0.8, 0.25, 1); }
         @media (min-width: 961px) {
@@ -162,7 +157,7 @@
             #info-drawer { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 52dvh; border-radius: 16px 16px 0 0; transform: translateY(105%); transition: transform 0.28s ease, height 0.25s ease; padding-bottom: env(safe-area-inset-bottom, 0px); }
             body.drawer-open #info-drawer { transform: translateY(0); }
             #info-drawer.full-mobile { height: 88dvh; }
-            #info-drawer.peek-mobile { height: 112px; }
+            #info-drawer.peek-mobile { height: calc(118px + env(safe-area-inset-bottom, 0px)); }
             #info-drawer.peek-mobile .drawer-body, #info-drawer.peek-mobile .drawer-actions, #info-drawer.peek-mobile #drawer-family-tabs, #info-drawer.peek-mobile .drawer-tailo, #info-drawer.peek-mobile .drawer-section { display: none !important; }
             #info-drawer.peek-mobile .drawer-header { padding-top: 8px; }
             .drawer-drag-handle { display: block; touch-action: pan-x; }
@@ -173,7 +168,6 @@
             .leaflet-control-zoom { display: none !important; }
             #system-title { top: 15px !important; right: 14px !important; left: auto !important; bottom: auto !important; max-width: calc(100vw - 85px); padding: 10px 13px; font-size: 13px !important; border-radius: 20px; }
             body.search-expanded #system-title, body:has(#custom-search-box.expanded) #system-title { opacity: 0; pointer-events: none; }
-            body.search-expanded #active-state-bar, body:has(#custom-search-box.expanded) #active-state-bar { display: none; }
             #year-filter-bar { top: 65px !important; right: 12px !important; left: auto !important; bottom: auto !important; width: min(340px, calc(100vw - 24px)); box-sizing: border-box; padding: 9px 10px; white-space: normal; }
             #year-filter-bar .year-main-row { width: 100%; }
             #year-filter-bar .year-options-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -187,10 +181,6 @@
             body.year-filter-open #map-legend { top: 220px; }
             #operator-banner { top: 111px; left: 50%; max-width: calc(100vw - 30px); box-sizing: border-box; font-size: 12px; white-space: normal; gap: 7px; line-height: 1.35; text-align: center; }
             body.year-filter-open #operator-banner { top: 221px; }
-            #active-state-bar { top: auto; bottom: 18px; left: 14px; right: 14px; max-width: none; font-size: 11px; }
-            body.drawer-open #active-state-bar { bottom: auto; top: 112px; right: auto; left: 14px; max-width: min(240px, 55vw); }
-            body.year-filter-open.drawer-open #active-state-bar { top: 226px; }
-            body.drawer-open #active-state-bar .state-reset, body.operator-active #active-state-bar { display: none; }
         }
         @media (max-width: 360px) {
             #system-title { max-width: calc(100vw - 80px); font-size: 12px !important; padding: 10px; }
@@ -371,7 +361,7 @@
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
         const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85 });
 
-        const myRenderer = L.canvas({ tolerance: 15 });
+        const myRenderer = L.canvas({ tolerance: 15, padding: window.innerWidth <= 960 ? 0.25 : 0.5 });
         const map = L.map('map', { renderer: myRenderer, layers: [osm], zoomControl: false }).setView([23.6978, 120.9605], 7);
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -527,18 +517,43 @@
             yearSelect.appendChild(opt);
         }
 
+        /* ✨ 動態可視範圍站名標籤管理（僅掛載當前螢幕內的車站標籤，消除高倍率縮放卡頓） */
+        function updateVisibleStationTooltips() {
+            const shouldShowLabels = (map.getZoom() >= 14 && showStations);
+            if (!shouldShowLabels) {
+                for (let i = 0; i < allStationLayers.length; i++) {
+                    const st = allStationLayers[i];
+                    if (st._labelBound) {
+                        st.unbindTooltip();
+                        st._labelBound = false;
+                    }
+                }
+                return;
+            }
+            const viewBounds = map.getBounds().pad(0.15);
+            for (let i = 0; i < allStationLayers.length; i++) {
+                const st = allStationLayers[i];
+                if (!st._stationName) continue;
+                const inViewAndVisible = map.hasLayer(st) && viewBounds.contains(st.getLatLng());
+                if (inViewAndVisible && !st._labelBound) {
+                    st.bindTooltip(st._stationName, { permanent: true, direction: 'top', className: 'station-label', offset: [0, -5] });
+                    st._labelBound = true;
+                } else if (!inViewAndVisible && st._labelBound) {
+                    st.unbindTooltip();
+                    st._labelBound = false;
+                }
+            }
+        }
+
         function setStationsVisibility(visible) {
             showStations = visible;
             const lgSt = document.getElementById('lg-st');
-            if (showStations) {
-                lgSt.classList.remove('muted');
-                if (map.getZoom() >= 14) document.getElementById('map').classList.add('zoom-labels');
-            } else {
-                lgSt.classList.add('muted');
-                document.getElementById('map').classList.remove('zoom-labels');
+            lgSt.classList.toggle('muted', !showStations);
+            if (!showStations) {
                 allStationLayers.forEach(stLayer => stLayer.closePopup());
             }
-            applyYearFilter();
+            updateMapHighlightStyles();
+            updateActiveStateBar();
         }
 
         function toggleLineType(typeKey) {
@@ -547,7 +562,8 @@
             document.getElementById('lg-main').classList.toggle('muted', hiddenLineTypes.has('主線'));
             document.getElementById('lg-old').classList.toggle('muted', hiddenLineTypes.has('舊線'));
             document.getElementById('lg-sub').classList.toggle('muted', hiddenLineTypes.has('副線'));
-            applyYearFilter();
+            updateMapHighlightStyles();
+            updateActiveStateBar();
         }
 
         const opacityBox = document.getElementById('opacity-box');
@@ -561,11 +577,21 @@
         });
         map.on('overlayadd', e => { if (e.layer === sinica1904) opacityBox.style.display = 'flex'; });
         map.on('overlayremove', e => { if (e.layer === sinica1904) opacityBox.style.display = 'none'; });
+
+        let lastIsLowZoom = (map.getZoom() <= 10);
         map.on('zoomend', function() {
-            const mapEl = document.getElementById('map');
-            if (map.getZoom() >= 14 && showStations) mapEl.classList.add('zoom-labels');
-            else mapEl.classList.remove('zoom-labels');
-            applyYearFilter();
+            const curIsLowZoom = (map.getZoom() <= 10);
+            if (curIsLowZoom !== lastIsLowZoom) {
+                lastIsLowZoom = curIsLowZoom;
+                updateMapHighlightStyles();
+            } else {
+                updateVisibleStationTooltips();
+            }
+        });
+        map.on('moveend', function() {
+            if (map.getZoom() >= 14 && showStations) {
+                updateVisibleStationTooltips();
+            }
         });
 
         function getGeometryBBox(geom) {
@@ -616,58 +642,89 @@
             return hiddenLineTypes.has("主線");
         }
 
-        function isRouteFeatureActiveInYear(feature, yearStr) {
-            if (yearStr === 'all') return true;
-            const yr = parseInt(yearStr, 10);
-            const p = feature.properties || {};
-            const groupKey = p.parent_id || p.route_id || p.name;
-            const hist = (p.history && p.history.length > 0) ? p.history : (masterRouteHistoryMap[groupKey] || []);
+        function parseYearRangesFromFeature(p, fallbackHist) {
+            const ranges = [];
+            const hist = (p.history && p.history.length > 0) ? p.history : (fallbackHist || []);
             if (hist.length > 0) {
-                return hist.some(h => yr >= parseInt(h.startYear, 10) && yr <= parseInt(h.endYear, 10));
+                for (let i = 0; i < hist.length; i++) {
+                    const s = parseInt(hist[i].startYear, 10);
+                    const e = parseInt(hist[i].endYear, 10);
+                    if (!isNaN(s) && !isNaN(e)) ranges.push([s, e]);
+                }
+                return ranges;
             }
             if (p.period && p.period !== '未知') {
                 const m = p.period.match(/(\d{4})\D+(\d{4})/);
-                if (m) return yr >= parseInt(m[1], 10) && yr <= parseInt(m[2], 10);
-                const mSingle = p.period.match(/(\d{4})/);
-                if (mSingle) return yr === parseInt(mSingle[1], 10);
+                if (m) {
+                    ranges.push([parseInt(m[1], 10), parseInt(m[2], 10)]);
+                } else {
+                    const mSingle = p.period.match(/(\d{4})/);
+                    if (mSingle) {
+                        const y = parseInt(mSingle[1], 10);
+                        ranges.push([y, y]);
+                    }
+                }
             }
-            return false;
+            return ranges;
+        }
+
+        function isRouteFeatureActiveInYear(feature, yearStr) {
+            if (yearStr === 'all') return true;
+            const yr = typeof yearStr === 'number' ? yearStr : parseInt(yearStr, 10);
+            const ranges = feature._yearRanges;
+            if (ranges) {
+                for (let i = 0; i < ranges.length; i++) {
+                    if (yr >= ranges[i][0] && yr <= ranges[i][1]) return true;
+                }
+                return false;
+            }
+            const p = feature.properties || {};
+            const groupKey = p.parent_id || p.route_id || p.name;
+            feature._yearRanges = parseYearRangesFromFeature(p, masterRouteHistoryMap[groupKey]);
+            return isRouteFeatureActiveInYear(feature, yr);
         }
 
         function isStationFeatureActiveInYear(stFeature, yearStr) {
             if (yearStr === 'all') return true;
-            const yr = parseInt(yearStr, 10);
-            const p = stFeature.properties || {};
-            if (p.period && p.period !== '未知') {
-                const m = p.period.match(/(\d{4})\D+(\d{4})/);
-                if (m) return yr >= parseInt(m[1], 10) && yr <= parseInt(m[2], 10);
-                const mSingle = p.period.match(/(\d{4})/);
-                if (mSingle) return yr === parseInt(mSingle[1], 10);
+            const yr = typeof yearStr === 'number' ? yearStr : parseInt(yearStr, 10);
+            const ownRanges = stFeature._ownYearRanges;
+            if (ownRanges && ownRanges.length > 0) {
+                for (let i = 0; i < ownRanges.length; i++) {
+                    if (yr >= ownRanges[i][0] && yr <= ownRanges[i][1]) return true;
+                }
+                return false;
             }
+            const p = stFeature.properties || {};
             const boundFeatures = p._boundRouteFeatures || [];
-            if (boundFeatures.length > 0) {
-                return boundFeatures.some(rf => isRouteFeatureActiveInYear(rf, yearStr));
+            for (let i = 0; i < boundFeatures.length; i++) {
+                if (isRouteFeatureActiveInYear(boundFeatures[i], yr)) return true;
             }
             return false;
         }
 
         function hasStationHistory(feature) {
+            if (feature._hasStHistory !== undefined) return feature._hasStHistory;
             const p = (feature && feature.properties) || {};
-            if (p.history && Array.isArray(p.history) && p.history.length > 0) return true;
+            if (p.history && Array.isArray(p.history) && p.history.length > 0) {
+                feature._hasStHistory = true;
+                return true;
+            }
             const desc = (p.description && p.description.zh) ? p.description.zh.trim() : "";
-            return Boolean(desc && !desc.includes("在此輸入中文歷史描述") && desc !== `【車站】${p.name}`);
+            feature._hasStHistory = Boolean(desc && !desc.includes("在此輸入中文歷史描述") && desc !== `【車站】${p.name}`);
+            return feature._hasStHistory;
         }
 
         function isOperatorRouteMatch(feature, opName = activeOperatorFilter) {
             if (!opName) return false;
+            if (feature._opSet && feature._opSet.has(opName)) return true;
             const p = feature.properties || {};
             const groupKey = p.parent_id || p.route_id || p.name;
-            if (p.operators && p.operators.split('、').some(name => name.trim() === opName)) return true;
             const famOps = familyOperatorsMap[groupKey];
             if (famOps && famOps.has(opName)) {
                 if (!p.operators || p.route_id === groupKey) return true;
             }
             const master = masterRouteFeatureMap[groupKey] || feature;
+            if (master._opSet && master._opSet.has(opName)) return true;
             const operators = (master.properties && master.properties.operators) || '';
             return operators.split('、').some(name => name.trim() === opName);
         }
@@ -795,6 +852,8 @@
                     if (isPrimarySt && stLayer.bringToFront) stLayer.bringToFront();
                 }
             });
+
+            updateVisibleStationTooltips();
         }
 
         function loadRoutePhoto(feature) {
@@ -2117,14 +2176,63 @@
                     }
                 });
 
+                                /* ✨ 預先建立年份區間、業者集合與搜尋快取索引（將縮放篩選與打字搜尋降為 O(1) 零延遲） */
+                routeFeaturesList.forEach(f => {
+                    const p = f.properties || {};
+                    const gk = p.parent_id || p.route_id || p.name;
+                    f._yearRanges = parseYearRangesFromFeature(p, masterRouteHistoryMap[gk]);
+                    f._opSet = new Set(p.operators ? p.operators.split('、').map(s => s.trim()).filter(Boolean) : []);
+                });
+                stationFeaturesList.forEach(st => {
+                    const p = st.properties || {};
+                    st._ownYearRanges = parseYearRangesFromFeature(p, null);
+                    st._normName = normalizeSearchText(p.name);
+                });
+
+                searchableRoutes.forEach(f => {
+                    const p = f.properties || {};
+                    const gk = p.parent_id || p.route_id || '';
+                    const famList = familyMembersMap[gk] || [];
+                    const famNarTexts = [];
+                    if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
+                    famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
+                    const narText = normalizeSearchText(famNarTexts.map(n => [n.sectionText, n.openDate, ...(n.paragraphs || [])].join(' ')).join(' '));
+                    const cleanTailo = normalizeSearchText(p.tailo || '');
+                    const firstChar = (cleanTailo.match(/[a-z]/i) || ['#'])[0].toUpperCase();
+                    const cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+
+                    f._searchCache = {
+                        gk,
+                        code: normalizeSearchText(gk),
+                        name: normalizeSearchText(p.name),
+                        tai: cleanTailo,
+                        taiCompact: compactSearchText(p.tailo || p.name || ''),
+                        alt: normalizeSearchText(p.alt_names),
+                        ops: normalizeSearchText(p.operators),
+                        gaugeStr: p.gauge ? String(p.gauge) : '',
+                        narText,
+                        firstChar,
+                        cleanSec,
+                        shortSec16: cleanSec ? (cleanSec.length > 16 ? cleanSec.slice(0, 16) + '…' : cleanSec) : ''
+                    };
+                });
+
+                window._sortedSearchableRoutes = searchableRoutes.slice().sort((a, b) => {
+                    const ta = a._searchCache.taiCompact;
+                    const tb = b._searchCache.taiCompact;
+                    return ta.localeCompare(tb) || String(a.properties.route_id || '').localeCompare(String(b.properties.route_id || ''), undefined, { numeric: true });
+                });
+
+                window._allOperatorsIndex = Array.from(new Set(Object.values(familyOperatorsMap).flatMap(set => Array.from(set))))
+                    .map(op => ({ op, norm: normalizeSearchText(op) }));
+
                 geojsonLayer = L.geoJSON({ type: "FeatureCollection", features: cleanFeatures }, {
-                    style: feature => getLineStyle(feature, 'none', false),
+                    style: feature => Object.assign({ smoothFactor: 1.2 }, getLineStyle(feature, 'none', false)),
                     pointToLayer: function(feature, latlng) {
                         const canInteract = hasStationHistory(feature);
                         const marker = L.circleMarker(latlng, Object.assign({}, getStationStyle(feature, false, false), { interactive: canInteract }));
-                        if (feature.properties && feature.properties.name) {
-                            marker.bindTooltip(feature.properties.name, { permanent: true, direction: 'top', className: 'station-label', offset: [0, -5] });
-                        }
+                        marker._stationName = (feature.properties && feature.properties.name) ? feature.properties.name : '';
+                        marker._labelBound = false;
                         return marker;
                     },
                     onEachFeature: function(feature, layer) {
@@ -2190,7 +2298,7 @@
                 clearBtn.style.display = 'block';
             }
             syncDisplay();
-            setTimeout(() => { renderList(input.value); }, 100);
+            setTimeout(() => { renderList(input.value); }, 60);
         });
 
         searchBox.addEventListener('click', function() {
@@ -2253,7 +2361,10 @@
             dropdown.replaceChildren();
             clearBtn.style.display = 'block';
 
-            const pool = searchableRoutes.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
+            const baseList = window._sortedSearchableRoutes || searchableRoutes;
+            const pool = currentFilterYear === 'all'
+                ? baseList
+                : baseList.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
 
             if (!keyword) {
                 if (!pool.length) {
@@ -2269,32 +2380,45 @@
                     closeSearchResults(); highlightRouteGroup(chosen, true);
                 }).classList.add('random-item');
 
-                const sortedByTailo = pool.slice().sort((a, b) => {
-                    const ta = compactSearchText(a.properties.tailo || a.properties.name || '');
-                    const tb = compactSearchText(b.properties.tailo || b.properties.name || '');
-                    return ta.localeCompare(tb) || String(a.properties.route_id || '').localeCompare(String(b.properties.route_id || ''), undefined, { numeric: true });
-                });
-
+                const frag = document.createDocumentFragment();
+                const origDropdown = dropdown;
                 let currentLetter = '';
-                sortedByTailo.forEach(f => {
+                pool.forEach(f => {
                     const p = f.properties || {};
-                    const cleanTailo = normalizeSearchText(p.tailo || '');
-                    const firstChar = (cleanTailo.match(/[a-z]/i) || ['#'])[0].toUpperCase();
+                    const sc = f._searchCache || {};
+                    const firstChar = sc.firstChar || '#';
                     if (firstChar !== currentLetter) {
                         currentLetter = firstChar;
-                        addSearchHeader(currentLetter, 'search-letter-header');
+                        const head = document.createElement('div');
+                        head.className = 'search-letter-header';
+                        head.textContent = currentLetter;
+                        frag.appendChild(head);
                     }
-                    const code = p.parent_id || p.route_id || '';
-                    const section = (p.section || '').replace(/\s*\([^)]*\)$/, '');
-                    const shortSec = section ? (section.length > 16 ? section.slice(0, 16) + '…' : section) : '';
-                    addSearchItem(
-                        p.name || '未命名',
-                        code,
-                        () => { closeSearchResults(); highlightRouteGroup(f, true); },
-                        'code',
-                        shortSec
-                    );
+                    const item = document.createElement('div');
+                    item.className = 'search-item';
+                    item.setAttribute('role', 'option');
+                    item.tabIndex = 0;
+                    const left = document.createElement('span');
+                    left.textContent = p.name || '未命名';
+                    if (sc.shortSec16) {
+                        const subSpan = document.createElement('span');
+                        subSpan.style.cssText = 'font-size:12px; color:#999; margin-left:6px; font-weight:normal;';
+                        subSpan.textContent = sc.shortSec16;
+                        left.appendChild(subSpan);
+                    }
+                    item.appendChild(left);
+                    if (sc.gk) {
+                        const label = document.createElement('span');
+                        label.className = 'match-tag code';
+                        label.textContent = sc.gk;
+                        item.appendChild(label);
+                    }
+                    const onSelect = () => { closeSearchResults(); highlightRouteGroup(f, true); };
+                    item.addEventListener('click', e => { e.stopPropagation(); onSelect(); });
+                    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } });
+                    frag.appendChild(item);
                 });
+                origDropdown.appendChild(frag);
                 isRenderingList = false;
                 return;
             }
@@ -2302,52 +2426,41 @@
             const results = [];
             pool.forEach(f => {
                 const p = f.properties || {};
-                const gk = p.parent_id || p.route_id || '';
-                const code = normalizeSearchText(gk);
-                const name = normalizeSearchText(p.name);
-                const tai = normalizeSearchText(p.tailo);
-                const taiCompact = compactSearchText(p.tailo);
-                const alt = normalizeSearchText(p.alt_names);
-                const ops = normalizeSearchText(p.operators);
-                const gaugeStr = p.gauge ? String(p.gauge) : '';
-
-                const famList = familyMembersMap[gk] || [];
-                const famNarTexts = [];
-                if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
-                famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
-                const narText = normalizeSearchText(famNarTexts.map(n => [n.sectionText, n.openDate, ...(n.paragraphs || [])].join(' ')).join(' '));
+                const sc = f._searchCache;
+                if (!sc) return;
 
                 let rank = 99, matchHint = '';
 
-                if (code === keyword) rank = 0;
-                else if (name === keyword) rank = 1;
-                else if (code.startsWith(keyword)) rank = 2;
-                else if (name.startsWith(keyword)) rank = 3;
-                else if (code.includes(keyword) || name.includes(keyword)) rank = 4;
-                else if (tai.includes(keyword) || (compactKey && taiCompact.includes(compactKey))) {
+                if (sc.code === keyword) rank = 0;
+                else if (sc.name === keyword) rank = 1;
+                else if (sc.code.startsWith(keyword)) rank = 2;
+                else if (sc.name.startsWith(keyword)) rank = 3;
+                else if (sc.code.includes(keyword) || sc.name.includes(keyword)) rank = 4;
+                else if (sc.tai.includes(keyword) || (compactKey && sc.taiCompact.includes(compactKey))) {
                     rank = 5; matchHint = p.tailo || '';
-                } else if (alt.includes(keyword)) {
+                } else if (sc.alt.includes(keyword)) {
                     rank = 5; matchHint = `舊稱: ${p.alt_names}`;
-                } else if (gaugeStr && gaugeStr === keyword) {
+                } else if (sc.gaugeStr && sc.gaugeStr === keyword) {
                     rank = 5; matchHint = `軌距: ${formatGaugeText(p.gauge)}`;
-                } else if (ops.includes(keyword)) {
+                } else if (sc.ops.includes(keyword)) {
                     rank = 6;
-                } else if (narText && narText.includes(keyword)) {
+                } else if (sc.narText && sc.narText.includes(keyword)) {
                     rank = 7; matchHint = '📖 沿革提及';
                 } else return;
 
-                results.push({ f, rank, code: gk, matchHint });
+                results.push({ f, rank, code: sc.gk, matchHint, cleanSec: sc.cleanSec });
             });
             results.sort((a, b) => a.rank - b.rank || String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
 
-            const ops = Array.from(new Set(Object.values(familyOperatorsMap).flatMap(set => Array.from(set))))
-                .filter(op => normalizeSearchText(op).includes(keyword))
-                .sort((a, b) => normalizeSearchText(a) === keyword ? -1 : normalizeSearchText(b) === keyword ? 1 : a.localeCompare(b, 'zh-Hant'))
-                .slice(0, 20);
+            const ops = (window._allOperatorsIndex || [])
+                .filter(it => it.norm.includes(keyword))
+                .sort((a, b) => a.norm === keyword ? -1 : b.norm === keyword ? 1 : a.op.localeCompare(b.op, 'zh-Hant'))
+                .slice(0, 20)
+                .map(it => it.op);
 
             const stations = allStationLayers.filter(st =>
                 isStationFeatureActiveInYear(st.feature, currentFilterYear) &&
-                normalizeSearchText(st.feature.properties.name).includes(keyword)).slice(0, 30);
+                (st.feature._normName || '').includes(keyword)).slice(0, 30);
 
             if (!results.length && !ops.length && !stations.length) {
                 addSearchHeader('沒有符合的結果，請試試舊稱、台羅拼音、編號或業者名稱');
@@ -2366,11 +2479,9 @@
             }
             if (results.length) {
                 addSearchHeader(`🛤️ 路線（${results.length}）`);
-                results.forEach(({ f, matchHint }) => {
+                results.forEach(({ f, code, matchHint, cleanSec }) => {
                     const p = f.properties || {};
-                    const code = p.parent_id || p.route_id || '';
-                    const rawSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
-                    const sub = matchHint ? (rawSec ? `${rawSec} · ${matchHint}` : matchHint) : rawSec;
+                    const sub = matchHint ? (cleanSec ? `${cleanSec} · ${matchHint}` : matchHint) : cleanSec;
                     const shortSub = sub.length > 22 ? sub.slice(0, 22) + '…' : sub;
                     addSearchItem(
                         p.name || '未命名',
