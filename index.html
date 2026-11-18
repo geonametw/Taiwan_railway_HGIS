@@ -20,13 +20,14 @@
         .yf-btn:hover { background: #3949ab; color: white; }
         .yf-btn:disabled { opacity: 0.35; cursor: not-allowed; background: #eee; color: #999; }
         #yearSelect { border: 1px solid #9fa8da; border-radius: 14px; padding: 3px 8px; font-size: 13px; font-weight: bold; color: var(--primary); background: #fff; outline: none; cursor: pointer; }
-        #yearModeSelect { border: 1px solid #ddd; border-radius: 12px; padding: 3px 6px; font-size: 12px; color: #555; background: #f8f9fa; outline: none; cursor: pointer; display: none; }
-        #yearPlayBtn { background: #2e7d32; color: white; border: none; padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transition: background-color 0.15s; }
+        #yearModeSelect { border: 1px solid #ddd; border-radius: 12px; padding: 3px 6px; font-size: 12px; color: #555; background: #f8f9fa; outline: none; cursor: pointer; display: inline-block; }
+        #yearPlayBtn { background: #2e7d32; color: white; border: none; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transition: background-color 0.15s; }
         #yearPlayBtn:hover { background: #1b5e20; }
         #yearPlayBtn.playing { background: #e65100; }
-        #yearResetBtn { background: #ef5350; color: white; border: none; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: none; }
-        #yearResetBtn:hover { background: #c62828; }
-        .pegman-control { background: white; width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: grab; user-select: none; touch-action: none; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s, background-color 0.15s; margin-bottom: 8px !important; }
+        #yearResetBtn { background: #ef5350; color: white; border: none; padding: 3px 9px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-block; }
+        #yearResetBtn:hover:not(:disabled) { background: #c62828; }
+        #yearResetBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pegman-control { background: white; width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: grab; user-select: none; touch-action: none; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s, background-color 0.15s; margin-top: 8px !important; margin-bottom: 10px !important; }
         .pegman-control:hover { transform: scale(1.06); background: #fffdf5; border-color: #fbc02d; }
         .pegman-control.active { background: #fff8e1; border-color: #f57f17; box-shadow: 0 0 0 3px rgba(245, 127, 23, 0.32); cursor: pointer; }
         .pegman-control svg { width: 24px; height: 24px; pointer-events: none; }
@@ -240,20 +241,19 @@
 
     <div id="year-filter-bar">
         <div class="year-main-row">
-            <span aria-hidden="true">📅</span>
             <button class="yf-btn" id="prevYearBtn" title="上一年" aria-label="上一年" disabled>&#9664;</button>
             <select id="yearSelect" title="選擇歷史年份">
                 <option value="all">全部年代 (不限)</option>
             </select>
             <button class="yf-btn" id="nextYearBtn" title="下一年" aria-label="下一年" disabled>&#9654;</button>
-            <button id="yearPlayBtn" type="button" title="自動依年份播放路網演變">▶ 播放</button>
         </div>
         <div class="year-options-row">
+            <button id="yearPlayBtn" type="button" title="自動依年份播放路網演變">▶ 播放</button>
             <select id="yearModeSelect" title="非當年路線與車站顯示方式">
                 <option value="hide">僅保留當年</option>
                 <option value="dim">淡化其他</option>
             </select>
-            <button id="yearResetBtn" title="顯示全部年代">重置</button>
+            <button id="yearResetBtn" type="button" title="顯示全部年代" disabled>重置</button>
         </div>
     </div>
 
@@ -428,8 +428,18 @@
             L.DomEvent.disableScrollPropagation(el);
         });
 
-        /* ✨ v11.0：多元現代底圖（OSM + Google Maps）與中研院日治各時期歷史地形圖 */
+        /* ✨ v11.0：多元現代底圖（OSM + 通用版電子地圖 NLSC + Google Maps）與中研院日治各時期歷史地形圖 */
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+        const nlscEmapUrl = location.protocol === 'https:'
+            ? 'https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}'
+            : 'http://maps.nlsc.gov.tw/S_Maps/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}';
+        const nlscEmap = L.tileLayer(nlscEmapUrl, { maxZoom: 19, attribution: '&copy; 內政部國土測繪中心 通用版電子地圖' });
+        nlscEmap.on('tileerror', function(e) {
+            if (e && e.tile && !e.tile._nlscFallbackTried && e.coords) {
+                e.tile._nlscFallbackTried = true;
+                e.tile.src = `http://maps.nlsc.gov.tw/S_Maps/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=EMAP&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX=${e.coords.z}&TILEROW=${e.coords.y}&TILECOL=${e.coords.x}&FORMAT=image/jpeg`;
+            }
+        });
         const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&hl=zh-TW&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
         const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&hl=zh-TW&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
 
@@ -893,11 +903,10 @@
                 return btn;
             }
         });
-        new PegmanControl().addTo(map);
-
         L.control.layers(
             {
                 "現代地圖 (OSM)": osm,
+                "通用版電子地圖": nlscEmap,
                 "Google 街道圖": googleStreets,
                 "Google 衛星混合圖": googleHybrid
             },
@@ -910,6 +919,8 @@
             },
             { position: 'bottomright', collapsed: true }
         ).addTo(map);
+
+        new PegmanControl().addTo(map);
 
         let geojsonLayer;
         let allRouteLayers = [];
@@ -962,7 +973,7 @@
         function updateTitleText() {
             const mobile = window.innerWidth <= 960;
             sysTitle.textContent = mobile
-                ? `📅 ${currentFilterYear === 'all' ? '全部年代' : currentFilterYear + ' 年'}`
+                ? `${currentFilterYear === 'all' ? '全部年代' : currentFilterYear + ' 年'}`
                 : `古今鐵道營業線 HGIS 查詢${currentFilterYear === 'all' || yfBar.classList.contains('open') ? '' : '・' + currentFilterYear + '年'}`;
             sysTitle.setAttribute('aria-expanded', String(yfBar.classList.contains('open')));
             document.body.classList.toggle('year-filter-open', yfBar.classList.contains('open'));
@@ -2274,8 +2285,7 @@
             const isAll = (currentFilterYear === 'all');
             prevYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) <= MIN_YEAR;
             nextYearBtn.disabled = isAll || parseInt(currentFilterYear, 10) >= MAX_YEAR;
-            yearModeSelect.style.display = isAll ? 'none' : 'inline-block';
-            yearResetBtn.style.display = isAll ? 'none' : 'inline-block';
+            yearResetBtn.disabled = isAll;
             updateTitleText();
             updateUrlHash();
             updateMapHighlightStyles();
