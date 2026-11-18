@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v10.2</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a237e; --primary-light: #e8eaf6; --accent: #ff7800; --drawer-width: 390px; }
@@ -21,8 +21,18 @@
         .yf-btn:disabled { opacity: 0.35; cursor: not-allowed; background: #eee; color: #999; }
         #yearSelect { border: 1px solid #9fa8da; border-radius: 14px; padding: 3px 8px; font-size: 13px; font-weight: bold; color: var(--primary); background: #fff; outline: none; cursor: pointer; }
         #yearModeSelect { border: 1px solid #ddd; border-radius: 12px; padding: 3px 6px; font-size: 12px; color: #555; background: #f8f9fa; outline: none; cursor: pointer; display: none; }
+        #yearPlayBtn { background: #2e7d32; color: white; border: none; padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; transition: background-color 0.15s; }
+        #yearPlayBtn:hover { background: #1b5e20; }
+        #yearPlayBtn.playing { background: #e65100; }
         #yearResetBtn { background: #ef5350; color: white; border: none; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; display: none; }
         #yearResetBtn:hover { background: #c62828; }
+        .pegman-control { background: white; width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; cursor: grab; user-select: none; touch-action: none; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s, background-color 0.15s; margin-bottom: 8px !important; }
+        .pegman-control:hover { transform: scale(1.06); background: #fffdf5; border-color: #fbc02d; }
+        .pegman-control.active { background: #fff8e1; border-color: #f57f17; box-shadow: 0 0 0 3px rgba(245, 127, 23, 0.32); cursor: pointer; }
+        .pegman-control svg { width: 24px; height: 24px; pointer-events: none; }
+        #pegman-ghost { position: fixed; left: 0; top: 0; width: 42px; height: 42px; pointer-events: none; z-index: 4000; display: none; transform: translate(-50%, -88%); filter: drop-shadow(0 6px 8px rgba(0,0,0,0.4)); }
+        #pegman-ghost::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 14px; height: 7px; background: rgba(21, 101, 192, 0.55); border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, 4px); }
+        body.sv-select-mode #map { cursor: crosshair !important; }
         #operator-banner { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1001; background: #4a148c; color: white; padding: 7px 10px 7px 14px; border-radius: 25px; font-size: 13.5px; font-weight: bold; box-shadow: 0 4px 15px rgba(74, 20, 140, 0.45); display: none; align-items: center; gap: 8px; white-space: nowrap; max-width: calc(100vw - 320px); transition: left 0.32s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.25s ease; }
         #operator-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #operator-banner button { background: rgba(255,255,255,0.22); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; padding: 0; font-size: 15px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -208,6 +218,7 @@
                 <option value="all">全部年代 (不限)</option>
             </select>
             <button class="yf-btn" id="nextYearBtn" title="下一年" aria-label="下一年" disabled>&#9654;</button>
+            <button id="yearPlayBtn" type="button" title="自動依年份播放路網演變">▶ 播放</button>
         </div>
         <div class="year-options-row">
             <select id="yearModeSelect" title="非當年路線與車站顯示方式">
@@ -244,7 +255,7 @@
             </span>
         </div>
         <div id="opacity-box">
-            <span>🗺️ 堡圖透明度</span>
+            <span>🗺️ 古地圖透明度</span>
             <input type="range" id="opacitySlider" min="0" max="100" value="85">
             <span id="opacityVal">85%</span>
         </div>
@@ -309,6 +320,12 @@
     </div>
 
     <div id="toast-msg"></div>
+    <div id="pegman-ghost" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="42" height="42">
+            <circle cx="12" cy="4.5" r="3.2" fill="#f9a825" stroke="#fff" stroke-width="1.2"/>
+            <path d="M8.5 9.2c0-1.1.9-2 2-2h3c1.1 0 2 .9 2 2l1.2 5.2c.2.8-.4 1.5-1.2 1.5h-.8l-.7 5.6c-.1.8-.8 1.5-1.6 1.5h-.8c-.8 0-1.5-.7-1.6-1.5l-.7-5.6h-.8c-.8 0-1.4-.7-1.2-1.5L8.5 9.2z" fill="#fbc02d" stroke="#e65100" stroke-width="1"/>
+        </svg>
+    </div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -333,7 +350,7 @@
         let currentPhotoMeta = { caption: '', source: '', link: '' };
         let globalNarrativesMap = {};
 
-        /* ✨ v10.2：格式化軌距（gauge）顯示字串 */
+        /* ✨ v11.0：格式化軌距（gauge）顯示字串 */
         function formatGaugeText(val) {
             if (val === undefined || val === null || val === '') return '';
             const num = Number(val);
@@ -358,14 +375,149 @@
             L.DomEvent.disableScrollPropagation(el);
         });
 
+        /* ✨ v11.0：多元現代底圖（OSM + Google Maps）與中研院日治各時期歷史地形圖 */
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
-        const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85 });
+        const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&hl=zh-TW&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
+        const googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&hl=zh-TW&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: '&copy; Google Maps' });
+
+        const sinica1904 = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1904-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85, attribution: '中研院人社中心 GIS' });
+        const sinica1921Bao = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM20K_1921-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85, attribution: '中研院人社中心 GIS' });
+        const sinica1921Topo = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM25K_1921-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85, attribution: '中研院人社中心 GIS' });
+        const sinica1924Topo = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=JM50K_1924-jpg-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85, attribution: '中研院人社中心 GIS' });
+        const sinica1944Us = L.tileLayer('https://gis.sinica.edu.tw/tileserver/file-exists.php?img=AM50K_1944-png-{z}-{x}-{y}', { maxZoom: 18, opacity: 0.85, attribution: '中研院人社中心 GIS' });
+
+        const historicalOverlays = [sinica1904, sinica1921Bao, sinica1921Topo, sinica1924Topo, sinica1944Us];
+        const activeHistOverlays = new Set();
+
+        /* 🚶 Google 街景藍色覆蓋線圖層（拖曳或點擊街景小人時自動浮現） */
+        const svCoverageLayer = L.tileLayer('https://mt1.google.com/vt?hl=zh-TW&lyrs=svv|cb_client:apiv3&style=40,18&x={x}&y={y}&z={z}', { maxZoom: 20, opacity: 0.95, zIndex: 450, pointerEvents: 'none' });
 
         const myRenderer = L.canvas({ tolerance: 15, padding: window.innerWidth <= 960 ? 0.25 : 0.5 });
         const map = L.map('map', { renderer: myRenderer, layers: [osm], zoomControl: false }).setView([23.6978, 120.9605], 7);
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
-        L.control.layers({ "現代地圖 (OSM)": osm }, { "1904 臺灣堡圖": sinica1904 }, { position: 'bottomright', collapsed: true }).addTo(map);
+
+        let svSelectMode = false;
+        let pegmanBtnEl = null;
+        const pegmanGhostEl = document.getElementById('pegman-ghost');
+
+        function openGoogleStreetView(lat, lng) {
+            const latStr = Number(lat).toFixed(6);
+            const lngStr = Number(lng).toFixed(6);
+            const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${latStr},${lngStr}`;
+            showToast(`🚶 正在開啟 Google 街景 (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`);
+            window.open(svUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        function setSvSelectMode(active) {
+            svSelectMode = Boolean(active);
+            document.body.classList.toggle('sv-select-mode', svSelectMode);
+            if (pegmanBtnEl) pegmanBtnEl.classList.toggle('active', svSelectMode);
+            if (svSelectMode) {
+                if (!map.hasLayer(svCoverageLayer)) svCoverageLayer.addTo(map);
+                showToast('🚶 街景模式已開啟：可拖曳右下角小人，或直接點擊地圖藍線處進入街景');
+            } else {
+                if (map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
+            }
+        }
+
+        const PegmanControl = L.Control.extend({
+            options: { position: 'bottomright' },
+            onAdd: function() {
+                const btn = L.DomUtil.create('div', 'leaflet-bar pegman-control');
+                btn.title = '拖曳小人至地圖開啟 Google 街景（或點擊切換街景選點模式）';
+                btn.setAttribute('role', 'button');
+                btn.setAttribute('aria-label', 'Google 街景小人');
+                btn.tabIndex = 0;
+                btn.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="3.2" fill="#f9a825"/><path d="M8.5 9.2c0-1.1.9-2 2-2h3c1.1 0 2 .9 2 2l1.2 5.2c.2.8-.4 1.5-1.2 1.5h-.8l-.7 5.6c-.1.8-.8 1.5-1.6 1.5h-.8c-.8 0-1.5-.7-1.6-1.5l-.7-5.6h-.8c-.8 0-1.4-.7-1.2-1.5L8.5 9.2z" fill="#fbc02d" stroke="#e65100" stroke-width="0.8"/></svg>`;
+                L.DomEvent.disableClickPropagation(btn);
+                L.DomEvent.disableScrollPropagation(btn);
+
+                let startX = 0, startY = 0, isDragging = false, pointerId = null;
+
+                btn.addEventListener('pointerdown', e => {
+                    if (e.button !== undefined && e.button !== 0) return;
+                    e.preventDefault();
+                    pointerId = e.pointerId;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    isDragging = false;
+                    btn.setPointerCapture(pointerId);
+                    if (!map.hasLayer(svCoverageLayer)) svCoverageLayer.addTo(map);
+                });
+
+                btn.addEventListener('pointermove', e => {
+                    if (pointerId === null || e.pointerId !== pointerId) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    if (!isDragging && Math.hypot(dx, dy) > 8) {
+                        isDragging = true;
+                        pegmanGhostEl.style.display = 'block';
+                    }
+                    if (isDragging) {
+                        pegmanGhostEl.style.left = `${e.clientX}px`;
+                        pegmanGhostEl.style.top = `${e.clientY}px`;
+                    }
+                });
+
+                const finishPointer = (e, cancelled = false) => {
+                    if (pointerId === null || e.pointerId !== pointerId) return;
+                    try { btn.releasePointerCapture(pointerId); } catch (_) {}
+                    pointerId = null;
+                    pegmanGhostEl.style.display = 'none';
+
+                    if (cancelled) {
+                        if (!svSelectMode && map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
+                        return;
+                    }
+
+                    if (isDragging) {
+                        isDragging = false;
+                        const btnRect = btn.getBoundingClientRect();
+                        const droppedOnBtn = (e.clientX >= btnRect.left - 12 && e.clientX <= btnRect.right + 12 && e.clientY >= btnRect.top - 12 && e.clientY <= btnRect.bottom + 12);
+                        if (!svSelectMode && map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
+                        if (!droppedOnBtn) {
+                            const mapRect = map.getContainer().getBoundingClientRect();
+                            const pt = L.point(e.clientX - mapRect.left, e.clientY - mapRect.top);
+                            const latlng = map.containerPointToLatLng(pt);
+                            if (svSelectMode) setSvSelectMode(false);
+                            openGoogleStreetView(latlng.lat, latlng.lng);
+                        }
+                    } else {
+                        setSvSelectMode(!svSelectMode);
+                    }
+                };
+
+                btn.addEventListener('pointerup', e => finishPointer(e, false));
+                btn.addEventListener('pointercancel', e => finishPointer(e, true));
+                btn.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSvSelectMode(!svSelectMode);
+                    }
+                });
+
+                pegmanBtnEl = btn;
+                return btn;
+            }
+        });
+        new PegmanControl().addTo(map);
+
+        L.control.layers(
+            {
+                "現代地圖 (OSM)": osm,
+                "Google 街道圖": googleStreets,
+                "Google 衛星混合圖": googleHybrid
+            },
+            {
+                "1904 臺灣堡圖 (明治版 1:20,000)": sinica1904,
+                "1921 臺灣堡圖 (大正版 1:20,000)": sinica1921Bao,
+                "1921 日治地形圖 (1:25,000)": sinica1921Topo,
+                "1924 陸測地形圖 (1:50,000)": sinica1924Topo,
+                "1944 美軍地形圖 (1:50,000)": sinica1944Us
+            },
+            { position: 'bottomright', collapsed: true }
+        ).addTo(map);
 
         let geojsonLayer;
         let allRouteLayers = [];
@@ -572,11 +724,21 @@
 
         opacitySlider.addEventListener('input', function() {
             const v = parseInt(this.value, 10);
-            sinica1904.setOpacity(v / 100);
+            historicalOverlays.forEach(layer => layer.setOpacity(v / 100));
             opacityVal.textContent = `${v}%`;
         });
-        map.on('overlayadd', e => { if (e.layer === sinica1904) opacityBox.style.display = 'flex'; });
-        map.on('overlayremove', e => { if (e.layer === sinica1904) opacityBox.style.display = 'none'; });
+        map.on('overlayadd', e => {
+            if (historicalOverlays.includes(e.layer)) {
+                activeHistOverlays.add(e.layer);
+                opacityBox.style.display = 'flex';
+            }
+        });
+        map.on('overlayremove', e => {
+            if (historicalOverlays.includes(e.layer)) {
+                activeHistOverlays.delete(e.layer);
+                if (activeHistOverlays.size === 0) opacityBox.style.display = 'none';
+            }
+        });
 
         let lastIsLowZoom = (map.getZoom() <= 10);
         map.on('zoomend', function() {
@@ -1397,7 +1559,7 @@
 
             const activeNarObj = renderRouteNarrative(feature, groupKey, currentId);
 
-            /* ✨ v10.2：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
+            /* ✨ v11.0：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
             const rawGauge = (currentMember && currentMember.gauge !== undefined && currentMember.gauge !== null && currentMember.gauge !== '')
                 ? currentMember.gauge
                 : ((p.gauge !== undefined && p.gauge !== null && p.gauge !== '')
@@ -1690,6 +1852,11 @@
 
         function buildStationPopupContent(feature) {
             const p = feature.properties || {};
+            const coords = (feature.geometry && feature.geometry.coordinates) || [];
+            const lng = coords[0], lat = coords[1];
+            const svBtn = (lat !== undefined && lng !== undefined)
+                ? `<span class="route-badge" style="background:#f57f17;color:#fff;margin-left:6px;cursor:pointer;font-size:11px;padding:2px 6px;" onclick="openGoogleStreetView(${lat}, ${lng})" title="開啟此車站位置的 Google 街景">🚶 街景</span>`
+                : '';
             const boundKeys = p._boundGroupKeys || [];
             const routeButtons = boundKeys.map(k => {
                 const rName = routeKeyToNameMap[k] || k;
@@ -1697,7 +1864,7 @@
             }).join('');
             const desc = (p.description && p.description.zh) ? `<div style="margin-top:6px;font-size:12.5px;color:#333;">${p.description.zh}</div>` : '';
             return `
-                <div style="font-size:15px;font-weight:bold;color:#1a237e;">🚉 ${p.name || '未命名車站'}</div>
+                <div style="font-size:15px;font-weight:bold;color:#1a237e;display:flex;align-items:center;justify-content:space-between;"><span>🚉 ${p.name || '未命名車站'}</span>${svBtn}</div>
                 ${desc}
                 ${routeButtons ? `<div style="margin-top:5px;font-size:12px;color:#555;">點擊查看所屬路線：<br>${routeButtons}</div>` : ''}
             `;
@@ -1730,25 +1897,80 @@
             if (dropdown.style.display === 'block') renderList(input.value);
         }
 
+        const yearPlayBtn = document.getElementById('yearPlayBtn');
+        let yearPlayTimer = null;
+
+        function stopYearPlay() {
+            if (yearPlayTimer) {
+                clearInterval(yearPlayTimer);
+                yearPlayTimer = null;
+            }
+            if (yearPlayBtn) {
+                yearPlayBtn.classList.remove('playing');
+                yearPlayBtn.textContent = '▶ 播放';
+                yearPlayBtn.title = '自動依年份播放路網演變';
+            }
+        }
+
+        function toggleYearPlay() {
+            if (yearPlayTimer) {
+                stopYearPlay();
+                return;
+            }
+            let startYr = (currentFilterYear === 'all' || parseInt(currentFilterYear, 10) >= MAX_YEAR)
+                ? MIN_YEAR
+                : parseInt(currentFilterYear, 10);
+
+            currentFilterYear = String(startYr);
+            yearSelect.value = currentFilterYear;
+            map.closePopup();
+            applyYearFilter();
+
+            yearPlayBtn.classList.add('playing');
+            yearPlayBtn.textContent = '⏸ 暫停';
+            yearPlayBtn.title = '暫停年代自動播放';
+
+            yearPlayTimer = setInterval(() => {
+                const cur = parseInt(currentFilterYear, 10);
+                if (isNaN(cur) || cur >= MAX_YEAR) {
+                    stopYearPlay();
+                    showToast(`🎬 年代播放完畢 (${MAX_YEAR} 年)`);
+                    return;
+                }
+                currentFilterYear = String(cur + 1);
+                yearSelect.value = currentFilterYear;
+                applyYearFilter();
+            }, 850);
+        }
+
+        yearPlayBtn.addEventListener('click', toggleYearPlay);
+
         yearSelect.addEventListener('change', function() {
+            stopYearPlay();
             currentFilterYear = this.value;
             map.closePopup();
             applyYearFilter();
         });
         prevYearBtn.addEventListener('click', function() {
+            stopYearPlay();
             if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) > MIN_YEAR) {
                 yearSelect.value = String(parseInt(currentFilterYear, 10) - 1);
-                yearSelect.dispatchEvent(new Event('change'));
+                currentFilterYear = yearSelect.value;
+                map.closePopup();
+                applyYearFilter();
             }
         });
         nextYearBtn.addEventListener('click', function() {
+            stopYearPlay();
             if (currentFilterYear !== 'all' && parseInt(currentFilterYear, 10) < MAX_YEAR) {
                 yearSelect.value = String(parseInt(currentFilterYear, 10) + 1);
-                yearSelect.dispatchEvent(new Event('change'));
+                currentFilterYear = yearSelect.value;
+                map.closePopup();
+                applyYearFilter();
             }
         });
         yearModeSelect.addEventListener('change', function() { yearFilterMode = this.value; applyYearFilter(); });
-        yearResetBtn.addEventListener('click', function() { yearSelect.value = 'all'; yearSelect.dispatchEvent(new Event('change')); });
+        yearResetBtn.addEventListener('click', function() { stopYearPlay(); yearSelect.value = 'all'; currentFilterYear = 'all'; map.closePopup(); applyYearFilter(); });
 
         function getDrawerWidth() {
             return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-width'), 10) || 390;
@@ -2244,12 +2466,24 @@
                             });
                             if (hasStationHistory(feature)) {
                                 layer.bindPopup(() => buildStationPopupContent(feature), { className: 'custom-popup', maxWidth: 280 });
-                                layer.on('click', () => { lastFeatureClickTime = Date.now(); });
+                                layer.on('click', (e) => {
+                                    lastFeatureClickTime = Date.now();
+                                    if (svSelectMode && e.latlng) {
+                                        layer.closePopup();
+                                        setSvSelectMode(false);
+                                        openGoogleStreetView(e.latlng.lat, e.latlng.lng);
+                                    }
+                                });
                             }
                         } else {
                             allRouteLayers.push(layer);
-                            layer.on('click', () => {
+                            layer.on('click', (e) => {
                                 lastFeatureClickTime = Date.now();
+                                if (svSelectMode && e.latlng) {
+                                    setSvSelectMode(false);
+                                    openGoogleStreetView(e.latlng.lat, e.latlng.lng);
+                                    return;
+                                }
                                 setTimeout(() => { input.blur(); syncDisplay(); }, 0);
                                 highlightRouteGroup(feature, false, layer);
                             });
@@ -2570,7 +2804,12 @@
             }
         });
 
-        map.on('click', function() {
+        map.on('click', function(e) {
+            if (svSelectMode && e.latlng) {
+                setSvSelectMode(false);
+                openGoogleStreetView(e.latlng.lat, e.latlng.lng);
+                return;
+            }
             if (Date.now() - lastFeatureClickTime < 250) return;
             dropdown.style.display = 'none';
             input.setAttribute('aria-expanded', 'false');
