@@ -30,9 +30,37 @@
         .pegman-control:hover { transform: scale(1.06); background: #fffdf5; border-color: #fbc02d; }
         .pegman-control.active { background: #fff8e1; border-color: #f57f17; box-shadow: 0 0 0 3px rgba(245, 127, 23, 0.32); cursor: pointer; }
         .pegman-control svg { width: 24px; height: 24px; pointer-events: none; }
-        #pegman-ghost { position: fixed; left: 0; top: 0; width: 42px; height: 42px; pointer-events: none; z-index: 4000; display: none; transform: translate(-50%, -88%); filter: drop-shadow(0 6px 8px rgba(0,0,0,0.4)); }
-        #pegman-ghost::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 14px; height: 7px; background: rgba(21, 101, 192, 0.55); border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, 4px); }
+        #pegman-ghost { position: fixed; left: 0; top: 0; width: 44px; height: 52px; pointer-events: none; z-index: 4000; display: none; transform: translate(-50%, -44px); filter: drop-shadow(0 5px 7px rgba(0,0,0,0.42)); }
+        #pegman-ghost .ghost-target { position: absolute; bottom: 2px; left: 50%; width: 16px; height: 10px; background: rgba(0, 200, 83, 0.65); border: 2px solid #fff; border-radius: 50%; transform: translateX(-50%); box-shadow: 0 0 8px rgba(0,200,83,0.9); }
         body.sv-select-mode #map { cursor: crosshair !important; }
+        .sv-map-pegman-icon { background: transparent; border: none; }
+        .sv-map-pegman-wrap { position: relative; width: 36px; height: 42px; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.45)); cursor: grab; }
+        .sv-map-pegman-wrap::after { content: ''; position: absolute; bottom: 2px; left: 50%; width: 14px; height: 8px; background: rgba(245, 127, 23, 0.75); border: 2px solid #fff; border-radius: 50%; transform: translateX(-50%); }
+        #sv-panel { position: fixed; left: 15px; bottom: 18px; width: min(540px, calc(100vw - 90px)); height: 390px; background: #181c24; border: 2px solid #283593; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.42); z-index: 1005; display: none; flex-direction: column; overflow: hidden; transition: width 0.22s ease, height 0.22s ease, left 0.22s ease, bottom 0.22s ease, top 0.22s ease; }
+        #sv-panel.open { display: flex; }
+        #sv-panel.split-mode { left: 0 !important; bottom: 0 !important; top: auto !important; width: 100vw !important; height: 46dvh !important; border-radius: 12px 12px 0 0; border-left: none; border-right: none; border-bottom: none; }
+        @media (min-width: 961px) {
+            body.drawer-open #sv-panel.split-mode { width: calc(100vw - var(--drawer-width)) !important; }
+            body.drawer-open #sv-panel:not(.split-mode):not(.max-mode) { max-width: calc(100vw - var(--drawer-width) - 35px); }
+        }
+        #sv-panel.max-mode { left: 15px !important; top: 15px !important; bottom: 15px !important; width: calc(100vw - 30px) !important; height: calc(100dvh - 30px) !important; z-index: 2005; }
+        .sv-header { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: #fff; padding: 7px 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: move; user-select: none; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .sv-header-info { display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1; min-width: 0; }
+        #sv-title-text { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #sv-sub-badge { font-size: 11px; background: rgba(255,255,255,0.18); padding: 1px 7px; border-radius: 10px; white-space: nowrap; color: #fff9c4; flex-shrink: 0; }
+        .sv-header-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+        .sv-hdr-btn { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.28); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; transition: background-color 0.15s; }
+        .sv-hdr-btn:hover { background: rgba(255,255,255,0.32); }
+        .sv-hdr-btn.active { background: #ffb300; color: #1a237e; border-color: #ffe082; }
+        .sv-hdr-close { background: rgba(229,57,53,0.85); color: #fff; border: none; width: 26px; height: 26px; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; }
+        .sv-hdr-close:hover { background: #d32f2f; }
+        .sv-body { position: relative; flex: 1; background: #111; overflow: hidden; }
+        #sv-iframe { width: 100%; height: 100%; border: 0; display: block; background: #111; }
+        #sv-loading-overlay { position: absolute; inset: 0; background: rgba(18, 22, 31, 0.86); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 13.5px; font-weight: bold; z-index: 5; pointer-events: none; text-align: center; padding: 16px; }
+        .sv-footer-tip { background: #12161f; color: #b0bec5; font-size: 11.5px; padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid #263238; flex-shrink: 0; }
+        @media (max-width: 960px) {
+            #sv-panel { left: 0 !important; bottom: 0 !important; top: auto !important; width: 100vw !important; height: 46dvh; border-radius: 14px 14px 0 0; }
+        }
         #operator-banner { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1001; background: #4a148c; color: white; padding: 7px 10px 7px 14px; border-radius: 25px; font-size: 13.5px; font-weight: bold; box-shadow: 0 4px 15px rgba(74, 20, 140, 0.45); display: none; align-items: center; gap: 8px; white-space: nowrap; max-width: calc(100vw - 320px); transition: left 0.32s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.25s ease; }
         #operator-banner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #operator-banner button { background: rgba(255,255,255,0.22); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; padding: 0; font-size: 15px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -321,10 +349,35 @@
 
     <div id="toast-msg"></div>
     <div id="pegman-ghost" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="42" height="42">
+        <svg viewBox="0 0 24 28" width="44" height="48">
             <circle cx="12" cy="4.5" r="3.2" fill="#f9a825" stroke="#fff" stroke-width="1.2"/>
             <path d="M8.5 9.2c0-1.1.9-2 2-2h3c1.1 0 2 .9 2 2l1.2 5.2c.2.8-.4 1.5-1.2 1.5h-.8l-.7 5.6c-.1.8-.8 1.5-1.6 1.5h-.8c-.8 0-1.5-.7-1.6-1.5l-.7-5.6h-.8c-.8 0-1.4-.7-1.2-1.5L8.5 9.2z" fill="#fbc02d" stroke="#e65100" stroke-width="1"/>
         </svg>
+        <div class="ghost-target"></div>
+    </div>
+
+    <div id="sv-panel" role="dialog" aria-label="Google 街景檢視器">
+        <div class="sv-header" id="sv-panel-header">
+            <div class="sv-header-info">
+                <span>🚶</span>
+                <span id="sv-title-text">Google 街景實勘</span>
+                <span id="sv-sub-badge">定位中…</span>
+            </div>
+            <div class="sv-header-actions">
+                <button type="button" class="sv-hdr-btn" id="svSplitBtn" onclick="toggleSvPanelMode('split')" title="切換上下分割對照模式（如百年歷史地圖）">◫ 分割</button>
+                <button type="button" class="sv-hdr-btn" id="svMaxBtn" onclick="toggleSvPanelMode('max')" title="放大／還原街景視窗">🗖 放大</button>
+                <button type="button" class="sv-hdr-btn" id="svExtBtn" onclick="openCurrentSvInNewTab()" title="於 Google Maps 新分頁開啟">↗</button>
+                <button type="button" class="sv-hdr-close" onclick="closeStreetViewPanel()" title="關閉街景視窗" aria-label="關閉街景視窗">&times;</button>
+            </div>
+        </div>
+        <div class="sv-body">
+            <div id="sv-loading-overlay">🔍 正在自動搜尋最近之可通行道路街景…</div>
+            <iframe id="sv-iframe" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Google 街景畫面"></iframe>
+        </div>
+        <div class="sv-footer-tip">
+            <span id="sv-footer-status">💡 可直接拖曳地圖上的「黃色小人標記」或點擊地圖藍線切換街景位置</span>
+            <button type="button" class="sv-hdr-btn" style="padding:1px 7px;font-size:11px;" onclick="centerMapOnSvPegman()">🎯 置中小人</button>
+        </div>
     </div>
     <div id="map"></div>
 
@@ -370,7 +423,7 @@
             })
             .catch(() => {});
 
-        [sysTitle, yfBar, infoDrawer, mapLegend, opBanner, document.getElementById('sv-panel')].forEach(el => {
+        [sysTitle, yfBar, infoDrawer, mapLegend, opBanner, document.getElementById('sv-panel')].filter(Boolean).forEach(el => {
             L.DomEvent.disableClickPropagation(el);
             L.DomEvent.disableScrollPropagation(el);
         });
@@ -551,10 +604,18 @@
         }
 
         async function resolveNearestStreetView(origLat, origLng) {
-            let hit = await queryGoogleSingleImageSearch(origLat, origLng, 65, true);
-            if (!hit) hit = await queryGoogleSingleImageSearch(origLat, origLng, 300, true);
+            let hit = await queryGoogleSingleImageSearch(origLat, origLng, 80, true);
+            if (!hit) hit = await queryGoogleSingleImageSearch(origLat, origLng, 350, true);
+            if (!hit) {
+                const roadHit = await queryOsrmNearestRoad(origLat, origLng);
+                if (roadHit) {
+                    const panoOnRoad = await queryGoogleSingleImageSearch(roadHit.lat, roadHit.lng, 85, false);
+                    hit = panoOnRoad
+                        ? { panoId: panoOnRoad.panoId, lat: panoOnRoad.lat, lng: panoOnRoad.lng, roadName: panoOnRoad.roadName || roadHit.roadName }
+                        : roadHit;
+                }
+            }
             if (!hit) hit = await queryGoogleSingleImageSearch(origLat, origLng, 1200, false);
-            if (!hit) hit = await queryOsrmNearestRoad(origLat, origLng);
             if (!hit) {
                 return { panoId: '', lat: origLat, lng: origLng, roadName: '', dist: 0, foundPano: false };
             }
