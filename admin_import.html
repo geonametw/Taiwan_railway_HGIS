@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 + 資料修復神器 v2.8 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 + 資料修復神器 v2.9 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
         .container { max-width: 980px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -86,10 +86,10 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 + 資料修復神器 v2.8</h2>
+    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 + 資料修復神器 v2.9</h2>
     <div class="status warning" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="flex:1; min-width:280px;">
-            <b>💡 v2.8 升級重點（專責資料修復與防呆同步）：</b><br>
+            <b>💡 v2.9 升級重點（專責資料修復與防呆同步）：</b><br>
             1. <b>🛠️ 可擴充式「資料診斷與一鍵修復中心」</b>：自動檢測並修復「頂層字典（<code>names</code> / <code>tailos</code> / <code>gauges</code>）與圖層屬性（<code>features[].properties</code>）不同步」、異體字、台羅調號與重複車站，保持主程式 <code>index.html</code> 穩定免改。<br>
             2. <b>🔒 下載前強制自動同步</b>：在面板修改任何台羅、路線名或軌距後，直接點「📥 下載」也會自動將最新修改寫入全部路線圖層，絕不漏寫！
         </div>
@@ -102,7 +102,7 @@
     <!-- 🛠️ 新增：可擴充式資料診斷與一鍵修復中心 -->
     <div class="repair-section">
         <div class="repair-header">
-            <span id="repairCenterTitle">🛠️ 資料診斷與一鍵修復中心（Data Doctor v2.8）</span>
+            <span id="repairCenterTitle">🛠️ 資料診斷與一鍵修復中心（Data Doctor v2.9）</span>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button type="button" class="mini-btn" style="border-color:#0d47a1; color:#0d47a1;" onclick="runDataDiagnostics()">🔍 重新掃描診斷</button>
                 <button type="button" class="mini-btn" style="background:#0d47a1; color:#fff; border-color:#0d47a1;" onclick="executeSelectedRepairs()">⚡ 立即執行勾選修復並同步至記憶體</button>
@@ -384,13 +384,86 @@
         if (typeof coords[0] === 'number') return [Math.round(coords[0] * 1e5) / 1e5, Math.round(coords[1] * 1e5) / 1e5];
         return coords.map(roundCoords);
     }
-    function roundGeometry(geom) { return (!geom || !geom.coordinates) ? geom : { type: geom.type, coordinates: roundCoords(geom.coordinates) }; }
-    function stripStateKeys(histArr) { return Array.isArray(histArr) ? histArr.map(({ stateKey, ...rest }) => rest) : []; }
+    function distMeters(p1, p2) {
+        return Math.hypot((p1[0] - p2[0]) * 101300.0, (p1[1] - p2[1]) * 111320.0);
+    }
+    function perpDistMeters(pt, a, b) {
+        const ax = a[0] * 101300.0, ay = a[1] * 111320.0;
+        const bx = b[0] * 101300.0, by = b[1] * 111320.0;
+        const px = pt[0] * 101300.0, py = pt[1] * 111320.0;
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+        const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+        return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    }
+    function simplifyLineCoords(coords, epsilonM = 1.5, minStepM = 1.8) {
+        if (!Array.isArray(coords) || coords.length <= 2) return roundCoords(coords);
+        const rounded = coords.filter(pt => Array.isArray(pt) && pt.length >= 2).map(pt => [Math.round(pt[0] * 1e5) / 1e5, Math.round(pt[1] * 1e5) / 1e5]);
+        if (rounded.length <= 2) return rounded;
+        const dedup = [rounded[0]];
+        for (let i = 1; i < rounded.length - 1; i++) {
+            const pt = rounded[i], prev = dedup[dedup.length - 1];
+            if ((pt[0] !== prev[0] || pt[1] !== prev[1]) && distMeters(pt, prev) >= minStepM) dedup.push(pt);
+        }
+        const lastPt = rounded[rounded.length - 1], prevLast = dedup[dedup.length - 1];
+        if (lastPt[0] !== prevLast[0] || lastPt[1] !== prevLast[1]) dedup.push(lastPt);
+        else if (dedup.length === 1) dedup.push(lastPt);
+        if (dedup.length <= 2) return dedup;
+
+        const keep = new Uint8Array(dedup.length);
+        keep[0] = 1; keep[dedup.length - 1] = 1;
+        const stack = [[0, dedup.length - 1]];
+        while (stack.length > 0) {
+            const [s, e] = stack.pop();
+            if (e - s <= 1) continue;
+            let maxD = -1, maxI = -1;
+            const a = dedup[s], b = dedup[e];
+            for (let i = s + 1; i < e; i++) {
+                const d = perpDistMeters(dedup[i], a, b);
+                if (d > maxD) { maxD = d; maxI = i; }
+            }
+            if (maxD > epsilonM) {
+                keep[maxI] = 1;
+                stack.push([s, maxI], [maxI, e]);
+            }
+        }
+        return dedup.filter((_, idx) => keep[idx] === 1);
+    }
+    function roundGeometry(geom) {
+        if (!geom || !geom.coordinates) return geom;
+        if (geom.type === 'Point') return { type: 'Point', coordinates: roundCoords(geom.coordinates) };
+        if (geom.type === 'LineString') return { type: 'LineString', coordinates: simplifyLineCoords(geom.coordinates, 1.5, 1.8) };
+        if (geom.type === 'MultiLineString') return { type: 'MultiLineString', coordinates: geom.coordinates.map(line => simplifyLineCoords(line, 1.5, 1.8)).filter(line => line.length >= 2) };
+        return { type: geom.type, coordinates: roundCoords(geom.coordinates) };
+    }
+    function stripStateKeys(histArr) {
+        if (!Array.isArray(histArr) || histArr.length === 0) return [];
+        const intervals = [];
+        histArr.forEach(h => {
+            const s = parseInt(h.startYear, 10), e = parseInt(h.endYear, 10);
+            if (!isNaN(s) && !isNaN(e)) intervals.push([Math.min(s, e), Math.max(s, e)]);
+        });
+        if (intervals.length === 0) return [];
+        intervals.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+        const merged = [intervals[0].slice()];
+        for (let i = 1; i < intervals.length; i++) {
+            const [s, e] = intervals[i], last = merged[merged.length - 1];
+            if (s <= last[1] + 1) last[1] = Math.max(last[1], e);
+            else merged.push([s, e]);
+        }
+        return merged.map(([s, e]) => ({ startYear: s, endYear: e }));
+    }
     function compactTableHtml(htmlStr) {
         return String(htmlStr || '')
-            .replace(/\s*style="padding:3px 4px;border:1px solid #ddd;(?:white-space:nowrap;|text-align:right;)?"/g, '')
-            .replace(/\s*style="padding:4px;border:1px solid #ccc;"/g, '')
-            .replace(/>\s+</g, '><');
+            .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
+            .replace(/^\s*<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '')
+            .replace(/<table[^>]*>/g, '<table>')
+            .replace(/<tr[^>]*>/g, '<tr>')
+            .replace(/<td[^>]*>/g, '<td>')
+            .replace(/<th[^>]*>/g, '<th>')
+            .replace(/>\s+</g, '><')
+            .trim();
     }
     function isLegacySugarOrNoiseRoute(f) {
         const p = f.properties || {};
@@ -400,10 +473,15 @@
     }
     function cleanStationFeature(f) {
         if (f && f.properties) {
-            delete f.properties._preboundRouteIndices; delete f.properties._preboundRouteIds;
-            delete f.properties._preboundGroupKeys; delete f.properties._boundRouteFeatures;
-            delete f.properties._boundGroupKeys; delete f.properties._boundRouteIds;
-            if (f.properties.description && f.properties.description.zh === `【車站】${f.properties.name}`) delete f.properties.description;
+            const p = f.properties;
+            const newP = { name: p.name || '未命名車站', line_type: '車站' };
+            const zh = (p.description && p.description.zh) ? p.description.zh.trim() : '';
+            if (zh && !zh.includes('在此輸入中文歷史描述') && zh !== `【車站】${newP.name}`) {
+                newP.description = { zh };
+            }
+            if (Array.isArray(p.history) && p.history.length > 0) newP.history = stripStateKeys(p.history);
+            if (p.period && p.period !== '未知') newP.period = p.period;
+            f.properties = newP;
         }
         if (f && f.geometry) f.geometry = roundGeometry(f.geometry);
         return f;
@@ -1052,11 +1130,8 @@
         return `<!--HGIS_NARRATIVE_START--><div class="hgis-narrative-card" style="background:#f8f9fc;border:1px solid #d8def4;border-left:4px solid #1a237e;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#222;line-height:1.68;"><div style="font-weight:bold;color:#1a237e;font-size:13px;margin-bottom:6px;">📖 路線沿革</div>${metaBoxHtml}<div>${parasHtml}</div>${fnBoxHtml}</div><!--HGIS_NARRATIVE_END-->`;
     }
 
-    function injectNarrativeIntoDesc(descZh, narrativeHtml) {
-        let cleaned = compactTableHtml(String(descZh || '').replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, ''));
-        if (!narrativeHtml) return cleaned;
-        const badgeDivRegex = /^(\s*<div style="margin-bottom:6px;">[\s\S]*?<\/div>)/;
-        return badgeDivRegex.test(cleaned) ? cleaned.replace(badgeDivRegex, `$1${narrativeHtml}`) : (narrativeHtml + cleaned);
+    function injectNarrativeIntoDesc(descZh) {
+        return compactTableHtml(descZh);
     }
 
     function handleNarrativeInput() {
@@ -1516,7 +1591,7 @@
         document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
-    /* 🛠️ v2.8 可擴充式「資料診斷與一鍵修復引擎」（所有規則集中管理，未來可隨時新增規則物件） */
+    /* 🛠️ v2.9 可擴充式「資料診斷與一鍵修復引擎」（所有規則集中管理，未來可隨時新增規則物件） */
     const REPAIR_RULES = [
         {
             id: 'sync_top_dicts',
