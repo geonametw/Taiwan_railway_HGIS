@@ -370,7 +370,7 @@
             })
             .catch(() => {});
 
-        [sysTitle, yfBar, infoDrawer, mapLegend, opBanner].forEach(el => {
+        [sysTitle, yfBar, infoDrawer, mapLegend, opBanner, document.getElementById('sv-panel')].forEach(el => {
             L.DomEvent.disableClickPropagation(el);
             L.DomEvent.disableScrollPropagation(el);
         });
@@ -400,14 +400,338 @@
         let svSelectMode = false;
         let pegmanBtnEl = null;
         const pegmanGhostEl = document.getElementById('pegman-ghost');
+        const svPanelEl = document.getElementById('sv-panel');
+        const svIframeEl = document.getElementById('sv-iframe');
+        const svLoadingEl = document.getElementById('sv-loading-overlay');
+        const svTitleEl = document.getElementById('sv-title-text');
+        const svBadgeEl = document.getElementById('sv-sub-badge');
+        const svFooterStatusEl = document.getElementById('sv-footer-status');
 
-        function openGoogleStreetView(lat, lng) {
-            const latStr = Number(lat).toFixed(6);
-            const lngStr = Number(lng).toFixed(6);
-            const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${latStr},${lngStr}`;
-            showToast(`🚶 正在開啟 Google 街景 (${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)})`);
-            window.open(svUrl, '_blank', 'noopener,noreferrer');
+        let svMapMarker = null;
+        let svSightline = null;
+        let svTargetDot = null;
+        let currentSvState = { lat: 23.6978, lng: 120.9605, heading: 0, panoId: '' };
+        let svJsonpCounter = 0;
+
+        function calcBearingDeg(lat1, lng1, lat2, lng2) {
+            const toRad = d => d * Math.PI / 180;
+            const phi1 = toRad(lat1), phi2 = toRad(lat2);
+            const dLon = toRad(lng2 - lng1);
+            const y = Math.sin(dLon) * Math.cos(phi2);
+            const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+            return Math.round(((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360);
         }
+
+        function calcDistMeters(lat1, lng1, lat2, lng2) {
+            const kx = 111320 * Math.cos(((lat1 + lat2) / 2) * Math.PI / 180);
+            const ky = 110574;
+            return Math.round(Math.hypot((lng2 - lng1) * kx, (lat2 - lat1) * ky));
+        }
+
+        /* ✨ 透過 Google 官方 GeoPhotoService JSONP 搜尋真實存在的街景全景 (panoId 與精確道路座標) */
+        function queryGoogleSingleImageSearch(lat, lng, radiusMeters = 80, outdoorOnly = true) {
+            return new Promise(resolve => {
+                const cbName = `_hgisSvCb_${Date.now()}_${++svJsonpCounter}`;
+                const script = document.createElement('script');
+                let settled = false;
+
+                const cleanup = () => {
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
+                };
+
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    cleanup();
+                    resolve(null);
+                }, 1400);
+
+                window[cbName] = function(resp) {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cleanup();
+                    try {
+                        if (!Array.isArray(resp) || !resp[0] || resp[0][0] !== 0 || !resp[1]) {
+                            resolve(null);
+                            return;
+                        }
+                        const r1 = resp[1];
+                        const panoId = (r1[1] && typeof r1[1][1] === 'string') ? r1[1][1] : '';
+                        let pLat = null, pLng = null;
+
+                        if (r1[5] && r1[5][0] && r1[5][0][1] && r1[5][0][1][0]) {
+                            const c = r1[5][0][1][0];
+                            if (typeof c[2] === 'number' && typeof c[3] === 'number') {
+                                pLat = c[2];
+                                pLng = c[3];
+                            }
+                        }
+                        if (pLat === null) {
+                            const scanCoords = (node) => {
+                                if (!Array.isArray(node) || pLat !== null) return;
+                                if (node.length >= 4 && typeof node[2] === 'number' && typeof node[3] === 'number' &&
+                                    Math.abs(node[2] - lat) < 0.05 && Math.abs(node[3] - lng) < 0.05) {
+                                    pLat = node[2];
+                                    pLng = node[3];
+                                    return;
+                                }
+                                for (let i = 0; i < node.length; i++) scanCoords(node[i]);
+                            };
+                            scanCoords(r1);
+                        }
+
+                        let roadLabel = '';
+                        if (Array.isArray(r1[3])) {
+                            const extractStr = (arr) => {
+                                if (!Array.isArray(arr)) return;
+                                for (const item of arr) {
+                                    if (typeof item === 'string' && item.length >= 2 && !/^[A-Za-z0-9_-]+$/.test(item) && !roadLabel) {
+                                        roadLabel = item;
+                                    } else if (Array.isArray(item)) {
+                                        extractStr(item);
+                                    }
+                                }
+                            };
+                            extractStr(r1[3]);
+                        }
+
+                        if (panoId && pLat !== null && pLng !== null) {
+                            resolve({ panoId, lat: pLat, lng: pLng, roadName: roadLabel });
+                        } else {
+                            resolve(null);
+                        }
+                    } catch (err) {
+                        resolve(null);
+                    }
+                };
+
+                const filterBlock = outdoorOnly
+                    ? '!3m10!2m2!1szh-TW!2sTW!9m1!1e2!11m4!1m3!1e2!2b1!3e2'
+                    : '!3m8!2m2!1szh-TW!2sTW!11m4!1m3!1e2!2b1!3e2';
+                const pb = `!1m5!1sapiv3!5sUS!11m2!1m1!1b0!2m4!1m2!3d${Number(lat).toFixed(6)}!4d${Number(lng).toFixed(6)}!2d${Math.round(radiusMeters)}${filterBlock}!4m10!1e1!1e2!1e3!1e4!1e8!1e6!5m1!1e2!6m1!1e2`;
+                script.src = `https://maps.googleapis.com/maps/api/js/GeoPhotoService.SingleImageSearch?pb=${pb}&callback=${cbName}`;
+                script.onerror = () => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    cleanup();
+                    resolve(null);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        /* 🛣️ 備援：透過 OSRM 道路路網 API 自動吸附至最近之可通行道路中心線 */
+        async function queryOsrmNearestRoad(lat, lng) {
+            try {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 1400);
+                const res = await fetch(`https://router.project-osrm.org/nearest/v1/driving/${Number(lng).toFixed(6)},${Number(lat).toFixed(6)}?number=5`, { signal: ctrl.signal });
+                clearTimeout(tid);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (!data || !Array.isArray(data.waypoints) || data.waypoints.length === 0) return null;
+                const w0 = data.waypoints[0];
+                let chosen = w0;
+                if (!w0.name) {
+                    const named = data.waypoints.find(w => w.name && w.distance <= Math.max(160, (w0.distance || 0) + 75));
+                    if (named) chosen = named;
+                }
+                return {
+                    panoId: '',
+                    lat: chosen.location[1],
+                    lng: chosen.location[0],
+                    roadName: chosen.name || ''
+                };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        async function resolveNearestStreetView(origLat, origLng) {
+            let hit = await queryGoogleSingleImageSearch(origLat, origLng, 65, true);
+            if (!hit) hit = await queryGoogleSingleImageSearch(origLat, origLng, 300, true);
+            if (!hit) hit = await queryGoogleSingleImageSearch(origLat, origLng, 1200, false);
+            if (!hit) hit = await queryOsrmNearestRoad(origLat, origLng);
+            if (!hit) {
+                return { panoId: '', lat: origLat, lng: origLng, roadName: '', dist: 0, foundPano: false };
+            }
+            const dist = calcDistMeters(origLat, origLng, hit.lat, hit.lng);
+            return {
+                panoId: hit.panoId || '',
+                lat: hit.lat,
+                lng: hit.lng,
+                roadName: hit.roadName || '',
+                dist,
+                foundPano: Boolean(hit.panoId)
+            };
+        }
+
+        function updateSvMapOverlays(panoLat, panoLng, origLat, origLng) {
+            if (svSightline) { map.removeLayer(svSightline); svSightline = null; }
+            if (svTargetDot) { map.removeLayer(svTargetDot); svTargetDot = null; }
+
+            const dist = calcDistMeters(origLat, origLng, panoLat, panoLng);
+            if (dist >= 12) {
+                svSightline = L.polyline([[panoLat, panoLng], [origLat, origLng]], {
+                    color: '#ff6d00', weight: 2.5, dashArray: '5, 5', opacity: 0.9, interactive: false
+                }).addTo(map);
+                svTargetDot = L.circleMarker([origLat, origLng], {
+                    radius: 5, fillColor: '#ffeb3b', color: '#d32f2f', weight: 2, fillOpacity: 0.95, interactive: false
+                }).bindTooltip('目標鐵道／車站位置', { direction: 'top', offset: [0, -5] }).addTo(map);
+            }
+
+            const pegmanIcon = L.divIcon({
+                className: 'sv-map-pegman-icon',
+                html: `<div class="sv-map-pegman-wrap" title="拖曳小人可移動街景位置"><svg viewBox="0 0 24 24" width="36" height="36"><circle cx="12" cy="4.5" r="3.2" fill="#f9a825" stroke="#fff" stroke-width="1.2"/><path d="M8.5 9.2c0-1.1.9-2 2-2h3c1.1 0 2 .9 2 2l1.2 5.2c.2.8-.4 1.5-1.2 1.5h-.8l-.7 5.6c-.1.8-.8 1.5-1.6 1.5h-.8c-.8 0-1.5-.7-1.6-1.5l-.7-5.6h-.8c-.8 0-1.4-.7-1.2-1.5L8.5 9.2z" fill="#fbc02d" stroke="#e65100" stroke-width="1"/></svg></div>`,
+                iconSize: [36, 42],
+                iconAnchor: [18, 38]
+            });
+
+            if (!svMapMarker) {
+                svMapMarker = L.marker([panoLat, panoLng], { icon: pegmanIcon, draggable: true, zIndexOffset: 2000 }).addTo(map);
+                svMapMarker.on('dragend', function(e) {
+                    const pos = e.target.getLatLng();
+                    openGoogleStreetView(pos.lat, pos.lng);
+                });
+            } else {
+                svMapMarker.setLatLng([panoLat, panoLng]);
+                if (!map.hasLayer(svMapMarker)) svMapMarker.addTo(map);
+            }
+        }
+
+        window.openGoogleStreetView = async function(origLat, origLng, labelHint = '') {
+            const numLat = Number(origLat);
+            const numLng = Number(origLng);
+            if (isNaN(numLat) || isNaN(numLng)) return;
+
+            svPanelEl.classList.add('open');
+            if (!map.hasLayer(svCoverageLayer)) svCoverageLayer.addTo(map);
+            svLoadingEl.style.display = 'flex';
+            svTitleEl.textContent = labelHint ? `街景：${labelHint}` : 'Google 街景實勘';
+            svBadgeEl.textContent = '搜尋最近道路街景中…';
+
+            const res = await resolveNearestStreetView(numLat, numLng);
+            const finalLat = res.lat;
+            const finalLng = res.lng;
+            const heading = (res.dist >= 8) ? calcBearingDeg(finalLat, finalLng, numLat, numLng) : 0;
+
+            currentSvState = { lat: finalLat, lng: finalLng, heading, panoId: res.panoId };
+            updateSvMapOverlays(finalLat, finalLng, numLat, numLng);
+
+            if (res.roadName) {
+                svTitleEl.textContent = labelHint ? `${labelHint}（${res.roadName}）` : `街景：${res.roadName}`;
+            } else {
+                svTitleEl.textContent = labelHint ? `街景：${labelHint}` : `街景 (${finalLat.toFixed(4)}, ${finalLng.toFixed(4)})`;
+            }
+
+            if (res.dist >= 12) {
+                svBadgeEl.textContent = `已吸附道路 (${res.dist}m) · 鏡頭朝向鐵道`;
+                svFooterStatusEl.textContent = `📍 已自動吸附至距離目標 ${res.dist} 公尺之道路街景，並將鏡頭轉向鐵道位置（可拖曳地圖小人微調）`;
+            } else {
+                svBadgeEl.textContent = `${finalLat.toFixed(4)}, ${finalLng.toFixed(4)}`;
+                svFooterStatusEl.textContent = `💡 可直接拖曳地圖上的「黃色小人標記」或點擊地圖藍線切換街景位置`;
+            }
+
+            let embedUrl = '';
+            if (res.panoId) {
+                embedUrl = `https://www.google.com/maps/embed?pb=!4v${Date.now()}!6m8!1m7!1s${encodeURIComponent(res.panoId)}!2m2!1d${finalLat.toFixed(6)}!2d${finalLng.toFixed(6)}!3f${heading}!4f0!5f0.7820865974627469`;
+            } else {
+                embedUrl = `https://maps.google.com/maps?q=&layer=c&cbll=${finalLat.toFixed(6)},${finalLng.toFixed(6)}&cbp=12,${heading},0,0,0&output=svembed`;
+            }
+
+            svIframeEl.onload = () => { svLoadingEl.style.display = 'none'; };
+            svIframeEl.src = embedUrl;
+            setTimeout(() => { svLoadingEl.style.display = 'none'; }, 1200);
+
+            if (svPanelEl.classList.contains('split-mode') || window.innerWidth <= 960) {
+                const pt = map.project([finalLat, finalLng], map.getZoom());
+                const offsetPt = L.point(pt.x, pt.y + window.innerHeight * 0.2);
+                map.panTo(map.unproject(offsetPt, map.getZoom()), { animate: true });
+            }
+        };
+
+        window.closeStreetViewPanel = function() {
+            svPanelEl.classList.remove('open', 'max-mode');
+            svIframeEl.src = 'about:blank';
+            if (svMapMarker) { map.removeLayer(svMapMarker); svMapMarker = null; }
+            if (svSightline) { map.removeLayer(svSightline); svSightline = null; }
+            if (svTargetDot) { map.removeLayer(svTargetDot); svTargetDot = null; }
+            if (!svSelectMode && map.hasLayer(svCoverageLayer)) {
+                map.removeLayer(svCoverageLayer);
+            }
+        };
+
+        window.toggleSvPanelMode = function(mode) {
+            const splitBtn = document.getElementById('svSplitBtn');
+            const maxBtn = document.getElementById('svMaxBtn');
+            if (mode === 'split') {
+                svPanelEl.classList.remove('max-mode');
+                const isSplit = svPanelEl.classList.toggle('split-mode');
+                splitBtn.classList.toggle('active', isSplit);
+                maxBtn.classList.remove('active');
+                maxBtn.textContent = '🗖 放大';
+            } else if (mode === 'max') {
+                svPanelEl.classList.remove('split-mode');
+                splitBtn.classList.remove('active');
+                const isMax = svPanelEl.classList.toggle('max-mode');
+                maxBtn.classList.toggle('active', isMax);
+                maxBtn.textContent = isMax ? '🗗 還原' : '🗖 放大';
+            }
+        };
+
+        window.openCurrentSvInNewTab = function() {
+            const { lat, lng, heading } = currentSvState;
+            const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lng.toFixed(6)}&heading=${heading}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+        };
+
+        window.centerMapOnSvPegman = function() {
+            if (!svMapMarker) return;
+            const targetZoom = Math.max(map.getZoom(), 15);
+            const pt = map.project(svMapMarker.getLatLng(), targetZoom);
+            const isBottomCovered = svPanelEl.classList.contains('split-mode') || window.innerWidth <= 960;
+            const offsetPt = isBottomCovered ? L.point(pt.x, pt.y + window.innerHeight * 0.2) : pt;
+            map.flyTo(map.unproject(offsetPt, targetZoom), targetZoom, { duration: 0.6 });
+        };
+
+        /* 支援桌機拖曳街景視窗標題列移動位置 */
+        (function initSvPanelDrag() {
+            const hdr = document.getElementById('sv-panel-header');
+            let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0, pid = null;
+            hdr.addEventListener('pointerdown', e => {
+                if (window.innerWidth <= 960 || svPanelEl.classList.contains('split-mode') || svPanelEl.classList.contains('max-mode')) return;
+                if (e.target.closest('button')) return;
+                dragging = true;
+                pid = e.pointerId;
+                const rect = svPanelEl.getBoundingClientRect();
+                startX = e.clientX;
+                startY = e.clientY;
+                origLeft = rect.left;
+                origTop = rect.top;
+                svPanelEl.style.transition = 'none';
+                svPanelEl.style.bottom = 'auto';
+                svPanelEl.style.left = `${origLeft}px`;
+                svPanelEl.style.top = `${origTop}px`;
+                hdr.setPointerCapture(pid);
+            });
+            hdr.addEventListener('pointermove', e => {
+                if (!dragging || e.pointerId !== pid) return;
+                const nx = Math.max(5, Math.min(window.innerWidth - 120, origLeft + (e.clientX - startX)));
+                const ny = Math.max(5, Math.min(window.innerHeight - 80, origTop + (e.clientY - startY)));
+                svPanelEl.style.left = `${nx}px`;
+                svPanelEl.style.top = `${ny}px`;
+            });
+            const endDrag = () => {
+                if (!dragging) return;
+                dragging = false;
+                svPanelEl.style.transition = '';
+            };
+            hdr.addEventListener('pointerup', endDrag);
+            hdr.addEventListener('pointercancel', endDrag);
+        })();
 
         function setSvSelectMode(active) {
             svSelectMode = Boolean(active);
@@ -415,9 +739,11 @@
             if (pegmanBtnEl) pegmanBtnEl.classList.toggle('active', svSelectMode);
             if (svSelectMode) {
                 if (!map.hasLayer(svCoverageLayer)) svCoverageLayer.addTo(map);
-                showToast('🚶 街景模式已開啟：可拖曳右下角小人，或直接點擊地圖藍線處進入街景');
+                showToast('🚶 街景選點模式：請直接點擊地圖上的路線、車站或藍線道路開啟內嵌街景');
             } else {
-                if (map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
+                if (!svPanelEl.classList.contains('open') && map.hasLayer(svCoverageLayer)) {
+                    map.removeLayer(svCoverageLayer);
+                }
             }
         }
 
@@ -425,7 +751,7 @@
             options: { position: 'bottomright' },
             onAdd: function() {
                 const btn = L.DomUtil.create('div', 'leaflet-bar pegman-control');
-                btn.title = '拖曳小人至地圖開啟 Google 街景（或點擊切換街景選點模式）';
+                btn.title = '拖曳小人至地圖開啟內嵌街景（或點擊切換街景選點模式）';
                 btn.setAttribute('role', 'button');
                 btn.setAttribute('aria-label', 'Google 街景小人');
                 btn.tabIndex = 0;
@@ -433,7 +759,7 @@
                 L.DomEvent.disableClickPropagation(btn);
                 L.DomEvent.disableScrollPropagation(btn);
 
-                let startX = 0, startY = 0, isDragging = false, pointerId = null;
+                let startX = 0, startY = 0, isDragging = false, pointerId = null, touchOffsetY = 0;
 
                 btn.addEventListener('pointerdown', e => {
                     if (e.button !== undefined && e.button !== 0) return;
@@ -441,6 +767,7 @@
                     pointerId = e.pointerId;
                     startX = e.clientX;
                     startY = e.clientY;
+                    touchOffsetY = (e.pointerType === 'touch') ? -32 : 0;
                     isDragging = false;
                     btn.setPointerCapture(pointerId);
                     if (!map.hasLayer(svCoverageLayer)) svCoverageLayer.addTo(map);
@@ -456,7 +783,7 @@
                     }
                     if (isDragging) {
                         pegmanGhostEl.style.left = `${e.clientX}px`;
-                        pegmanGhostEl.style.top = `${e.clientY}px`;
+                        pegmanGhostEl.style.top = `${e.clientY + touchOffsetY}px`;
                     }
                 });
 
@@ -467,7 +794,9 @@
                     pegmanGhostEl.style.display = 'none';
 
                     if (cancelled) {
-                        if (!svSelectMode && map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
+                        if (!svSelectMode && !svPanelEl.classList.contains('open') && map.hasLayer(svCoverageLayer)) {
+                            map.removeLayer(svCoverageLayer);
+                        }
                         return;
                     }
 
@@ -475,13 +804,15 @@
                         isDragging = false;
                         const btnRect = btn.getBoundingClientRect();
                         const droppedOnBtn = (e.clientX >= btnRect.left - 12 && e.clientX <= btnRect.right + 12 && e.clientY >= btnRect.top - 12 && e.clientY <= btnRect.bottom + 12);
-                        if (!svSelectMode && map.hasLayer(svCoverageLayer)) map.removeLayer(svCoverageLayer);
                         if (!droppedOnBtn) {
                             const mapRect = map.getContainer().getBoundingClientRect();
-                            const pt = L.point(e.clientX - mapRect.left, e.clientY - mapRect.top);
-                            const latlng = map.containerPointToLatLng(pt);
+                            const dropX = e.clientX - mapRect.left;
+                            const dropY = (e.clientY + touchOffsetY) - mapRect.top;
+                            const latlng = map.containerPointToLatLng(L.point(dropX, dropY));
                             if (svSelectMode) setSvSelectMode(false);
                             openGoogleStreetView(latlng.lat, latlng.lng);
+                        } else if (!svSelectMode && !svPanelEl.classList.contains('open') && map.hasLayer(svCoverageLayer)) {
+                            map.removeLayer(svCoverageLayer);
                         }
                     } else {
                         setSvSelectMode(!svSelectMode);
@@ -1855,7 +2186,7 @@
             const coords = (feature.geometry && feature.geometry.coordinates) || [];
             const lng = coords[0], lat = coords[1];
             const svBtn = (lat !== undefined && lng !== undefined)
-                ? `<span class="route-badge" style="background:#f57f17;color:#fff;margin-left:6px;cursor:pointer;font-size:11px;padding:2px 6px;" onclick="openGoogleStreetView(${lat}, ${lng})" title="開啟此車站位置的 Google 街景">🚶 街景</span>`
+                ? `<span class="route-badge" style="background:#f57f17;color:#fff;margin-left:6px;cursor:pointer;font-size:11px;padding:2px 6px;" onclick="openGoogleStreetView(${lat}, ${lng}, '${escapeHtml(p.name || '車站')}')" title="於原視窗開啟此車站位置的 Google 街景">🚶 街景</span>`
                 : '';
             const boundKeys = p._boundGroupKeys || [];
             const routeButtons = boundKeys.map(k => {
