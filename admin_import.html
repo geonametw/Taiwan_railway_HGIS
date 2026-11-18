@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 智慧縫合神器 v2.7 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 + 資料修復神器 v2.8 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
         .container { max-width: 980px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -20,6 +20,16 @@
         .upload-area:hover { background: #e8eaf6; }
         .upload-area.loaded { border-color: #2e7d32; background: #e8f5e9; }
         input[type="file"] { display: none; }
+        .repair-section { background: #e3f2fd; border: 2px solid #64b5f6; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+        .repair-header { font-size: 15px; font-weight: bold; color: #0d47a1; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .repair-rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin-bottom: 10px; }
+        .repair-rule-card { background: #fff; border: 1px solid #90caf9; border-radius: 7px; padding: 8px 10px; font-size: 12.5px; display: flex; align-items: flex-start; gap: 7px; cursor: pointer; }
+        .repair-rule-card input { margin-top: 3px; }
+        .repair-badge { display: inline-block; background: #ffecb3; color: #e65100; font-weight: bold; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+        .repair-badge.ok { background: #c8e6c9; color: #1b5e20; }
+        .custom-replace-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #fff; border: 1px solid #bbdefb; border-radius: 7px; padding: 8px 10px; font-size: 12.5px; }
+        .custom-replace-bar select, .custom-replace-bar input { border: 1px solid #90caf9; border-radius: 5px; padding: 4px 7px; font-size: 12.5px; }
+        #repairLogBox { margin-top: 8px; padding: 8px 11px; background: #fff; border: 1px dashed #64b5f6; border-radius: 6px; font-size: 12.5px; color: #0d47a1; display: none; max-height: 150px; overflow-y: auto; line-height: 1.55; }
         .name-section { background: #f1f8e9; border: 2px solid #81c784; border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
         .name-header { font-size: 15px; font-weight: bold; color: #1b5e20; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 8px; max-height: 280px; overflow-y: auto; padding: 4px 2px; }
@@ -76,11 +86,45 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 智慧縫合器 v2.7</h2>
-    <div class="status warning">
-        <b>💡 v2.7 升級重點：</b><br>
-        1. <b>🏷️ 路線名稱與台羅拼音（Tailo）快速編輯面板</b>：可隨時修正主線與支線名稱（如 <code>E25-5</code>、<code>E25-6</code>），並支援<b>聲調數字自動轉標準台羅調號</b>（如輸入 <code>Kuan1-tsi2-ling2-suann3</code> 自動轉為 <code>Kuan-tsí-líng-suànn</code>）與<b>一鍵預填台羅</b>！<br>
-        2. <b>記憶繼承不覆蓋</b>：手改過的路線名與台羅會寫入 <code>data.json</code>，日後重跑 CSV+KML 縫合時自動優先保留。
+    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 + 資料修復神器 v2.8</h2>
+    <div class="status warning" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="flex:1; min-width:280px;">
+            <b>💡 v2.8 升級重點（專責資料修復與防呆同步）：</b><br>
+            1. <b>🛠️ 可擴充式「資料診斷與一鍵修復中心」</b>：自動檢測並修復「頂層字典（<code>names</code> / <code>tailos</code> / <code>gauges</code>）與圖層屬性（<code>features[].properties</code>）不同步」、異體字、台羅調號與重複車站，保持主程式 <code>index.html</code> 穩定免改。<br>
+            2. <b>🔒 下載前強制自動同步</b>：在面板修改任何台羅、路線名或軌距後，直接點「📥 下載」也會自動將最新修改寫入全部路線圖層，絕不漏寫！
+        </div>
+        <div>
+            <label for="localJsonFile" class="mini-btn" style="background:#1a237e; color:#fff; border-color:#1a237e; padding:7px 12px; font-size:13px; display:inline-block;">📂 手動載入本機 data.json</label>
+            <input type="file" id="localJsonFile" accept=".json" onchange="loadLocalDataJsonFile(this)" />
+        </div>
+    </div>
+
+    <!-- 🛠️ 新增：可擴充式資料診斷與一鍵修復中心 -->
+    <div class="repair-section">
+        <div class="repair-header">
+            <span id="repairCenterTitle">🛠️ 資料診斷與一鍵修復中心（Data Doctor v2.8）</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" class="mini-btn" style="border-color:#0d47a1; color:#0d47a1;" onclick="runDataDiagnostics()">🔍 重新掃描診斷</button>
+                <button type="button" class="mini-btn" style="background:#0d47a1; color:#fff; border-color:#0d47a1;" onclick="executeSelectedRepairs()">⚡ 立即執行勾選修復並同步至記憶體</button>
+            </div>
+        </div>
+        <div class="repair-rules-grid" id="repairRulesContainer"></div>
+        <div class="custom-replace-bar">
+            <b>🔎 批次欄位查找替換（萬用規則擴充）：</b>
+            <select id="batchFieldSelect">
+                <option value="all">全部文字欄位 (name/tailo/section/operators/alt_names)</option>
+                <option value="name">路線名稱 (name)</option>
+                <option value="tailo">台羅拼音 (tailo)</option>
+                <option value="section">區間 (section)</option>
+                <option value="operators">經營者 (operators)</option>
+                <option value="alt_names">歷史舊稱 (alt_names)</option>
+            </select>
+            <input type="text" id="batchFindInput" placeholder="查找字串 (例：阿缑)" style="width:135px;">
+            <span>➔</span>
+            <input type="text" id="batchReplaceInput" placeholder="替換為 (例：阿緱)" style="width:135px;">
+            <button type="button" class="mini-btn" style="border-color:#0d47a1; color:#0d47a1;" onclick="runCustomBatchReplace()">套用替換</button>
+        </div>
+        <div id="repairLogBox"></div>
     </div>
 
     <div id="inventoryBox" class="inventory-box">
@@ -219,12 +263,12 @@
     /* 常用台車地名台羅對照詞庫（供一鍵自動補齊與拼組） */
     const PLACE_TAILO_DICT = {
         "三爪子":"Sam-jiáu-á","瑞芳":"Suī-hng","金瓜石":"Kim-kue-tsio̍h","金山":"Kim-san","野柳":"Iá-liú","觀音町":"Kuan-im-ting","錫板":"Sik-pán","水碓仔":"Tsuí-tuì-á","松三":"Siông-sam","深坑":"Tshim-khing","指南宮":"Tsí-lâm-kiong","十五份":"Tsa̍p-gōo-hūn","南門":"Lâm-mn̂g","屈尺":"Khut-tshioh","古亭村庄":"Kóo-tîng-tshun-tsng","大稻埕":"Tuā-tiū-tiânn","錫口":"Siah-kháu","龍匣口":"Liông-a̍p-kháu","頂埔":"Tíng-poo","新埔":"Sin-poo","枋橋":"Pang-kiô","萬華":"Báng-kah","鷺洲":"Lōo-tsiu","新莊":"Sin-tsng","和尚洲":"Hô-siūnn-tsiu","橋頭":"Kiô-thâu","板橋":"Pán-kiô","成福":"Sîng-hok","三角湧":"Sam-kak-íng","中庄":"Tiong-tsng","大湖":"Tuā-ôo","媽祖田":"Má-tsóo-tshân","佳園":"Ka-hn̂g","新樹":"Sin-tshiū","烏來":"U-lai","三峽":"Sam-kiap",
-        "塔寮坑":"Thah-liâu-khing","南崁":"Lâm-khám","北門":"Pak-mn̂g","大溪":"Tāi-khe","角板山":"Kak-pán-san","大園":"Tuā-hn̂g","竹圍":"Tik-uî","中壢":"Tiong-li̍k","觀音":"Kuan-im","龍潭":"Liông-thâm","下大堀":"Ē-tuā-khut","新屋":"Sin-ook","東勢":"Tang-sì","三坑仔":"Sann-khing-á","楊梅":"Iûnn-muî","下水流":"Ē-tsuí-lâu","大陂":"Tuā-pi","伯公岡":"Peh-kong-kng","湖口":"Ôo-kháu","平關":"Pîng-kuan","橫崗頭":"Huînn-kong-thâu","紅關":"Âng-kuan","犁頭山":"Lê-thâu-suann","石門":"Tsio̍h-mn̂g","馬武督":"Má-bú-tok","竹東":"Tik-tang","新竹":"Sin-tik","鹿寮坑":"Lo̍k-liâu-khing","北埔":"Pak-poo","上坪":"Siōng-phiânn","芎林":"Khiong-lîm","石壁坑":"Tsio̍h-piah-khing","舊港":"Kū-káng","舊社":"Kū-siā","南寮":"Lâm-liâu","油車港":"Iû-tshia-káng",
-        "竹南":"Tik-lâm","斗煥坪":"Táu-huàn-phiânn","大南埔":"Tuā-lâm-poo","中港街":"Tiong-káng-ke","尖山下":"Tsiam-suann-ē","錦水":"Kím-tsuí","造橋":"Tsō-kiô","二坪岡":"Jī-phiânn-kong","後攏":"Āu-lâng","崁頭屋":"Khám-thâu-ook","大山腳":"Tuā-suann-kha","新港":"Sin-káng","公司寮":"Kong-si-liâu","苗栗":"Biâu-li̍k","內麻":"Lāi-muâ","出磺坑":"Tshut-hông-khing","銅鑼灣":"Tâng-lô-uan","福基":"Hok-ki","山腳":"Suann-kha","日南":"Ji̍t-lâm","五里牌":"Gōo-lí-pâi","三叉":"Sann-tshê","卓蘭":"Tah-lân",
-        "后里":"Hōo-lí","月眉":"Gua̍t-bâi","大安港":"Tāi-an-káng","甲南":"Kah-lâm","四塊厝":"Sì-tè-tshù","公館":"Kong-kuán","清水":"Tshing-tsuí","梧棲":"Gōo-tshe","神崗":"Sîn-kng","崎頭":"Kiā-thâu","葫蘆墩":"Hôo-lôo-tun","水底寮":"Tsuí-té-liâu","馬力埔":"Má-li̍k-poo","牛欄坑":"Gû-nuâ-khing","中坑坪":"Tiong-khing-phiânn","臺中":"Tâi-tiong","大雅":"Tāi-ngá","北屯":"Pak-tūn","三貴城":"Sam-kuì-siânn","埧雅":"Pà-ngá","西屯":"Se-tūn","頭汴坑":"Thâu-piān-khing","三汴":"Sann-piān","廍子":"Pōo-á","太平":"Thài-pîng","南屯":"Lâm-tūn","烏日":"Oo-ji̍t","龍井":"Liông-tsínn","海埔厝":"Hái-poo-tshù","龍目井":"Liông-bo̍k-tsínn","南投":"Lâm-tâu","大里":"Tuā-lí","霧峰":"Bū-hong","大平":"Tuā-pînn","竹子坑":"Tik-á-khing","牛角坑":"Gû-kak-khing","青桐林":"Tshing-tông-lîm","六股":"La̍k-kóo","彰草":"Tsiang-tshó","八卦山":"Pat-kuà-suann","彰化":"Tsiong-huà","鹿港":"Lo̍k-káng","溪州":"Khe-tsiu","二林":"Jī-lîm","員林":"Uân-lîm","東山":"Tang-suann","湳雅":"Lâm-ngá","湖水坑":"Ôo-tsuí-khing","海豐崙":"Hái-hong-lūn","下見口":"Ē-kìnn-kháu","秀水":"Siù-tsuí","茄苳腳":"Ka-tang-kha","土城":"Thôo-siânn","國姓":"Kok-sìnn","集南":"Tsi̍p-lâm","番子吧":"Huan-á-pah","暗坑":"Àm-khing","粗坑":"Tshoo-khing","龍眼林":"Lîng-gíng-lîm","集鹿":"Tsi̍p-lo̍k","新高":"Sin-ko","埔里":"Poo-lí","二八水":"Jī-pat-tsuí","濁水":"Lô-tsuí","田中央":"Tshân-tiong-ng","北斗":"Pó-táu","竹山":"Tik-san","東埔蚋":"Tang-poo-la̍p","林圯埔":"Lîm-kî-poo","大坑":"Tuā-khing","社寮":"Siā-liâu","名間":"Bîng-kan","車輄寮":"Tshia-kng-liâu","溪頭":"Khe-thâu","名濁":"Bîng-lo̍k","西螺":"Se-lê","內林":"Lāi-lîm","斗六":"Táu-la̍k","土庫":"Thôo-khòo","埔眉":"Poo-bî",
-        "打貓":"Tá-biau","北港":"Pak-káng","梅山":"Muî-san","嘉義":"Ka-gī","小梅":"Sió-muî","中埔":"Tiong-poo","西門":"Se-mn̂g","沄水":"Ûn-tsuí","三界埔":"Sam-kài-poo","石硦":"Tsio̍h-lōng","觸口":"Tshiok-kháu","番路":"Huan-lōo","內埔子":"Lāi-poo-á","鹿麻產":"Lo̍k-muâ-sán","竹崎":"Tik-kiā","關子嶺":"Kuan-tsí-líng","菁寮":"Tshing-liâu","後壁":"Āu-piah","木屐寮":"Ba̍k-kia̍h-liâu","仙草埔":"Sian-tsháu-poo","番社":"Huan-siā","六重溪":"La̍k-tîng-khe","崎子頭":"Kiā-á-thâu","前大埔":"Tsîng-tuā-poo","烏山頭":"Oo-suann-thâu","六甲":"La̍k-kah","鹽水":"Kiâm-tsuí","善化":"Siān-huà","二重溪":"Jī-tîng-khe","大內":"Tuā-lāi","北勢洲":"Pak-sì-tsiu","玉井":"Gio̍k-tsínn","大目降":"Tuā-ba̍k-kàng","新市":"Sin-tshī","虎頭埤":"Hóo-thâu-pi","安平":"An-pîng","喜樹":"Hí-tshiū","關廟":"Kuan-biō","東市場":"Tang-tshī-tiûnn","番子寮":"Huan-á-liâu","麻豆":"Muâ-tāu","西港":"Se-káng","鹽水港":"Kiâm-tsuí-káng","三崁店":"Sann-khám-tiàm","六塊厝":"La̍k-tè-tshù","直加弄":"Ti̍t-ka-lāng","台南水道":"Tâi-lâm-tsuí-tō",
-        "路竹":"Lōo-tik","燕巢":"Iàn-tsâu","岡山":"Kang-san","阿蓮":"A-liân","大岡山":"Tuā-kang-san","赤崁":"Tshik-khám","彌陀":"Bî-tô","鳳山":"Hōng-suann","苓雅寮":"Lîng-ngá-liâu","蕃薯寮":"Han-tsî-liâu","楠仔坑":"Lâm-á-khing","舊寮":"Kū-liâu","九曲堂":"Kiú-khiok-tông","阿缑":"A-kâu","東港":"Tang-káng","萬巒":"Bān-luân","四溝水":"Sì-kau-tsuí","打鐵":"Phah-thih","新埤頭":"Sin-pi-thâu","枋寮":"Pang-liâu","頂中街":"Tíng-tiong-ke","下中街":"Ē-tiong-ke","磘仔口":"Iâu-á-kháu","竹仔腳":"Tik-á-kha","麟洛":"Lîn-lo̍k","屏東":"Pîng-tang","西勢":"Se-sì","內埔":"Lāi-poo","新大路關":"Sin-tuā-lōo-kuan","溪洲":"Khe-tsiu","恆春":"Hîng-tshun","海口":"Hái-kháu","大坂埒":"Tuā-pán-la̍t","六龜里":"La̍k-kui-lí","橫山":"Huînn-suann","哨船頭":"Sàu-tsûn-thâu",
-        "頭圍":"Thâu-uî","蘇澳":"Soo-ò","宜蘭":"Gî-lân","南方澳":"Lâm-hng-ò","港邊":"Káng-pinn","員山":"Uân-suann","水源地":"Tsuí-guân-tē","深溝":"Tshim-kau","叭哩沙":"Pat-lí-sa","羅東":"Lô-tang","竹林":"Tik-lîm","二結":"Jī-kiat","大洲":"Tuā-tsiu","小南澳":"Sió-lâm-ò","利澤簡":"Lī-ti̍k-kán","一百甲":"Tsit-pah-kah","功勞":"Kong-lô",
+        "塔寮坑":"Thah-liâu-khing","南崁":"Lâm-khám","北門":"Pak-mn̂g","大溪":"Tāi-khe","角板山":"Kak-pán-san","大園":"Tuā-hn̂g","竹圍":"Tik-uî","中壢":"Tiong-li̍k","觀音":"Kuan-im","龍潭":"Liông-thâm","下大堀":"Ē-tuā-khut","新屋":"Sin-tshù","東勢":"Tang-sì","三坑仔":"Sann-khenn-á","楊梅":"Iûnn-muî","下水流":"Ē-tsuí-lâu","大陂":"Tuā-pi","伯公岡":"Peh-kong-kong","湖口":"Ôo-kháu","平關":"Pîng-kuan","橫崗頭":"Huînn-kong-thâu","紅關":"Âng-kuan","犁頭山":"Lê-thâu-suann","石門":"Tsio̍h-mn̂g","馬武督":"Má-bú-tok","竹東":"Tik-tang","新竹":"Sin-tik","鹿寮坑":"Lo̍k-liâu-khing","北埔":"Pak-poo","上坪":"Siōng-phiânn","芎林":"Khiong-nâ","石壁坑":"Tsio̍h-piah-khing","舊港":"Kū-káng","舊社":"Kū-siā","南寮":"Lâm-liâu","油車港":"Iû-tshia-káng",
+        "竹南":"Tik-lâm","斗煥坪":"Táu-huàn-phiânn","大南埔":"Tuā-lâm-poo","中港街":"Tiong-káng-ke","尖山下":"Tsiam-suann-ē","錦水":"Kím-tsuí","造橋":"Tsō-kiô","二坪岡":"Jī-phiânn-kong","後攏":"Āu-lâng","崁頭屋":"Khám-thâu-ook","大山腳":"Tuā-suann-kha","新港":"Sin-káng","公司寮":"Kong-si-liâu","苗栗":"Biâu-li̍k","內麻":"Lāi-muâ","出磺坑":"Tshut-hông-khing","銅鑼灣":"Tâng-lô-uan","福基":"Hok-ki","山腳":"Suann-kha","日南":"Ji̍t-lâm","五里牌":"Gōo-lí-pâi","三叉":"Sam-tshê","卓蘭":"Tah-lân",
+        "后里":"Hōo-lí","月眉":"Gua̍t-bâi","大安港":"Tāi-an-káng","甲南":"Kah-lâm","四塊厝":"Sì-tè-tshù","公館":"Kong-kuán","清水":"Tshing-tsuí","梧棲":"Gōo-tshe","神崗":"Sîn-kng","崎頭":"Kiā-thâu","葫蘆墩":"Hôo-lôo-tun","水底寮":"Tsuí-té-liâu","馬力埔":"Má-li̍k-poo","牛欄坑":"Gû-nuâ-khing","中坑坪":"Tiong-khing-phiânn","臺中":"Tâi-tiong","大雅":"Tāi-ngé","北屯":"Pak-tūn","三貴城":"Sam-kuì-siânn","埧雅":"Pà-ngá","西屯":"Se-tūn","頭汴坑":"Thâu-piān-khing","三汴":"Sann-piān","廍子":"Pōo-á","太平":"Thài-pîng","南屯":"Lâm-tūn","烏日":"Oo-ji̍t","龍井":"Liông-tsínn","海埔厝":"Hái-poo-tshù","龍目井":"Liông-bo̍k-tsínn","南投":"Lâm-tâu","大里":"Tuā-lí","霧峰":"Bū-hong","大平":"Tuā-pînn","竹子坑":"Tik-á-khing","牛角坑":"Gû-kak-khing","青桐林":"Tshing-tông-lîm","六股":"La̍k-kóo","彰草":"Tsiang-tshó","八卦山":"Pat-kuà-suann","彰化":"Tsiong-huà","鹿港":"Lo̍k-káng","溪州":"Khe-tsiu","二林":"Jī-lîm","員林":"Uân-lîm","東山":"Tang-suann","湳雅":"Lâm-ngá","湖水坑":"Ôo-tsuí-khing","海豐崙":"Hái-hong-lūn","下見口":"Ē-kìnn-kháu","秀水":"Siù-tsuí","茄苳腳":"Ka-tang-kha","土城":"Thôo-siânn","國姓":"Kok-sìnn","集南":"Tsi̍p-lâm","番子吧":"Huan-á-pah","暗坑":"Àm-khing","粗坑":"Tshoo-khing","龍眼林":"Lîng-gíng-lîm","集鹿":"Tsi̍p-lo̍k","新高":"Sin-ko","埔里":"Poo-lí","二八水":"Jī-pat-tsuí","濁水":"Lô-tsuí","田中央":"Tshân-tiong-ng","北斗":"Pó-táu","竹山":"Tik-san","東埔蚋":"Tang-poo-la̍p","林圯埔":"Lîm-kî-poo","大坑":"Tuā-khing","社寮":"Siā-liâu","名間":"Bîng-kan","車輄寮":"Tshia-kng-liâu","溪頭":"Khe-thâu","名濁":"Bîng-lo̍k","西螺":"Sai-lê","內林":"Lāi-lîm","斗六":"Táu-la̍k","土庫":"Thôo-khòo","埔眉":"Poo-bî",
+        "打貓":"Tá-biau","北港":"Pak-káng","梅山":"Muî-san","嘉義":"Ka-gī","小梅":"Sió-muî","中埔":"Tiong-poo","西門":"Se-mn̂g","沄水":"Ûn-tsuí","三界埔":"Sam-kài-poo","石硦":"Tsio̍h-lōng","觸口":"Tshiok-kháu","番路":"Huan-lōo","內埔子":"Lāi-poo-á","鹿麻產":"Lo̍k-muâ-sán","竹崎":"Tik-kiā","關子嶺":"Kuan-á-niá","菁寮":"Tshenn-liâu","後壁":"Āu-piah","木屐寮":"Ba̍k-kia̍h-liâu","仙草埔":"Sian-tsháu-poo","番社":"Huan-siā","六重溪":"La̍k-tîng-khe","崎子頭":"Kiā-á-thâu","前大埔":"Tsîng-tuā-poo","烏山頭":"Oo-suann-thâu","六甲":"La̍k-kah","鹽水":"Kiâm-tsuí","善化":"Siān-huà","二重溪":"Jī-tîng-khe","大內":"Tuā-lāi","北勢洲":"Pak-sì-tsiu","玉井":"Gio̍k-tsénn","大目降":"Tuā-ba̍k-kàng","新市":"Sin-tshī","虎頭埤":"Hóo-thâu-pi","安平":"An-pîng","喜樹":"Hí-tshiū","關廟":"Kuan-biō","東市場":"Tang-tshī-tiûnn","番子寮":"Huan-á-liâu","麻豆":"Muâ-tāu","西港":"Se-káng","鹽水港":"Kiâm-tsuí-káng","三崁店":"Sann-khám-tiàm","六塊厝":"La̍k-tè-tshù","直加弄":"Ti̍t-ka-lāng","台南水道":"Tâi-lâm-tsuí-tō",
+        "路竹":"Lōo-tik","燕巢":"Iàn-tsâu","岡山":"Kang-san","阿蓮":"A-liân","大岡山":"Tuā-kang-san","赤崁":"Tshik-khám","彌陀":"Mî-tô","鳳山":"Hōng-suann","苓雅寮":"Lîng-ngá-liâu","蕃薯寮":"Han-tsî-liâu","楠仔坑":"Lâm-á-khing","舊寮":"Kū-liâu","九曲堂":"Kiú-khiok-tông","阿緱":"A-kâu","阿缑":"A-kâu","東港":"Tang-káng","萬巒":"Bān-luân","四溝水":"Sì-kau-tsuí","打鐵":"Phah-thih","新埤頭":"Sin-pi-thâu","枋寮":"Pang-liâu","頂中街":"Tíng-tiong-ke","下中街":"Ē-tiong-ke","磘仔口":"Iâu-á-kháu","竹仔腳":"Tik-á-kha","麟洛":"Lîn-lo̍k","屏東":"Pîng-tang","西勢":"Se-sì","內埔":"Lāi-poo","新大路關":"Sin-tuā-lōo-kuan","溪洲":"Khe-tsiu","恆春":"Hîng-tshun","海口":"Hái-kháu","大坂埒":"Tuā-pán-la̍t","六龜里":"La̍k-kui-lí","橫山":"Huînn-suann","哨船頭":"Sàu-tsûn-thâu",
+        "頭圍":"Thâu-uî","蘇澳":"Soo-ò","宜蘭":"Gî-lân","南方澳":"Lâm-hng-ò","港邊":"Káng-pinn","員山":"Uân-suann","水源地":"Tsuí-guân-tē","深溝":"Tshim-kau","叭哩沙":"Pat-lí-sa","羅東":"Lô-tang","竹林":"Tik-nâ","二結":"Jī-kiat","大洲":"Tuā-tsiu","小南澳":"Sió-lâm-ò","利澤簡":"Lī-ti̍k-kán","一百甲":"Tsit-pah-kah","功勞":"Kong-lô",
         "臺東":"Tâi-tang","水尾":"Tsuí-bué","卑南":"Pi-lâm","吉野村":"Kiat-iá-tshun","銅文蘭":"Tâng-bûn-lân","新城":"Sin-siânn","瑞穗":"Suī-suī",
         "臺南":"Tâi-lâm","打狗":"Tá-káu","塗葛窟":"Thôo-kat-khut","雲林":"Hûn-lîm"
     };
@@ -848,7 +892,7 @@
                     if (p.name && !savedNamesMap[p.route_id]) savedNamesMap[p.route_id] = p.name;
                     if (p.tailo && !savedTailosMap[p.route_id]) savedTailosMap[p.route_id] = p.tailo;
                     if (p.narrative && !savedNarrativesMap[p.route_id]) savedNarrativesMap[p.route_id] = p.narrative;
-                    if (p.gauge !== undefined && p.gauge !== null && p.gauge !== '') {
+                    if (p.gauge !== undefined && p.gauge !== null && p.gauge !== '' && savedGaugesMap[p.route_id] === undefined) {
                         const gNum = Number(p.gauge);
                         if (!isNaN(gNum) && gNum > 0) savedGaugesMap[p.route_id] = gNum;
                     }
@@ -864,6 +908,7 @@
             renderSavedNarrativesPanel();
             renderNameTailoGrid();
             renderGaugeGrid();
+            runDataDiagnostics();
 
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
@@ -1471,7 +1516,348 @@
         document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
+    /* 🛠️ v2.8 可擴充式「資料診斷與一鍵修復引擎」（所有規則集中管理，未來可隨時新增規則物件） */
+    const REPAIR_RULES = [
+        {
+            id: 'sync_top_dicts',
+            title: '同步頂層字典（names / tailos / gauges）至圖層屬性',
+            desc: '解決修改了台羅或名稱（如 E10 Kuan-á-niá-suànn），但 features[].properties 仍殘留舊值的問題',
+            enabled: true,
+            diagnose: function(features) {
+                let count = 0;
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (!p.route_id || (f.geometry && f.geometry.type === 'Point')) return;
+                    const rid = p.route_id, pid = p.parent_id || rid;
+                    const expTailo = savedTailosMap[rid] || savedTailosMap[pid];
+                    if (expTailo && p.tailo !== expTailo) count++;
+                    const expName = savedNamesMap[rid] || (rid === pid ? savedNamesMap[pid] : '');
+                    if (expName && p.name !== expName) count++;
+                    const expGauge = savedGaugesMap[rid] !== undefined ? savedGaugesMap[rid] : savedGaugesMap[pid];
+                    if (expGauge !== undefined && Number(p.gauge) !== Number(expGauge)) count++;
+                });
+                return count;
+            },
+            fix: function(features, logs) {
+                let fixedTailo = 0, fixedName = 0, fixedGauge = 0;
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (!p.route_id || (f.geometry && f.geometry.type === 'Point')) return;
+                    const rid = p.route_id, pid = p.parent_id || rid;
+                    const expTailo = savedTailosMap[rid] || savedTailosMap[pid];
+                    if (expTailo && p.tailo !== expTailo) {
+                        logs.push(`🔤 [${rid}] 台羅同步：<code>${escapeHtml(p.tailo || '空')}</code> ➔ <b>${escapeHtml(expTailo)}</b>`);
+                        p.tailo = expTailo;
+                        fixedTailo++;
+                    }
+                    const expName = savedNamesMap[rid] || (rid === pid ? savedNamesMap[pid] : '');
+                    if (expName && p.name !== expName) {
+                        logs.push(`🏷️ [${rid}] 路線名同步：<code>${escapeHtml(p.name || '空')}</code> ➔ <b>${escapeHtml(expName)}</b>`);
+                        p.name = expName;
+                        fixedName++;
+                    }
+                    const expGauge = savedGaugesMap[rid] !== undefined ? savedGaugesMap[rid] : savedGaugesMap[pid];
+                    if (expGauge !== undefined && Number(p.gauge) !== Number(expGauge)) {
+                        p.gauge = Number(expGauge);
+                        fixedGauge++;
+                    }
+                });
+                return fixedTailo + fixedName + fixedGauge;
+            }
+        },
+        {
+            id: 'normalize_tailo_tones',
+            title: '台羅拼音數字調號轉換與格式清理',
+            desc: '自動將殘留之數字調號（如 suann3）轉為標準調號（suànn），並清除首尾多餘空白',
+            enabled: true,
+            diagnose: function(features) {
+                let count = 0;
+                Object.entries(savedTailosMap).forEach(([k, v]) => {
+                    if (v && (/[1-8]/.test(v) || v !== v.trim())) count++;
+                });
+                features.forEach(f => {
+                    const t = (f.properties && f.properties.tailo) || '';
+                    if (t && (/[1-8]/.test(t) || t !== t.trim())) count++;
+                });
+                return count;
+            },
+            fix: function(features, logs) {
+                let count = 0;
+                Object.keys(savedTailosMap).forEach(k => {
+                    const orig = savedTailosMap[k];
+                    if (!orig) return;
+                    const conv = convertTailoToneNumbers(orig.trim());
+                    if (conv !== orig) {
+                        savedTailosMap[k] = conv;
+                        logs.push(`🎵 [${k}] 台羅調號正規化：<code>${escapeHtml(orig)}</code> ➔ <b>${escapeHtml(conv)}</b>`);
+                        count++;
+                    }
+                });
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (p.tailo) {
+                        const conv = convertTailoToneNumbers(p.tailo.trim());
+                        if (conv !== p.tailo) { p.tailo = conv; count++; }
+                    }
+                });
+                return count;
+            }
+        },
+        {
+            id: 'sync_sub_tables_title',
+            title: '同步主線內嵌「▸ 附屬統計」之子路線名稱',
+            desc: '當子路線名稱（如 E10-1 菁寮、E25-5 三崁店）更新時，同步更新主線 HTML 表格內的附屬標題',
+            enabled: true,
+            diagnose: function(features) {
+                let count = 0;
+                features.forEach(f => {
+                    const zh = (f.properties && f.properties.description && f.properties.description.zh) || '';
+                    const re = /▸\s*(?:附屬統計|相關路線)：\s*([A-Z]\d+-[^\s<]+)\s+([^<]+)</g;
+                    let m;
+                    while ((m = re.exec(zh)) !== null) {
+                        const subCode = m[1].trim(), curSubLabel = m[2].trim();
+                        const targetSub = (savedNamesMap[subCode] || DEFAULT_CODE_REF_MAP[subCode] || '').replace(/線$/, '').trim();
+                        if (targetSub && curSubLabel.replace(/線$/, '').trim() !== targetSub) count++;
+                    }
+                });
+                return count;
+            },
+            fix: function(features, logs) {
+                let count = 0;
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (!p.description || !p.description.zh) return;
+                    p.description.zh = p.description.zh.replace(/(▸\s*(?:附屬統計|相關路線)：\s*([A-Z]\d+-[^\s<]+)\s+)([^<]+)(<)/g, (full, prefix, subCode, oldLabel, suffix) => {
+                        const targetSub = (savedNamesMap[subCode] || DEFAULT_CODE_REF_MAP[subCode] || '').replace(/線$/, '').trim();
+                        if (targetSub && oldLabel.replace(/線$/, '').trim() !== targetSub) {
+                            count++;
+                            logs.push(`📑 [${p.route_id}] 附屬統計標題同步：<code>${escapeHtml(subCode + ' ' + oldLabel)}</code> ➔ <b>${escapeHtml(subCode + ' ' + targetSub)}</b>`);
+                            return `${prefix}${targetSub}${suffix}`;
+                        }
+                        return full;
+                    });
+                });
+                return count;
+            }
+        },
+        {
+            id: 'dedup_stations_and_clean',
+            title: '重複車站去重、無效雜訊線剔除與座標無損瘦身',
+            desc: '清除重複座標之車站點位、剔除殘留測試線段，並將座標最佳化至小數點第 5 位',
+            enabled: true,
+            diagnose: function(features) {
+                let count = 0;
+                const seen = new Set();
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (f.geometry && f.geometry.type === 'Point') {
+                        const k = `${p.name}_${(f.geometry.coordinates || []).join(',')}`;
+                        if (seen.has(k)) count++; else seen.add(k);
+                    } else if (isLegacySugarOrNoiseRoute(f)) count++;
+                });
+                return count;
+            },
+            fix: function(features, logs) {
+                let removed = 0;
+                const seen = new Set();
+                const kept = [];
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    if (f.geometry && f.geometry.type === 'Point') {
+                        const sc = roundCoords(f.geometry.coordinates || []);
+                        const k = `${p.name}_${sc.join(',')}`;
+                        if (seen.has(k)) { removed++; return; }
+                        seen.add(k);
+                        kept.push(cleanStationFeature(f));
+                    } else {
+                        if (document.getElementById('chkRemoveSugar').checked && isLegacySugarOrNoiseRoute(f)) {
+                            removed++;
+                            return;
+                        }
+                        if (f.geometry) f.geometry = roundGeometry(f.geometry);
+                        kept.push(f);
+                    }
+                });
+                if (removed > 0) {
+                    features.length = 0;
+                    kept.forEach(k => features.push(k));
+                    logs.push(`🧹 已清理重複車站或雜訊路線共 <b>${removed}</b> 筆`);
+                }
+                return removed;
+            }
+        }
+    ];
+
+    window.runDataDiagnostics = function() {
+        const container = document.getElementById('repairRulesContainer');
+        if (!container) return;
+        const features = (existingData && existingData.data && existingData.data.features) ? existingData.data.features : ((existingData && existingData.features) ? existingData.features : []);
+        container.innerHTML = '';
+        let totalIssues = 0;
+
+        REPAIR_RULES.forEach(rule => {
+            const issueCount = existingData ? rule.diagnose(features) : 0;
+            totalIssues += issueCount;
+            const badgeHtml = issueCount > 0
+                ? `<span class="repair-badge">偵測到 ${issueCount} 處待修復</span>`
+                : `<span class="repair-badge ok">✓ 狀態正常</span>`;
+            const card = document.createElement('label');
+            card.className = 'repair-rule-card';
+            card.innerHTML = `
+                <input type="checkbox" id="chk-rule-${rule.id}" ${rule.enabled ? 'checked' : ''} onchange="REPAIR_RULES.find(r=>r.id==='${rule.id}').enabled=this.checked">
+                <div>
+                    <div style="font-weight:bold; color:#0d47a1;">${escapeHtml(rule.title)} ${badgeHtml}</div>
+                    <div style="color:#555; font-size:11.5px; margin-top:2px;">${escapeHtml(rule.desc)}</div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        const titleEl = document.getElementById('repairCenterTitle');
+        if (titleEl) {
+            titleEl.innerHTML = totalIssues > 0
+                ? `🛠️ 資料診斷與一鍵修復中心（⚠️ 掃描發現 <span style="color:#d32f2f;">${totalIssues}</span> 處不同步或待優化項目）`
+                : `🛠️ 資料診斷與一鍵修復中心（✅ 目前資料完全同步無異常）`;
+        }
+    };
+
+    window.executeSelectedRepairs = function() {
+        if (!existingData) return;
+        const features = (existingData.data && existingData.data.features) ? existingData.data.features : (existingData.features || []);
+        const logs = [];
+        let totalFixed = 0;
+
+        REPAIR_RULES.forEach(rule => {
+            if (rule.enabled) {
+                totalFixed += rule.fix(features, logs);
+            }
+        });
+
+        runNarrativeOrCleanUpdate(true);
+        runDataDiagnostics();
+        renderNameTailoGrid();
+        renderGaugeGrid();
+
+        const logBox = document.getElementById('repairLogBox');
+        logBox.style.display = 'block';
+        if (logs.length > 0) {
+            logBox.innerHTML = `<b>✅ 已完成修復（共修正 ${totalFixed} 處），明細如下：</b><br>` + logs.slice(0, 80).join('<br>') + (logs.length > 80 ? `<br>...及其他 ${logs.length - 80} 處` : '');
+        } else {
+            logBox.innerHTML = `✅ 所有勾選項目皆已同步完畢（無額外差異需修正），可直接點擊下方藍色「📥 下載最新瘦身版 data.json」！`;
+        }
+    };
+
+    window.runCustomBatchReplace = function() {
+        if (!existingData) return;
+        const field = document.getElementById('batchFieldSelect').value;
+        const findStr = document.getElementById('batchFindInput').value;
+        const repStr = document.getElementById('batchReplaceInput').value;
+        if (!findStr) { alert('請輸入要查找的字串！'); return; }
+
+        const features = (existingData.data && existingData.data.features) ? existingData.data.features : (existingData.features || []);
+        let hitCount = 0;
+
+        const replaceInDict = (dict) => {
+            Object.keys(dict).forEach(k => {
+                if (typeof dict[k] === 'string' && dict[k].includes(findStr)) {
+                    dict[k] = dict[k].split(findStr).join(repStr);
+                    hitCount++;
+                }
+            });
+        };
+
+        if (field === 'all' || field === 'name') replaceInDict(savedNamesMap);
+        if (field === 'all' || field === 'tailo') replaceInDict(savedTailosMap);
+
+        const targetFields = field === 'all' ? ['name', 'tailo', 'section', 'operators', 'alt_names'] : [field];
+        features.forEach(f => {
+            const p = f.properties || {};
+            targetFields.forEach(tf => {
+                if (typeof p[tf] === 'string' && p[tf].includes(findStr)) {
+                    p[tf] = p[tf].split(findStr).join(repStr);
+                    hitCount++;
+                }
+            });
+        });
+
+        runNarrativeOrCleanUpdate(true);
+        runDataDiagnostics();
+        renderNameTailoGrid();
+
+        const logBox = document.getElementById('repairLogBox');
+        logBox.style.display = 'block';
+        logBox.innerHTML = `🔎 批次替換完成：將「<code>${escapeHtml(findStr)}</code>」替換為「<b>${escapeHtml(repStr)}</b>」，共更新 <b>${hitCount}</b> 處！`;
+    };
+
+    window.loadLocalDataJsonFile = function(inputEl) {
+        const file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = JSON.parse(evt.target.result);
+                existingData = data;
+                savedNarrativesMap = {}; savedGaugesMap = {}; savedNamesMap = {}; savedTailosMap = {}; oldPropsMap = {}; existingRouteCodesSet.clear();
+                const rootObj = data.data || data;
+                if (rootObj.narratives && typeof rootObj.narratives === 'object') Object.assign(savedNarrativesMap, rootObj.narratives);
+                if (rootObj.gauges && typeof rootObj.gauges === 'object') {
+                    Object.entries(rootObj.gauges).forEach(([k, v]) => { const num = Number(v); if (!isNaN(num) && num > 0) savedGaugesMap[k] = num; });
+                }
+                if (rootObj.names && typeof rootObj.names === 'object') Object.assign(savedNamesMap, rootObj.names);
+                if (rootObj.tailos && typeof rootObj.tailos === 'object') Object.assign(savedTailosMap, rootObj.tailos);
+
+                const features = rootObj.features || [];
+                features.forEach(f => {
+                    const p = f.properties || {};
+                    const isPoint = f.geometry && f.geometry.type === "Point";
+                    if (!isPoint && !isLegacySugarOrNoiseRoute(f)) {
+                        if (p.route_id) existingRouteCodesSet.add(p.route_id);
+                        if (p.parent_id) existingRouteCodesSet.add(p.parent_id);
+                    }
+                    const key = p.route_id || p.name;
+                    if (key && !oldPropsMap[key]) oldPropsMap[key] = p;
+                    if (p.route_id) {
+                        if (p.name && !savedNamesMap[p.route_id]) savedNamesMap[p.route_id] = p.name;
+                        if (p.tailo && !savedTailosMap[p.route_id]) savedTailosMap[p.route_id] = p.tailo;
+                        if (p.narrative && !savedNarrativesMap[p.route_id]) savedNarrativesMap[p.route_id] = p.narrative;
+                        if (p.gauge !== undefined && p.gauge !== null && p.gauge !== '' && savedGaugesMap[p.route_id] === undefined) {
+                            const gNum = Number(p.gauge);
+                            if (!isNaN(gNum) && gNum > 0) savedGaugesMap[p.route_id] = gNum;
+                        }
+                    }
+                });
+                sanitizeSavedNarratives();
+                renderSavedNarrativesPanel();
+                renderNameTailoGrid();
+                renderGaugeGrid();
+                runDataDiagnostics();
+                updateActionButtons();
+                const logBox = document.getElementById('repairLogBox');
+                logBox.style.display = 'block';
+                logBox.innerHTML = `📂 已成功載入本機 <b>${escapeHtml(file.name)}</b>！`;
+            } catch (err) {
+                alert('解析 JSON 失敗：' + err.message);
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    };
+
     function downloadJSON() {
+        // 🔒 防呆關鍵：無論使用者在按「儲存」之後有沒有再改過輸入框，下載前一律強制重跑一次全圖層屬性同步，確保 features[].properties 與頂層字典 100% 一致！
+        if (existingData && !(rawKmlTexts.length > 0 && Object.keys(csvRoutesMap).length > 0)) {
+            runNarrativeOrCleanUpdate();
+        } else if (finalGeoJson && finalGeoJson.data && Array.isArray(finalGeoJson.data.features)) {
+            finalGeoJson.data.features.forEach(f => {
+                const p = f.properties || {};
+                if (!p.route_id || (f.geometry && f.geometry.type === 'Point')) return;
+                const rid = p.route_id, pid = p.parent_id || rid;
+                if (savedNamesMap[rid]) p.name = savedNamesMap[rid];
+                else if (rid === pid && savedNamesMap[pid]) p.name = savedNamesMap[pid];
+                p.tailo = savedTailosMap[rid] || savedTailosMap[pid] || p.tailo || "";
+                const gVal = (savedGaugesMap[rid] !== undefined) ? savedGaugesMap[rid] : ((savedGaugesMap[pid] !== undefined) ? savedGaugesMap[pid] : null);
+                if (gVal !== null && !isNaN(Number(gVal))) p.gauge = Number(gVal);
+            });
+        }
         if (!finalGeoJson) return;
         const blob = new Blob([JSON.stringify(finalGeoJson)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
