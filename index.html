@@ -975,11 +975,11 @@
             clearTimeout(t._timer);
             t._timer = setTimeout(() => { t.style.display = 'none'; }, 2600);
         }
-
+        
         function updateTitleText() {
             const mobile = window.innerWidth <= 960;
             sysTitle.textContent = mobile
-                ? `${currentFilterYear === 'all' ? '全部年代' : currentFilterYear + ' 年'}`
+                ? (currentFilterYear === 'all' ? '古今鐵道營業線 HGIS 查詢' : `古今鐵道 HGIS・${currentFilterYear}年`)
                 : `古今鐵道營業線 HGIS 查詢${currentFilterYear === 'all' || yfBar.classList.contains('open') ? '' : '・' + currentFilterYear + '年'}`;
             sysTitle.setAttribute('aria-expanded', String(yfBar.classList.contains('open')));
             document.body.classList.toggle('year-filter-open', yfBar.classList.contains('open'));
