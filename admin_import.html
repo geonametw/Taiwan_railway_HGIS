@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 + 資料修復神器 v2.9 - 古今鐵道 HGIS</title>
+    <title>KML + CSV + 名稱台羅 + 軌距 + 沿革 + 資料修復神器 v3.0 - 古今鐵道 HGIS</title>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 25px; color: #333; }
         .container { max-width: 980px; margin: 0 auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         h2 { color: #1a237e; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-top: 0; text-align: center; }
-        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; border: 8px; padding: 15px; margin-bottom: 18px; display: none; border-radius: 8px; }
+        .inventory-box { background: #e8eaf6; border: 1px solid #c5cae9; padding: 15px; margin-bottom: 18px; display: none; border-radius: 8px; }
         .inventory-header { font-size: 15px; font-weight: bold; color: #1a237e; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 6px; max-height: 130px; overflow-y: auto; padding: 4px 2px; }
         .tag { background: white; border: 1px solid #7986cb; color: #283593; padding: 3px 9px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; }
@@ -86,10 +86,10 @@
 <body>
 
 <div class="container">
-    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 + 資料修復神器 v2.9</h2>
+    <h2>🗺️ KML + CSV + 路線名/台羅 + 軌距 + 沿革 + 資料修復神器 v3.0</h2>
     <div class="status warning" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="flex:1; min-width:280px;">
-            <b>💡 v2.9 升級重點（專責資料修復與防呆同步）：</b><br>
+            <b>💡 v3.0 升級重點（版號升版與防呆同步）：</b><br>
             1. <b>🛠️ 可擴充式「資料診斷與一鍵修復中心」</b>：自動檢測並修復「頂層字典（<code>names</code> / <code>tailos</code> / <code>gauges</code>）與圖層屬性（<code>features[].properties</code>）不同步」、異體字、台羅調號與重複車站，保持主程式 <code>index.html</code> 穩定免改。<br>
             2. <b>🔒 下載前強制自動同步</b>：在面板修改任何台羅、路線名或軌距後，直接點「📥 下載」也會自動將最新修改寫入全部路線圖層，絕不漏寫！
         </div>
@@ -99,10 +99,10 @@
         </div>
     </div>
 
-    <!-- 🛠️ 新增：可擴充式資料診斷與一鍵修復中心 -->
+    <!-- 🛠️ 可擴充式資料診斷與一鍵修復中心 -->
     <div class="repair-section">
         <div class="repair-header">
-            <span id="repairCenterTitle">🛠️ 資料診斷與一鍵修復中心（Data Doctor v2.9）</span>
+            <span id="repairCenterTitle">🛠️ 資料診斷與一鍵修復中心（Data Doctor v3.0）</span>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button type="button" class="mini-btn" style="border-color:#0d47a1; color:#0d47a1;" onclick="runDataDiagnostics()">🔍 重新掃描診斷</button>
                 <button type="button" class="mini-btn" style="background:#0d47a1; color:#fff; border-color:#0d47a1;" onclick="executeSelectedRepairs()">⚡ 立即執行勾選修復並同步至記憶體</button>
@@ -160,7 +160,7 @@
         <input type="file" id="kmlFile" accept=".kml,.xml" multiple />
     </div>
 
-    <!-- 🏷️ 新增：路線名稱與台羅拼音快編面板 -->
+    <!-- 🏷️ 路線名稱與台羅拼音快編面板 -->
     <div class="name-section">
         <div class="name-header">
             <span id="namePanelTitle">🏷️ 路線名稱（name）與台羅拼音（tailo）快編面板（已設台羅 0 條）</span>
@@ -258,6 +258,7 @@
 </div>
 
 <script>
+    const TOOL_VERSION = "v3.0";
     const DEFAULT_CODE_REF_MAP = {"A1":"三爪子","A1-1":"三爪子複線","A1-2":"瑞芳停車場引入","A2":"金瓜石","A3":"金山","A3-1":"金山野柳段","A3-2":"觀音町","A4":"錫板","A4-1":"水碓仔","A5":"松三","A6":"深坑","A6-1":"指南宮","A7":"十五份","A8":"南門屈尺","A8-1":"南門複線","A9":"古亭村庄大稻埕","A10":"大稻埕錫口","A11":"龍匣口","A12":"頂埔","A12-1":"新埔","A12-2":"枋橋","A12-3":"萬華驛","A13":"鷺洲新莊","A13-1":"和尚洲","A13-2":"橋頭","A14":"板橋","A15":"萬華","A16":"成福","A16-1":"成福複線","A16-2":"三角湧","A17":"中庄","A17-1":"貨物","A18":"大湖","A19":"媽祖田","A20":"佳園","A21":"新樹","A22":"三井(烏來)","A23":"三井(三峽合流)","B1":"新莊","B1-1":"塔寮坑","B2":"南崁","B2-1":"北門","B3":"大溪複線","B3-1":"大溪單線","B4":"角板山","B5":"大園","B6":"竹圍","B7":"中壢","B8":"中壢","B8-1":"觀音","B8-2":"龍潭","B9":"下大堀","B10":"新屋(中壢)","B11":"東勢","B12":"三坑仔","B13":"楊梅","B13-1":"下水流","B14":"大陂","B15":"伯公岡","B16":"湖口","B17":"平關","B18":"橫崗頭","B19":"紅關","B19-1":"紅關複線","B19-2":"犁頭山","B20":"新埔輕鐵","B21":"石門","B22":"馬武督","B23":"竹東","B23-1":"竹東","B23-2":"新竹單","B23-3":"鹿寮坑","B24":"北埔","B25":"上坪","B26":"芎林(臺灣軌道)","B27":"芎林(文林軌道)","B27-1":"石壁坑竹東","B28":"芎林(帝國製糖)","B29":"舊港","B29-1":"北門","B29-2":"舊社","B29-3":"南寮","B29-4":"舊港岔","B30":"南寮油車港","B31":"油車港","C1":"竹南","C1-1":"竹南複","C1-2":"斗煥坪","C1-3":"大南埔","C2":"中港街","C3":"尖山下錦水","C3-1":"造橋","C4":"錦水","C4-1":"二坪岡","C5":"後攏驛後攏街","C5-1":"後攏驛崁頭屋","C5-2":"後攏街大山腳","C5-3":"後攏街新港","C6":"公司寮","C7":"苗栗","C7-1":"苗栗複線","C7-2":"苗栗內麻","C7-3":"出磺坑","C8":"銅鑼灣福基","C9":"銅鑼灣山腳","C10":"日南","C10-1":"五里牌","C11":"三叉","C12":"卓蘭","D1":"后里","D2":"月眉","D3":"大安港","D4":"甲南","D5":"四塊厝","D6":"公館","D7":"清水","D7-1":"清水","D8":"梧棲","D9":"神崗崎頭","D10":"神崗","D11":"東勢","D11-1":"東勢複線","D11-2":"葫蘆墩驛","D11-3":"貯木池","D12":"水底寮","D13":"馬力埔","D14":"牛欄坑","D15":"中坑坪","D16":"臺中","D16-1":"大雅支","D16-2":"北屯","D16-3":"三貴城","D17":"埧雅","D18":"大雅","D19":"西屯","D20":"頭汴坑","D20-1":"三汴","D20-2":"廍子","D20-3":"太平","D20-4":"芭蕉市場","D21":"南屯","D22":"烏日","D23":"龍井","D23-1":"海埔厝","D23-2":"龍目井","D24":"臺中南投","D25":"大里","D26":"霧峰(霧峰宏業)","D27":"霧峰(霧峰輕鐵)","D28":"大平","D28-1":"竹子坑支","D28-2":"牛角坑支","D29":"青桐林","D30":"六股","D31":"彰草","D31-1":"八卦山","D32":"彰化鹿港","D32-1":"鹿港新營口","D33":"彰化軌道","D34":"溪州二林","D35":"員林鹿港","D36":"員林","D36-1":"員林複線","D36-2":"員林東山","D36-3":"東山湳雅","D36-4":"湖水坑支線","D36-5":"海豐崙支線","D37":"下見口","D38":"秀水茄苳腳","D39":"土城","D40":"國姓","D41":"集南","D41-1":"南投分歧線","D41-2":"番子吧","D41-3":"暗坑","D41-4":"粗坑","D42":"龍眼林","D43":"集鹿","D44":"新高","D44-1":"貨物","D45":"埔里","D45-1":"埔里複線","D46":"二八水","D47":"濁水","D48":"田中央驛田中央街","D49":"北斗田中央","D50":"竹山","D50-1":"東埔蚋複線","D50-2":"林圯埔","D50-3":"大坑","D51":"社寮","D51-1":"名間","D52":"車輄寮","D53":"溪頭","D54":"名濁","D55":"西螺","D56":"內林","D57":"斗六糖廠","D58":"土庫","D59":"埔眉","E1":"打貓北港","E2":"新港驛新港街","E3":"梅山","E4":"嘉義小梅","E5":"中埔","E5-1":"南門西門","E5-2":"沄水","E5-3":"三界埔","E5-4":"石硦","E6":"觸口","E6-1":"番路(臺中輕鐵)","E7":"番路(內外食品)","E8":"內埔子鹿麻產","E9":"竹崎輕鐵","E10":"關子嶺","E10-1":"菁寮","E10-2":"後壁","E10-3":"木屐寮","E10-4":"仙草埔","E10-5":"關子嶺溫泉","E11":"番社","E12":"六重溪","E13":"崎子頭","E13-1":"前大埔","E14":"烏山頭","E15":"六甲","E16":"北門","E17":"鹽水","E18":"善化市街","E19":"善化二重溪","E19-1":"大內北勢洲","E20":"玉井","E21":"大目降","E21-1":"糖業科","E21-2":"新市","E21-3":"虎頭埤","E22":"安平","E23":"喜樹","E23-1":"屠畜場","E24":"關廟","E24-1":"東市場","E25":"番子寮","E25-1":"麻豆","E25-2":"麻豆市街","E25-3":"西港麻豆","E25-4":"西港番子寮","E25-5":"鹽水港三崁店","E25-6":"六塊厝直加弄","E26":"嘉義公園","E26-1":"郵局西門","E27":"台南水道","F1":"石材","F2":"路竹","F3":"燕巢","F4":"岡山阿蓮","F4-1":"大岡山","F5":"赤崁","F5-1":"彌陀","F6":"鳳山苓雅寮","F7":"蕃薯寮楠仔坑","F8":"舊寮中庄","F9":"九曲堂驛阿缑","F10":"阿缑東港","F10-1":"萬巒四溝水","F10-2":"打鐵新埤頭","F11":"東港枋寮","F11-1":"頂中街海岸","F11-2":"下中街","F11-3":"磘仔口竹仔腳","F12":"麟洛屏東","F13":"西勢內埔","F14":"新大路關屏東","F15":"東港溪洲","F16":"恆春海口","F17":"恆春大坂埒","F18":"六龜里橫山","F19":"哨船頭鳳山","G1":"頭圍蘇澳","G2":"宜蘭蘇澳","G3":"蘇澳海岸","G3-1":"蘇澳停車場引入","G4":"南方澳","G4-1":"港邊","G5":"員山","G5-1":"員山溫泉","G5-2":"水源地","G5-3":"深溝","G6":"叭哩沙","G6-1":"羅東停車場","G6-2":"羅東引込","G6-3":"農庫","G7":"竹林貯木場","G8":"竹林二結","G9":"大洲","G10":"小南澳","G11":"利澤簡","G12":"一百甲","G13":"功勞","G13-1":"二結","H1":"臺東","H1-1":"水尾","H2":"南町指導所","H2-1":"卑南海岸","H2-2":"卑南社","H2-3":"南町卑南社","H2-4":"南町指導所","H2-5":"新町南町","H3":"吉野村","H4":"銅文蘭","H5":"新城","H6":"瑞穗溫泉","I1":"新竹","I2":"臺中","I3":"臺南","I3-1":"嘉義","I4":"打狗","I5":"塗葛窟","I6":"雲林","I7":"安平","I8":"鳳山","I9":"軍用速成"};
 
     /* 常用台車地名台羅對照詞庫（供一鍵自動補齊與拼組） */
@@ -356,7 +357,6 @@
         clean = clean.replace(/\(.*?\)|（.*?）/g, '').replace(/輕鐵|軌道|停車場引入|引込/g, '').trim();
         if (PLACE_TAILO_DICT[clean]) return PLACE_TAILO_DICT[clean] + suffix;
 
-        // 嘗試雙地名組合（例如 鹽水港三崁店、六塊厝直加弄、打貓北港）
         const keys = Object.keys(PLACE_TAILO_DICT).sort((a, b) => b.length - a.length);
         let remaining = clean;
         const parts = [];
@@ -457,7 +457,6 @@
     function compactTableHtml(htmlStr) {
         return String(htmlStr || '')
             .replace(/<!--HGIS_NARRATIVE_START-->[\s\S]*?<!--HGIS_NARRATIVE_END-->/g, '')
-            .replace(/^\s*<div style="margin-bottom:6px;">[\s\S]*?<\/div>/, '')
             .replace(/<table[^>]*>/g, '<table>')
             .replace(/<tr[^>]*>/g, '<tr>')
             .replace(/<td[^>]*>/g, '<td>')
@@ -991,7 +990,7 @@
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             document.getElementById('inventoryTitle').innerHTML = `
-                <span>✅ 現有 <code>data.json</code> 讀取成功！</span>
+                <span>✅ 現有 <code>data.json</code> 讀取成功（${TOOL_VERSION}）！</span>
                 <span style="font-size: 13px; background: #1a237e; color: white; padding: 3px 10px; border-radius: 12px;">
                     台車路線 ${routeCount} 筆（台羅 ${Object.keys(savedTailosMap).length} 筆 / 軌距 ${Object.keys(savedGaugesMap).length} 筆 / 沿革 ${Object.keys(savedNarrativesMap).length} 筆） / 車站 ${stationCount} 座
                 </span>
@@ -1001,10 +1000,11 @@
         .catch(() => {
             renderNameTailoGrid();
             renderGaugeGrid();
+            runDataDiagnostics();
             const invBox = document.getElementById('inventoryBox');
             invBox.style.display = 'block';
             invBox.className = 'status error';
-            invBox.innerHTML = `<b>⚠️ 無法自動讀取現有 <code>data.json</code></b>（將以全新狀態建立資料庫）。`;
+            invBox.innerHTML = `<b>⚠️ 無法自動讀取現有 <code>data.json</code></b>（可點擊上方「📂 手動載入本機 data.json」或以全新狀態建立資料庫）。`;
         });
 
     function parseWordNarrativeText(rawText) {
@@ -1170,7 +1170,7 @@
         return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
     }
 
-    function runNarrativeOrCleanUpdate() {
+    function runNarrativeOrCleanUpdate(silent = false) {
         if (!existingData) return;
         const removeSugar = document.getElementById('chkRemoveSugar').checked;
         Object.assign(savedNarrativesMap, pastedNarrativesMap);
@@ -1196,7 +1196,6 @@
             const rid = p.route_id;
             const pid = p.parent_id || rid;
 
-            // 套用修正後的路線名稱與台羅拼音
             if (savedNamesMap[rid]) p.name = savedNamesMap[rid];
             else if (rid === pid && savedNamesMap[pid]) p.name = savedNamesMap[pid];
 
@@ -1217,11 +1216,11 @@
             if (narObj) {
                 p.narrative = narObj;
                 if (!p.section && narObj.sectionText) p.section = narObj.sectionText;
-                p.description = { zh: injectNarrativeIntoDesc(oldZh, narObj.html) };
+                p.description = { zh: injectNarrativeIntoDesc(oldZh) };
                 p.last_updated = new Date().toISOString().split('T')[0];
             } else {
                 delete p.narrative;
-                p.description = { zh: injectNarrativeIntoDesc(oldZh, '') };
+                p.description = { zh: injectNarrativeIntoDesc(oldZh) };
             }
             updatedFeatures.push(f);
         });
@@ -1237,17 +1236,19 @@
             }
         };
 
+        document.getElementById('downloadBtn').style.display = 'inline-block';
+        if (silent) return;
+
         const sizeLabel = getCompactSizeLabel(finalGeoJson);
         const statusDiv = document.getElementById('status');
         statusDiv.style.display = 'block';
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
             <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">
-                🎉 路線名、台羅、軌距與沿革更新完成！共 ${updatedFeatures.length} 筆圖資（檔案大小 <b>${sizeLabel}</b>｜已套用台羅 ${tailoAppliedCount} 筆｜軌距 ${gaugeAppliedCount} 筆）
+                🎉（${TOOL_VERSION}）路線名、台羅、軌距與沿革更新完成！共 ${updatedFeatures.length} 筆圖資（檔案大小 <b>${sizeLabel}</b>｜已套用台羅 ${tailoAppliedCount} 筆｜軌距 ${gaugeAppliedCount} 筆）
             </div>
             <div>👉 請點擊上方藍色「<b>📥 下載最新瘦身版 data.json</b>」並覆蓋至 GitHub。</div>
         `;
-        document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
     function parseCSVLine(text) {
@@ -1339,6 +1340,7 @@
         });
         renderNameTailoGrid();
         renderGaugeGrid();
+        runDataDiagnostics();
     }
 
     document.getElementById('kmlFile').addEventListener('change', function(e) {
@@ -1556,8 +1558,8 @@
                     if (f.geometry) f.geometry = roundGeometry(f.geometry);
 
                     const oldZh = (p.description && p.description.zh) ? p.description.zh : '';
-                    if (narObj) { p.narrative = narObj; p.description = { zh: injectNarrativeIntoDesc(oldZh, narObj.html) }; }
-                    else { delete p.narrative; p.description = { zh: injectNarrativeIntoDesc(oldZh, '') }; }
+                    if (narObj) { p.narrative = narObj; p.description = { zh: injectNarrativeIntoDesc(oldZh) }; }
+                    else { delete p.narrative; p.description = { zh: injectNarrativeIntoDesc(oldZh) }; }
                     preservedFeatures.push(f);
                     preservedNames.push(p.route_id ? `${p.route_id} ${p.name}` : p.name);
                 }
@@ -1582,7 +1584,7 @@
         statusDiv.className = 'status success';
         statusDiv.innerHTML = `
             <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">
-                🎉 無損瘦身與縫合完成！總計 ${allFeatures.length} 筆圖資（檔案大小 <b>${sizeLabel}</b>）
+                🎉（${TOOL_VERSION}）無損瘦身與縫合完成！總計 ${allFeatures.length} 筆圖資（檔案大小 <b>${sizeLabel}</b>）
             </div>
             <div style="max-height:180px; overflow-y:auto; background:white; padding:10px; border-radius:6px; border:1px solid #c8e6c9; font-size:13px;">
                 ${matchedReport.join('<br>')}
@@ -1591,7 +1593,7 @@
         document.getElementById('downloadBtn').style.display = 'inline-block';
     }
 
-    /* 🛠️ v2.9 可擴充式「資料診斷與一鍵修復引擎」（所有規則集中管理，未來可隨時新增規則物件） */
+    /* 🛠️ v3.0 可擴充式「資料診斷與一鍵修復引擎」 */
     const REPAIR_RULES = [
         {
             id: 'sync_top_dicts',
@@ -1791,8 +1793,8 @@
         const titleEl = document.getElementById('repairCenterTitle');
         if (titleEl) {
             titleEl.innerHTML = totalIssues > 0
-                ? `🛠️ 資料診斷與一鍵修復中心（⚠️ 掃描發現 <span style="color:#d32f2f;">${totalIssues}</span> 處不同步或待優化項目）`
-                : `🛠️ 資料診斷與一鍵修復中心（✅ 目前資料完全同步無異常）`;
+                ? `🛠️ 資料診斷與一鍵修復中心（Data Doctor ${TOOL_VERSION}｜⚠️ 掃描發現 <span style="color:#d32f2f;">${totalIssues}</span> 處不同步或待優化項目）`
+                : `🛠️ 資料診斷與一鍵修復中心（Data Doctor ${TOOL_VERSION}｜✅ 目前資料完全同步無異常）`;
         }
     };
 
@@ -1909,7 +1911,7 @@
                 updateActionButtons();
                 const logBox = document.getElementById('repairLogBox');
                 logBox.style.display = 'block';
-                logBox.innerHTML = `📂 已成功載入本機 <b>${escapeHtml(file.name)}</b>！`;
+                logBox.innerHTML = `📂 已成功載入本機 <b>${escapeHtml(file.name)}</b>（${TOOL_VERSION}）！`;
             } catch (err) {
                 alert('解析 JSON 失敗：' + err.message);
             }
@@ -1918,10 +1920,13 @@
     };
 
     function downloadJSON() {
-        // 🔒 防呆關鍵：無論使用者在按「儲存」之後有沒有再改過輸入框，下載前一律強制重跑一次全圖層屬性同步，確保 features[].properties 與頂層字典 100% 一致！
         if (existingData && !(rawKmlTexts.length > 0 && Object.keys(csvRoutesMap).length > 0)) {
-            runNarrativeOrCleanUpdate();
+            runNarrativeOrCleanUpdate(true);
         } else if (finalGeoJson && finalGeoJson.data && Array.isArray(finalGeoJson.data.features)) {
+            finalGeoJson.data.names = savedNamesMap;
+            finalGeoJson.data.tailos = savedTailosMap;
+            finalGeoJson.data.gauges = savedGaugesMap;
+            finalGeoJson.data.narratives = savedNarrativesMap;
             finalGeoJson.data.features.forEach(f => {
                 const p = f.properties || {};
                 if (!p.route_id || (f.geometry && f.geometry.type === 'Point')) return;
