@@ -409,6 +409,7 @@
         let ROUTE_PHOTO_META = {};
         let currentPhotoMeta = { caption: '', source: '', link: '' };
         let globalNarrativesMap = {};
+        let customNamesDict = {};
 
         /* ✨ v11.0：格式化軌距（gauge）顯示字串 */
         function formatGaugeText(val) {
@@ -1969,10 +1970,12 @@
             const badgeText = currentMember ? currentMember.badgeText : `${p.route_id || groupKey} ${p.line_type || '主線'}`.trim();
             document.getElementById('drawer-badge').textContent = badgeText;
 
-            const subRefName = ROUTE_CODE_REF_MAP[currentId] || (currentMember && !/^(主線|舊線|副線|支線)/.test(currentMember.lineType) ? currentMember.lineType : '');
-            const mainRouteTitle = p.name || '未命名路線';
-            if (currentId !== groupKey && subRefName) {
-                const subFullTitle = subRefName.endsWith('線') ? subRefName : `${subRefName}線`;
+            const customMapName = customNamesDict[currentId] || '';
+            const subRefName = customMapName || ROUTE_CODE_REF_MAP[currentId] || (currentMember && !/^(主線|舊線|副線|支線)/.test(currentMember.lineType) ? currentMember.lineType : '');
+            const mainRouteTitle = customMapName || p.name || '未命名路線';
+            if (currentId !== groupKey && (customMapName || (p.name && p.name !== (masterRouteFeatureMap[groupKey]?.properties?.name)) || subRefName)) {
+                const chosenSub = customMapName || (p.name && p.name !== (masterRouteFeatureMap[groupKey]?.properties?.name) ? p.name : subRefName);
+                const subFullTitle = chosenSub.endsWith('線') ? chosenSub : `${chosenSub}線`;
                 document.getElementById('drawer-title').textContent = subFullTitle;
             } else {
                 document.getElementById('drawer-title').textContent = mainRouteTitle;
@@ -2741,6 +2744,12 @@
             .then(rawData => {
                 const geoData = rawData.data || rawData;
                 const rawNarratives = geoData.narratives || rawData.narratives || {};
+                customNamesDict = geoData.names || rawData.names || {};
+                Object.entries(customNamesDict).forEach(([k, v]) => {
+                    if (v && String(v).trim()) {
+                        ROUTE_CODE_REF_MAP[k] = String(v).trim().replace(/線$/, '');
+                    }
+                });
 
                 const rawFeatures = geoData.features || [];
                 const seenStations = new Set();
