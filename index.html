@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.0</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a237e; --primary-light: #e8eaf6; --accent: #ff7800; --drawer-width: 390px; }
@@ -411,7 +411,7 @@
         let globalNarrativesMap = {};
         let customNamesDict = {};
 
-        /* ✨ v11.0：格式化軌距（gauge）顯示字串 */
+        /* ✨ v11.2：格式化軌距（gauge）顯示字串 */
         function formatGaugeText(val) {
             if (val === undefined || val === null || val === '') return '';
             const num = Number(val);
@@ -436,7 +436,7 @@
             L.DomEvent.disableScrollPropagation(el);
         });
 
-        /* ✨ v11.0：多元現代底圖（OSM + 通用版電子地圖 NLSC + Google Maps）與中研院日治各時期歷史地形圖 */
+        /* ✨ v11.2：多元現代底圖（OSM + 通用版電子地圖 NLSC + Google Maps）與中研院日治各時期歷史地形圖 */
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
         const nlscEmapUrl = location.protocol === 'https:'
             ? 'https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}'
@@ -2004,7 +2004,7 @@
 
             const activeNarObj = renderRouteNarrative(feature, groupKey, currentId);
 
-            /* ✨ v11.0：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
+            /* ✨ v11.2：讀取並格式化軌距（gauge），優先取當前路線，無則繼承家族主線 */
             const rawGauge = (currentMember && currentMember.gauge !== undefined && currentMember.gauge !== null && currentMember.gauge !== '')
                 ? currentMember.gauge
                 : ((p.gauge !== undefined && p.gauge !== null && p.gauge !== '')
@@ -2037,7 +2037,7 @@
                 famTabsBox.style.display = 'none';
             }
 
-            activeRouteName = p.name || '未命名';
+            activeRouteName = document.getElementById('drawer-title').textContent || p.name || '未命名';
             activeRouteSection = cleanSec;
             if (selectedGroupKey === groupKey) {
                 input.value = activeRouteName;
@@ -2771,7 +2771,6 @@
 
                 const routeFeaturesList = [];
                 const stationFeaturesList = [];
-                const routeGroupSeen = new Set();
 
                 cleanFeatures.forEach(f => {
                     const p = f.properties || {};
@@ -2831,21 +2830,28 @@
                     st.properties._boundRouteIds = Array.from(boundRouteIds);
                 });
 
-                routeFeaturesList.forEach(f => {
-                    const p = f.properties || {};
-                    const groupKey = p.parent_id || p.route_id || p.name;
-                    if (!routeGroupSeen.has(groupKey) && (p.line_type === "主線" || !p.line_type)) {
-                        routeGroupSeen.add(groupKey);
-                        searchableRoutes.push(f);
-                    }
-                });
-                routeFeaturesList.forEach(f => {
-                    const p = f.properties || {};
-                    const groupKey = p.parent_id || p.route_id || p.name;
-                    if (!routeGroupSeen.has(groupKey)) {
-                        routeGroupSeen.add(groupKey);
-                        searchableRoutes.push(f);
-                    }
+                const searchableIdSeen = new Set();
+                Object.keys(familyMembersMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(gk => {
+                    const members = familyMembersMap[gk] || [];
+                    members.forEach(m => {
+                        if (!m || !m.feature || searchableIdSeen.has(m.id)) return;
+                        const feat = m.feature;
+                        const p = feat.properties || {};
+                        const isMain = (m.id === gk);
+                        const customSubName = customNamesDict[m.id] || '';
+                        const refSubName = ROUTE_CODE_REF_MAP[m.id] || '';
+                        const parentMasterName = (masterRouteFeatureMap[gk] && masterRouteFeatureMap[gk].properties && masterRouteFeatureMap[gk].properties.name) || '';
+                        const hasDistinctName = Boolean(
+                            customSubName ||
+                            (p.name && p.name !== parentMasterName) ||
+                            (refSubName && (refSubName + '線') !== parentMasterName && refSubName !== parentMasterName)
+                        );
+                        const hasOwnInfo = Boolean(m.hasTable || globalNarrativesMap[m.id] || hasDistinctName);
+                        if (!isMain && !hasOwnInfo) return;
+
+                        searchableIdSeen.add(m.id);
+                        searchableRoutes.push(feat);
+                    });
                 });
 
                                 /* ✨ 預先建立年份區間、業者集合與搜尋快取索引（將縮放篩選與打字搜尋降為 O(1) 零延遲） */
@@ -2861,26 +2867,49 @@
                     st._normName = normalizeSearchText(p.name);
                 });
 
+                const topTailosDict = geoData.tailos || rawData.tailos || {};
                 searchableRoutes.forEach(f => {
                     const p = f.properties || {};
-                    const gk = p.parent_id || p.route_id || '';
+                    const rid = p.route_id || p.name || '';
+                    const gk = p.parent_id || rid;
+                    const isSub = (rid !== gk);
                     const famList = familyMembersMap[gk] || [];
+                    const curMember = famList.find(m => m.id === rid);
+
+                    let resolvedDisplayName = customNamesDict[rid] || p.name || '未命名';
+                    if (isSub && !customNamesDict[rid]) {
+                        const parentName = (masterRouteFeatureMap[gk] && masterRouteFeatureMap[gk].properties && masterRouteFeatureMap[gk].properties.name) || '';
+                        if (!p.name || p.name === parentName) {
+                            const subRef = ROUTE_CODE_REF_MAP[rid] || '';
+                            if (subRef) resolvedDisplayName = subRef.endsWith('線') ? subRef : (subRef + '線');
+                        }
+                    }
+
+                    const resolvedTailo = topTailosDict[rid] || p.tailo || '';
                     const famNarTexts = [];
-                    if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
-                    famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
+                    if (isSub) {
+                        if (globalNarrativesMap[rid]) famNarTexts.push(globalNarrativesMap[rid]);
+                    } else {
+                        if (globalNarrativesMap[gk]) famNarTexts.push(globalNarrativesMap[gk]);
+                        famList.forEach(m => { if (globalNarrativesMap[m.id]) famNarTexts.push(globalNarrativesMap[m.id]); });
+                    }
                     const narText = normalizeSearchText(famNarTexts.map(n => [n.sectionText, n.openDate, ...(n.paragraphs || [])].join(' ')).join(' '));
-                    const cleanTailo = normalizeSearchText(p.tailo || '');
+                    const cleanTailo = normalizeSearchText(resolvedTailo);
                     const firstChar = (cleanTailo.match(/[a-z]/i) || ['#'])[0].toUpperCase();
-                    const cleanSec = (p.section || '').replace(/\s*\([^)]*\)$/, '');
+                    const cleanSec = ((curMember && curMember.section) || p.section || '').replace(/\s*\([^)]*\)$/, '');
+                    const opsStr = (curMember && curMember.operators) || p.operators || '';
 
                     f._searchCache = {
+                        rid,
                         gk,
-                        code: normalizeSearchText(gk),
-                        name: normalizeSearchText(p.name),
+                        isSub,
+                        displayName: resolvedDisplayName,
+                        code: normalizeSearchText(rid),
+                        name: normalizeSearchText(resolvedDisplayName),
                         tai: cleanTailo,
-                        taiCompact: compactSearchText(p.tailo || p.name || ''),
+                        taiCompact: compactSearchText(resolvedTailo || resolvedDisplayName || ''),
                         alt: normalizeSearchText(p.alt_names),
-                        ops: normalizeSearchText(p.operators),
+                        ops: normalizeSearchText(opsStr),
                         gaugeStr: p.gauge ? String(p.gauge) : '',
                         narText,
                         firstChar,
@@ -2994,7 +3023,64 @@
             }
         });
 
-        input.addEventListener('blur', () => syncDisplay());
+        input.addEventListener('blur', () => {
+            if (/[1-8]/.test(input.value)) {
+                const converted = convertTailoToneNumbers(input.value);
+                if (converted !== input.value) {
+                    input.value = converted;
+                    if (dropdown.style.display === 'block') renderList(input.value);
+                }
+            }
+            syncDisplay();
+        });
+
+        function convertTailoToneNumbers(input) {
+        if (!input) return '';
+        const toneMap = {
+            a: {2:'á',3:'à',5:'â',6:'ǎ',7:'ā',8:'a̍'},
+            A: {2:'Á',3:'À',5:'Â',6:'Ǎ',7:'Ā',8:'A̍'},
+            e: {2:'é',3:'è',5:'ê',6:'ě',7:'ē',8:'e̍'},
+            E: {2:'É',3:'È',5:'Ê',6:'Ě',7:'Ē',8:'E̍'},
+            i: {2:'í',3:'ì',5:'î',6:'ǐ',7:'ī',8:'i̍'},
+            I: {2:'Í',3:'Ì',5:'Î',6:'Ǐ',7:'Ī',8:'I̍'},
+            o: {2:'ó',3:'ò',5:'ô',6:'ǒ',7:'ō',8:'o̍'},
+            O: {2:'Ó',3:'Ò',5:'Ô',6:'Ǒ',7:'Ō',8:'O̍'},
+            u: {2:'ú',3:'ù',5:'û',6:'ǔ',7:'ū',8:'u̍'},
+            U: {2:'Ú',3:'Ù',5:'Û',6:'Ǔ',7:'Ū',8:'U̍'},
+            m: {2:'ḿ',3:'m̀',5:'m̂',6:'m̌',7:'m̄',8:'m̍'},
+            M: {2:'Ḿ',3:'M̀',5:'M̂',6:'M̌',7:'M̄',8:'M̍'},
+            n: {2:'ń',3:'ǹ',5:'n̂',6:'ň',7:'n̄',8:'n̍'},
+            N: {2:'Ń',3:'Ǹ',5:'N̂',6:'Ň',7:'N̄',8:'N̍'}
+        };
+        return String(input).replace(/([a-zA-Z]+)([1-8])/g, (full, syl, dStr) => {
+            const d = parseInt(dStr, 10);
+            if (d === 1 || d === 4) return syl;
+            const markAt = (idx) => {
+                const ch = syl[idx];
+                const rep = toneMap[ch] && toneMap[ch][d];
+                return rep ? syl.slice(0, idx) + rep + syl.slice(idx + 1) : syl;
+            };
+            const mOO = syl.match(/oo/i);
+            if (mOO) return markAt(mOO.index);
+            const mA = syl.match(/a/i);
+            if (mA) return markAt(mA.index);
+            const mE = syl.match(/e/i);
+            if (mE) return markAt(mE.index);
+            const mO = syl.match(/o/i);
+            if (mO) return markAt(mO.index);
+            const mUI = syl.match(/(?:ui|iu)/i);
+            if (mUI) return markAt(mUI.index + 1);
+            const mI = syl.match(/i/i);
+            if (mI) return markAt(mI.index);
+            const mU = syl.match(/u/i);
+            if (mU) return markAt(mU.index);
+            const mNG = syl.match(/ng/i);
+            if (mNG) return markAt(mNG.index);
+            const mM = syl.match(/m/i);
+            if (mM) return markAt(mM.index);
+            return full;
+        });
+    }
 
         function normalizeSearchText(s) {
             return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -3083,7 +3169,7 @@
                     item.setAttribute('role', 'option');
                     item.tabIndex = 0;
                     const left = document.createElement('span');
-                    left.textContent = p.name || '未命名';
+                    left.textContent = sc.displayName || p.name || '未命名';
                     if (sc.shortSec16) {
                         const subSpan = document.createElement('span');
                         subSpan.style.cssText = 'font-size:12px; color:#999; margin-left:6px; font-weight:normal;';
@@ -3091,13 +3177,17 @@
                         left.appendChild(subSpan);
                     }
                     item.appendChild(left);
-                    if (sc.gk) {
+                    if (sc.rid) {
                         const label = document.createElement('span');
                         label.className = 'match-tag code';
-                        label.textContent = sc.gk;
+                        label.textContent = sc.rid;
                         item.appendChild(label);
                     }
-                    const onSelect = () => { closeSearchResults(); highlightRouteGroup(f, true); };
+                    const onSelect = () => {
+                        closeSearchResults();
+                        highlightRouteGroup(f, true);
+                        if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
+                    };
                     item.addEventListener('click', e => { e.stopPropagation(); onSelect(); });
                     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } });
                     frag.appendChild(item);
@@ -3132,7 +3222,7 @@
                     rank = 7; matchHint = '📖 沿革提及';
                 } else return;
 
-                results.push({ f, rank, code: sc.gk, matchHint, cleanSec: sc.cleanSec });
+                results.push({ f, rank, code: sc.rid, gk: sc.gk, isSub: sc.isSub, displayName: sc.displayName, matchHint, cleanSec: sc.cleanSec });
             });
             results.sort((a, b) => a.rank - b.rank || String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
 
@@ -3163,14 +3253,18 @@
             }
             if (results.length) {
                 addSearchHeader(`🛤️ 路線（${results.length}）`);
-                results.forEach(({ f, code, matchHint, cleanSec }) => {
+                results.forEach(({ f, code, gk, isSub, displayName, matchHint, cleanSec }) => {
                     const p = f.properties || {};
                     const sub = matchHint ? (cleanSec ? `${cleanSec} · ${matchHint}` : matchHint) : cleanSec;
                     const shortSub = sub.length > 22 ? sub.slice(0, 22) + '…' : sub;
                     addSearchItem(
-                        p.name || '未命名',
+                        displayName || p.name || '未命名',
                         code,
-                        () => { closeSearchResults(); highlightRouteGroup(f, true); },
+                        () => {
+                            closeSearchResults();
+                            highlightRouteGroup(f, true);
+                            if (isSub) window.switchFamilyMember(gk, code);
+                        },
                         'code',
                         shortSub
                     );
@@ -3229,6 +3323,14 @@
         });
 
         input.oninput = function() {
+            if (/[1-8]/.test(this.value)) {
+                const converted = convertTailoToneNumbers(this.value);
+                if (converted !== this.value) {
+                    const endPos = converted.length;
+                    this.value = converted;
+                    try { this.setSelectionRange(endPos, endPos); } catch (_) {}
+                }
+            }
             if (this.value !== activeRouteName) { activeRouteName = ''; activeRouteSection = ''; }
             syncDisplay();
             renderList(this.value);
