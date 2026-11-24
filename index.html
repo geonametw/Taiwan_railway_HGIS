@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.2</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.3</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -148,6 +148,11 @@
         #drawer-photo-box { display: none; margin-bottom: 14px; border-radius: 8px; overflow: hidden; border: 1px solid #d1d9ff; background: #111; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
         #drawer-photo-img { width: 100%; max-height: 240px; object-fit: cover; display: block; cursor: zoom-in; }
         .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.68); color: white; font-size: 11px; padding: 3px 8px; border-radius: 12px; pointer-events: none; }
+        .photo-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.55); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; line-height: 1; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 3; }
+        .photo-nav-btn:hover { background: rgba(0,0,0,0.82); }
+        #photo-prev-btn { left: 8px; }
+        #photo-next-btn { right: 8px; }
+        #photo-counter { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.68); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; display: none; pointer-events: none; z-index: 3; }
         .narrative-card { background: #f8f9fc; border: 1px solid #d8def4; border-left: 4px solid var(--primary); border-radius: 8px; padding: 9px 11px; font-size: 13px; color: #222; line-height: 1.62; margin-bottom: 8px; }
         .narrative-sub-header { font-weight: bold; color: var(--primary); font-size: 12px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .narrative-meta-box { background: #eef2ff; border-radius: 5px; padding: 5px 8px; margin-bottom: 7px; font-size: 12px; color: #1a237e; line-height: 1.45; }
@@ -195,6 +200,11 @@
         .lightbox-source-link { color: #90caf9; text-decoration: underline; text-underline-offset: 3px; font-weight: bold; transition: color 0.15s; }
         .lightbox-source-link:hover { color: #fff59d; }
         #lightbox-close { position: absolute; top: 20px; right: 25px; background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        .lightbox-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.18); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 26px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
+        .lightbox-nav-btn:hover { background: rgba(255,255,255,0.35); }
+        #lightbox-prev { left: 16px; }
+        #lightbox-next { right: 16px; }
+        .lightbox-note-row { margin-top: 4px; font-size: 13px; color: #ffe082; }
         #toast-msg { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(33,33,33,0.95); color: white; padding: 9px 18px; border-radius: 20px; font-size: 13px; z-index: 3500; display: none; box-shadow: 0 4px 14px rgba(0,0,0,0.35); white-space: nowrap; pointer-events: none; }
         .station-label { background: rgba(255, 255, 255, 0.9); border: 1px solid #7986cb; color: #1a237e; font-weight: bold; font-size: 11px; padding: 1px 5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); pointer-events: none; white-space: nowrap; will-change: transform; }
         .leaflet-control-layers { font-family: inherit; border-radius: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important; padding: 5px; }
@@ -334,6 +344,9 @@
             <div id="drawer-summary" aria-live="polite"></div>
             <div id="drawer-photo-box">
                 <span class="photo-zoom-hint">🔍 點擊放大與查看圖說</span>
+                <button type="button" class="photo-nav-btn" id="photo-prev-btn" onclick="event.stopPropagation(); stepPhoto(-1)" aria-label="上一張照片">&#8249;</button>
+                <button type="button" class="photo-nav-btn" id="photo-next-btn" onclick="event.stopPropagation(); stepPhoto(1)" aria-label="下一張照片">&#8250;</button>
+                <span id="photo-counter"></span>
                 <img id="drawer-photo-img" src="" alt="路線歷史照片" onclick="openLightbox()">
             </div>
 
@@ -362,6 +375,8 @@
 
     <div id="photo-lightbox" onclick="closeLightbox()">
         <button id="lightbox-close">&times;</button>
+        <button type="button" class="lightbox-nav-btn" id="lightbox-prev" onclick="event.stopPropagation(); stepPhoto(-1)" aria-label="上一張照片">&#8249;</button>
+        <button type="button" class="lightbox-nav-btn" id="lightbox-next" onclick="event.stopPropagation(); stepPhoto(1)" aria-label="下一張照片">&#8250;</button>
         <img id="lightbox-img" src="" alt="放大歷史照片" onclick="event.stopPropagation()">
         <div id="lightbox-caption" onclick="event.stopPropagation()"></div>
     </div>
@@ -419,7 +434,9 @@
         const ROUTE_CODE_REF_MAP = {"A1": "三爪子", "A1-1": "三爪子複線", "A1-2": "瑞芳停車場引入", "A2": "金瓜石", "A3": "金山", "A3-1": "金山野柳段", "A3-2": "觀音町", "A4": "錫板", "A4-1": "水碓仔", "A5": "松三", "A6": "深坑", "A6-1": "指南宮", "A7": "十五份", "A8": "南門屈尺", "A8-1": "南門複線", "A9": "古亭村庄大稻埕", "A10": "大稻埕錫口", "A11": "龍匣口", "A12": "頂埔", "A12-1": "新埔", "A12-2": "枋橋", "A12-3": "萬華驛", "A13": "鷺洲新莊", "A13-1": "和尚洲", "A13-2": "橋頭", "A14": "板橋", "A15": "萬華", "A16": "成福", "A16-1": "成福複線", "A16-2": "三角湧", "A17": "中庄", "A17-1": "貨物", "A18": "大湖", "A19": "媽祖田", "A20": "佳園", "A21": "新樹", "A22": "三井(烏來)", "A23": "三井(三峽合流)", "B1": "新莊", "B1-1": "塔寮坑", "B2": "南崁", "B2-1": "北門", "B3": "大溪複線", "B3-1": "大溪單線", "B4": "角板山", "B5": "大園", "B6": "竹圍", "B7": "中壢", "B8": "中壢", "B8-1": "觀音", "B8-2": "龍潭", "B9": "下大堀", "B10": "新屋(中壢)", "B11": "東勢", "B12": "三坑仔", "B13": "楊梅", "B13-1": "下水流", "B14": "大陂", "B15": "伯公岡", "B16": "湖口", "B17": "平關", "B18": "橫崗頭", "B19": "紅關", "B19-1": "紅關複線", "B19-2": "犁頭山", "B20": "新埔輕鐵", "B21": "石門", "B22": "馬武督", "B23": "竹東", "B23-1": "竹東", "B23-2": "新竹單", "B23-3": "鹿寮坑", "B24": "北埔", "B25": "上坪", "B26": "芎林(臺灣軌道)", "B27": "芎林(文林軌道)", "B27-1": "石壁坑竹東", "B28": "芎林(帝國製糖)", "B29": "舊港", "B29-1": "北門", "B29-2": "舊社", "B29-3": "南寮", "B29-4": "舊港岔", "B30": "南寮油車港", "B31": "油車港", "C1": "竹南", "C1-1": "竹南複", "C1-2": "斗煥坪", "C1-3": "大南埔", "C2": "中港街", "C3": "尖山下錦水", "C3-1": "造橋", "C4": "錦水", "C4-1": "二坪岡", "C5": "後攏驛後攏街", "C5-1": "後攏驛崁頭屋", "C5-2": "後攏街大山腳", "C5-3": "後攏街新港", "C6": "公司寮", "C7": "苗栗", "C7-1": "苗栗複線", "C7-2": "苗栗內麻", "C7-3": "出磺坑", "C8": "銅鑼灣福基", "C9": "銅鑼灣山腳", "C10": "日南", "C10-1": "五里牌", "C11": "三叉", "C12": "卓蘭", "D1": "后里", "D2": "月眉", "D3": "大安港", "D4": "甲南", "D5": "四塊厝", "D6": "公館", "D7": "清水", "D7-1": "清水", "D8": "梧棲", "D9": "神崗崎頭", "D10": "神崗", "D11": "東勢", "D11-1": "東勢複線", "D11-2": "葫蘆墩驛", "D11-3": "貯木池", "D12": "水底寮", "D13": "馬力埔", "D14": "牛欄坑", "D15": "中坑坪", "D16": "臺中", "D16-1": "大雅支", "D16-2": "北屯", "D16-3": "三貴城", "D17": "埧雅", "D18": "大雅", "D19": "西屯", "D20": "頭汴坑", "D20-1": "三汴", "D20-2": "廍子", "D20-3": "太平", "D20-4": "芭蕉市場", "D21": "南屯", "D22": "烏日", "D23": "龍井", "D23-1": "海埔厝", "D23-2": "龍目井", "D24": "臺中南投", "D25": "大里", "D26": "霧峰(霧峰宏業)", "D27": "霧峰(霧峰輕鐵)", "D28": "大平", "D28-1": "竹子坑支", "D28-2": "牛角坑支", "D29": "青桐林", "D30": "六股", "D31": "彰草", "D31-1": "八卦山", "D32": "彰化鹿港", "D32-1": "鹿港新營口", "D33": "彰化軌道", "D34": "溪州二林", "D35": "員林鹿港", "D36": "員林", "D36-1": "員林複線", "D36-2": "員林東山", "D36-3": "東山湳雅", "D36-4": "湖水坑支線", "D36-5": "海豐崙支線", "D37": "下見口", "D38": "秀水茄苳腳", "D39": "土城", "D40": "國姓", "D41": "集南", "D41-1": "南投分歧線", "D41-2": "番子吧", "D41-3": "暗坑", "D41-4": "粗坑", "D42": "龍眼林", "D43": "集鹿", "D44": "新高", "D44-1": "貨物", "D45": "埔里", "D45-1": "埔里複線", "D46": "二八水", "D47": "濁水", "D48": "田中央驛田中央街", "D49": "北斗田中央", "D50": "竹山", "D50-1": "東埔蚋複線", "D50-2": "林圯埔", "D50-3": "大坑", "D51": "社寮", "D51-1": "名間", "D52": "車輄寮", "D53": "溪頭", "D54": "名濁", "D55": "西螺", "D56": "內林", "D57": "斗六糖廠", "D58": "土庫", "D59": "埔眉", "E1": "打貓北港", "E2": "新港驛新港街", "E3": "梅山", "E4": "嘉義小梅", "E5": "中埔", "E5-1": "南門西門", "E5-2": "沄水", "E5-3": "三界埔", "E5-4": "石硦", "E6": "觸口", "E6-1": "番路(臺中輕鐵)", "E7": "番路(內外食品)", "E8": "內埔子鹿麻產", "E9": "竹崎輕鐵", "E10": "關子嶺", "E10-1": "菁寮", "E10-2": "後壁", "E10-3": "木屐寮", "E10-4": "仙草埔", "E10-5": "關子嶺溫泉", "E11": "番社", "E12": "六重溪", "E13": "崎子頭", "E13-1": "前大埔", "E14": "烏山頭", "E15": "六甲", "E16": "北門", "E17": "鹽水", "E18": "善化市街", "E19": "善化二重溪", "E19-1": "大內北勢洲", "E20": "玉井", "E21": "大目降", "E21-1": "糖業科", "E21-2": "新市", "E21-3": "虎頭埤", "E22": "安平", "E23": "喜樹", "E23-1": "屠畜場", "E24": "關廟", "E24-1": "東市場", "E25": "番子寮", "E25-1": "麻豆", "E25-2": "麻豆市街", "E25-3": "西港麻豆", "E25-4": "西港番子寮", "E25-5": "鹽水港三崁店", "E25-6": "六塊厝直加弄", "E26": "嘉義公園", "E26-1": "郵局西門", "E27": "台南水道", "F1": "石材", "F2": "路竹", "F3": "燕巢", "F4": "岡山阿蓮", "F4-1": "大岡山", "F5": "赤崁", "F5-1": "彌陀", "F6": "鳳山苓雅寮", "F7": "蕃薯寮楠仔坑", "F8": "舊寮中庄", "F9": "九曲堂驛阿缑", "F10": "阿缑東港", "F10-1": "萬巒四溝水", "F10-2": "打鐵新埤頭", "F11": "東港枋寮", "F11-1": "頂中街海岸", "F11-2": "下中街", "F11-3": "磘仔口竹仔腳", "F12": "麟洛屏東", "F13": "西勢內埔", "F14": "新大路關屏東", "F15": "東港溪洲", "F16": "恆春海口", "F17": "恆春大坂埒", "F18": "六龜里橫山", "F19": "哨船頭鳳山", "G1": "頭圍蘇澳", "G2": "宜蘭蘇澳", "G3": "蘇澳海岸", "G3-1": "蘇澳停車場引入", "G4": "南方澳", "G4-1": "港邊", "G5": "員山", "G5-1": "員山溫泉", "G5-2": "水源地", "G5-3": "深溝", "G6": "叭哩沙", "G6-1": "羅東停車場", "G6-2": "羅東引込", "G6-3": "農庫", "G7": "竹林貯木場", "G8": "竹林二結", "G9": "大洲", "G10": "小南澳", "G11": "利澤簡", "G12": "一百甲", "G13": "功勞", "G13-1": "二結", "H1": "臺東", "H1-1": "水尾", "H2": "南町指導所", "H2-1": "卑南海岸", "H2-2": "卑南社", "H2-3": "南町卑南社", "H2-4": "南町指導所", "H2-5": "新町南町", "H3": "吉野村", "H4": "銅文蘭", "H5": "新城", "H6": "瑞穗溫泉", "I1": "新竹", "I2": "臺中", "I3": "臺南", "I3-1": "嘉義", "I4": "打狗", "I5": "塗葛窟", "I6": "雲林", "I7": "安平", "I8": "鳳山", "I9": "軍用速成"};
 
         let ROUTE_PHOTO_META = {};
-        let currentPhotoMeta = { caption: '', source: '', link: '' };
+        let currentPhotoMeta = { caption: '', note: '', source: '', link: '' };
+        let currentPhotoList = [];
+        let currentPhotoIdx = 0;
         let globalNarrativesMap = {};
         let customNamesDict = {};
 
@@ -1445,52 +1462,80 @@
             updateVisibleStationTooltips();
         }
 
-        function loadRoutePhoto(feature) {
-            const p = feature.properties || {};
+        function renderCurrentDrawerPhoto() {
             const photoBox = document.getElementById('drawer-photo-box');
             const photoImg = document.getElementById('drawer-photo-img');
-            photoBox.style.display = 'none';
-            photoImg.removeAttribute('src');
-            currentPhotoMeta = { caption: '', source: '', link: '' };
+            const prevBtn = document.getElementById('photo-prev-btn');
+            const nextBtn = document.getElementById('photo-next-btn');
+            const counter = document.getElementById('photo-counter');
+            if (!currentPhotoList.length) {
+                photoBox.style.display = 'none';
+                photoImg.removeAttribute('src');
+                currentPhotoMeta = { caption: '', note: '', source: '', link: '' };
+                return;
+            }
+            const item = currentPhotoList[currentPhotoIdx];
+            photoImg.src = item.src;
+            currentPhotoMeta = { caption: item.caption || '', note: item.note || '', source: item.source || '', link: item.link || '' };
+            const multi = currentPhotoList.length > 1;
+            prevBtn.style.display = multi ? 'flex' : 'none';
+            nextBtn.style.display = multi ? 'flex' : 'none';
+            counter.style.display = multi ? 'block' : 'none';
+            if (multi) counter.textContent = `${currentPhotoIdx + 1} / ${currentPhotoList.length}`;
+            photoBox.style.display = 'block';
+        }
+
+        function stepPhoto(delta) {
+            if (currentPhotoList.length <= 1) return;
+            currentPhotoIdx = (currentPhotoIdx + delta + currentPhotoList.length) % currentPhotoList.length;
+            renderCurrentDrawerPhoto();
+            if (document.getElementById('photo-lightbox').classList.contains('open')) openLightbox();
+        }
+
+        function loadRoutePhoto(feature) {
+            const p = feature.properties || {};
+            currentPhotoList = [];
+            currentPhotoIdx = 0;
+            renderCurrentDrawerPhoto();
 
             const codeKey = p.route_id || p.parent_id || selectedGroupKey || '';
             const parentKey = p.parent_id || selectedGroupKey || '';
             const rawMeta = ROUTE_PHOTO_META[codeKey] || ROUTE_PHOTO_META[parentKey] || null;
-            const presetMeta = Array.isArray(rawMeta) ? rawMeta[0] : rawMeta;
+            const metaArr = Array.isArray(rawMeta) ? rawMeta : (rawMeta ? [rawMeta] : []);
+            const presetMeta = metaArr[0] || null;
 
-            if (presetMeta && presetMeta.file) {
-                const filePath = (presetMeta.file.startsWith('http') || presetMeta.file.startsWith('photos/'))
-                    ? presetMeta.file
-                    : `photos/${presetMeta.file}`;
-                photoImg.src = filePath;
-                currentPhotoMeta = {
-                    caption: presetMeta.caption || `${p.name} 歷史影像`,
-                    source: presetMeta.source || '',
-                    link: presetMeta.link || presetMeta.url || ''
-                };
-                photoBox.style.display = 'block';
+            if (metaArr.length > 0 && metaArr.some(m => m && m.file)) {
+                currentPhotoList = metaArr.filter(m => m && m.file).map(m => ({
+                    src: (m.file.startsWith('http') || m.file.startsWith('photos/')) ? m.file : `photos/${m.file}`,
+                    caption: m.caption || `${p.name} 歷史影像`,
+                    note: m.note || '',
+                    source: m.source || '',
+                    link: m.link || m.url || ''
+                }));
+                renderCurrentDrawerPhoto();
                 return;
             }
 
             if (p.photos && Array.isArray(p.photos) && p.photos.length > 0) {
-                const item = p.photos[0];
-                photoImg.src = item.url;
-                currentPhotoMeta = {
+                currentPhotoList = p.photos.map(item => ({
+                    src: item.url,
                     caption: item.caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                    note: item.note || (presetMeta && presetMeta.note) || '',
                     source: item.source || (presetMeta && presetMeta.source) || item.year || '',
                     link: item.link || item.url_source || (presetMeta && (presetMeta.link || presetMeta.url)) || ''
-                };
-                photoBox.style.display = 'block';
+                }));
+                renderCurrentDrawerPhoto();
                 return;
             }
             if (p.photo) {
-                photoImg.src = p.photo;
-                currentPhotoMeta = {
+                currentPhotoList = [{
+                    src: p.photo,
                     caption: p.photo_caption || (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                    note: p.photo_note || (presetMeta && presetMeta.note) || '',
                     source: p.photo_source || (presetMeta && presetMeta.source) || '',
                     link: p.photo_link || p.photo_url || (presetMeta && (presetMeta.link || presetMeta.url)) || ''
-                };
-                photoBox.style.display = 'block';
+                }];
+                renderCurrentDrawerPhoto();
                 return;
             }
 
@@ -1513,13 +1558,14 @@
                 const testImg = new Image();
                 testImg.onload = function() {
                     if (currentDrawerFeature !== feature) return;
-                    photoImg.src = candidates[idx];
-                    currentPhotoMeta = {
+                    currentPhotoList = [{
+                        src: candidates[idx],
                         caption: (presetMeta && presetMeta.caption) || `${p.name} 歷史影像`,
+                        note: (presetMeta && presetMeta.note) || '',
                         source: (presetMeta && presetMeta.source) || '',
                         link: (presetMeta && (presetMeta.link || presetMeta.url)) || ''
-                    };
-                    photoBox.style.display = 'block';
+                    }];
+                    renderCurrentDrawerPhoto();
                 };
                 testImg.onerror = () => tryNext(idx + 1);
                 testImg.src = candidates[idx];
@@ -1532,14 +1578,27 @@
             if (!src) return;
             document.getElementById('lightbox-img').src = src;
 
+            const multi = currentPhotoList.length > 1;
+            document.getElementById('lightbox-prev').style.display = multi ? 'flex' : 'none';
+            document.getElementById('lightbox-next').style.display = multi ? 'flex' : 'none';
+
             const capBox = document.getElementById('lightbox-caption');
             capBox.innerHTML = '';
 
             if (currentPhotoMeta.caption) {
                 const titleDiv = document.createElement('div');
                 titleDiv.style.fontWeight = 'bold';
-                titleDiv.textContent = currentPhotoMeta.caption;
+                titleDiv.textContent = multi
+                    ? `${currentPhotoMeta.caption} (${currentPhotoIdx + 1}/${currentPhotoList.length})`
+                    : currentPhotoMeta.caption;
                 capBox.appendChild(titleDiv);
+            }
+
+            if (currentPhotoMeta.note) {
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'lightbox-note-row';
+                noteDiv.textContent = `📝 ${currentPhotoMeta.note}`;
+                capBox.appendChild(noteDiv);
             }
 
             if (currentPhotoMeta.source || currentPhotoMeta.link) {
@@ -1566,6 +1625,12 @@
             document.getElementById('photo-lightbox').classList.add('open');
         }
         function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
+        document.addEventListener('keydown', e => {
+            if (!document.getElementById('photo-lightbox').classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            else if (e.key === 'ArrowLeft') stepPhoto(-1);
+            else if (e.key === 'ArrowRight') stepPhoto(1);
+        });
 
         window.jumpToFootnote = function(prefix, num) {
             const target = document.getElementById(`nar-fn-item-${prefix}-${num}`);
@@ -3035,16 +3100,7 @@
             }
         });
 
-        input.addEventListener('blur', () => {
-            if (/[1-8]/.test(input.value)) {
-                const converted = convertTailoToneNumbers(input.value);
-                if (converted !== input.value) {
-                    input.value = converted;
-                    if (dropdown.style.display === 'block') renderList(input.value);
-                }
-            }
-            syncDisplay();
-        });
+        input.addEventListener('blur', () => syncDisplay());
 
         function convertTailoToneNumbers(input) {
         if (!input) return '';
@@ -3065,6 +3121,7 @@
             N: {2:'Ń',3:'Ǹ',5:'N̂',6:'Ň',7:'N̄',8:'N̍'}
         };
         return String(input).replace(/([a-zA-Z]+)([1-8])/g, (full, syl, dStr) => {
+            if (!/[aeiou]|ng|m/i.test(syl)) return full;
             const d = parseInt(dStr, 10);
             if (d === 1 || d === 4) return syl;
             const markAt = (idx) => {
@@ -3140,6 +3197,9 @@
             const rawTrim = String(val || '').trim();
             const keyword = normalizeSearchText(rawTrim);
             const compactKey = compactSearchText(rawTrim);
+            const tailoConverted = /[1-8]/.test(rawTrim) ? convertTailoToneNumbers(rawTrim) : rawTrim;
+            const tailoKeyword = normalizeSearchText(tailoConverted);
+            const tailoCompactKey = compactSearchText(tailoConverted);
             dropdown.replaceChildren();
             clearBtn.style.display = 'block';
 
@@ -3222,7 +3282,7 @@
                 else if (sc.code.startsWith(keyword)) rank = 2;
                 else if (sc.name.startsWith(keyword)) rank = 3;
                 else if (sc.code.includes(keyword) || sc.name.includes(keyword)) rank = 4;
-                else if (sc.tai.includes(keyword) || (compactKey && sc.taiCompact.includes(compactKey))) {
+                else if (sc.tai.includes(keyword) || (compactKey && sc.taiCompact.includes(compactKey)) || sc.tai.includes(tailoKeyword) || (tailoCompactKey && sc.taiCompact.includes(tailoCompactKey))) {
                     rank = 5; matchHint = p.tailo || '';
                 } else if (sc.alt.includes(keyword)) {
                     rank = 5; matchHint = `舊稱: ${p.alt_names}`;
@@ -3335,14 +3395,6 @@
         });
 
         input.oninput = function() {
-            if (/[1-8]/.test(this.value)) {
-                const converted = convertTailoToneNumbers(this.value);
-                if (converted !== this.value) {
-                    const endPos = converted.length;
-                    this.value = converted;
-                    try { this.setSelectionRange(endPos, endPos); } catch (_) {}
-                }
-            }
             if (this.value !== activeRouteName) { activeRouteName = ''; activeRouteSection = ''; }
             syncDisplay();
             renderList(this.value);
