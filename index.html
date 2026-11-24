@@ -6,8 +6,20 @@
     <title>古今鐵道營業線 HGIS 查詢系統 v11.2</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        @font-face {
+            font-family: 'HGIS-RareHan';
+            src: url('fonts/rare-p1.woff2') format('woff2');
+            unicode-range: U+233CC, U+26C21;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'HGIS-RareHan';
+            src: url('fonts/rare-p2.woff2') format('woff2');
+            unicode-range: U+309D0;
+            font-display: swap;
+        }
         :root { --primary: #1a237e; --primary-light: #e8eaf6; --accent: #ff7800; --drawer-width: 390px; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: '微軟正黑體', 'PingFang TC', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: #f8f9fa; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: '微軟正黑體', 'PingFang TC', -apple-system, BlinkMacSystemFont, Arial, 'HGIS-RareHan', sans-serif; background-color: #f8f9fa; }
         button, select, input { font-family: inherit; }
         button:focus-visible, [tabindex]:focus-visible, select:focus-visible, input:focus-visible, .search-item:focus-visible, .st-chip:focus-visible, .op-chip:focus-visible, .fam-tab:focus-visible { outline: 3px solid #ff9800; outline-offset: 2px; }
         #map { width: 100vw; height: 100%; }
