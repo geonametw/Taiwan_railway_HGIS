@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.6</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.7</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -86,6 +86,7 @@
         #input-display-layer { position: absolute; left: 40px; top: 0; height: 45px; line-height: 45px; width: calc(100% - 85px); font-size: 15px; color: #333; pointer-events: none; white-space: pre; overflow: hidden; z-index: 1; opacity: 0; }
         #custom-search-box.expanded #input-display-layer { opacity: 1; }
         #clearBtn { position: absolute; right: 0; top: 0; font-size: 22px; color: #999; cursor: pointer; display: none; z-index: 1002; width: 45px; height: 45px; line-height: 45px; text-align: center; }
+        #custom-search-box:not(.expanded) #clearBtn { display: none !important; }
         #searchDropdown { position: absolute; top: 52px; left: 0; width: 100%; background: white; box-shadow: 0 6px 16px rgba(0,0,0,0.18); border-radius: 8px; display: none; max-height: 55dvh; overflow-y: auto; z-index: 1001; }
         .search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333; display: flex; justify-content: space-between; align-items: center; min-height: 40px; box-sizing: border-box; gap: 6px; }
         .search-item:hover, .search-item:focus { background-color: #eef1ff; color: var(--primary); }
