@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.4</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.6</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -90,6 +90,9 @@
         .search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333; display: flex; justify-content: space-between; align-items: center; min-height: 40px; box-sizing: border-box; gap: 6px; }
         .search-item:hover, .search-item:focus { background-color: #eef1ff; color: var(--primary); }
         .random-item { background-color: var(--primary-light); color: var(--primary); font-weight: bold; justify-content: center; border-bottom: 2px solid #c5cae9; }
+        .random-photo-toggle { background: rgba(255,255,255,0.75); border: 1px solid #c5cae9; border-radius: 14px; padding: 2px 8px; font-size: 14px; line-height: 1.2; cursor: pointer; transition: 0.15s; margin-left: 6px; }
+        .random-photo-toggle:hover { background: #fff; border-color: #7986cb; }
+        .random-photo-toggle.active { background: #fff3e0; border-color: #ffb74d; box-shadow: 0 1px 4px rgba(230,81,0,0.2); }
         .search-letter-header, .search-category { padding: 6px 14px; background-color: #e8eaf6; color: #25317d; font-weight: bold; font-size: 12px; position: sticky; top: 0; z-index: 5; }
         .match-tag { font-size: 11px; background: #eee; color: #555; padding: 2px 6px; border-radius: 4px; margin-left: 6px; white-space: nowrap; }
         .match-tag.code { background: #e8eaf6; color: #1a237e; font-weight: bold; }
@@ -441,6 +444,7 @@
         let currentPhotoMeta = { caption: '', note: '', source: '', link: '' };
         let currentPhotoList = [];
         let currentPhotoIdx = 0;
+        let photoAutoTimer = null;
         let globalNarrativesMap = {};
         let customNamesDict = {};
 
@@ -995,6 +999,7 @@
         let showStations = true;
         let hiddenLineTypes = new Set();
         let onlyPhotoRoutes = false;
+        let randomPhotoOnly = false;
         let lastFeatureClickTime = 0;
 
         function escapeHtml(str) {
@@ -1513,13 +1518,47 @@
             counter.style.display = multi ? 'block' : 'none';
             if (multi) counter.textContent = `${currentPhotoIdx + 1} / ${currentPhotoList.length}`;
             photoBox.style.display = 'block';
+            if (multi && !photoAutoTimer) startPhotoAutoPlay();
+            else if (!multi) stopPhotoAutoPlay();
+        }
+
+        function stopPhotoAutoPlay() {
+            if (photoAutoTimer) {
+                clearInterval(photoAutoTimer);
+                photoAutoTimer = null;
+            }
+        }
+
+        function startPhotoAutoPlay() {
+            stopPhotoAutoPlay();
+            if (currentPhotoList.length <= 1) return;
+            if (document.getElementById('photo-lightbox').classList.contains('open')) return;
+            photoAutoTimer = setInterval(() => {
+                if (currentPhotoList.length <= 1 || !document.body.classList.contains('drawer-open')) {
+                    stopPhotoAutoPlay();
+                    return;
+                }
+                if (document.getElementById('photo-lightbox').classList.contains('open')) return;
+                currentPhotoIdx = (currentPhotoIdx + 1) % currentPhotoList.length;
+                renderCurrentDrawerPhoto();
+            }, 4500);
+        }
+
+        const drawerPhotoBoxEl = document.getElementById('drawer-photo-box');
+        if (drawerPhotoBoxEl) {
+            drawerPhotoBoxEl.addEventListener('mouseenter', stopPhotoAutoPlay);
+            drawerPhotoBoxEl.addEventListener('mouseleave', startPhotoAutoPlay);
         }
 
         function stepPhoto(delta) {
             if (currentPhotoList.length <= 1) return;
             currentPhotoIdx = (currentPhotoIdx + delta + currentPhotoList.length) % currentPhotoList.length;
             renderCurrentDrawerPhoto();
-            if (document.getElementById('photo-lightbox').classList.contains('open')) openLightbox();
+            if (document.getElementById('photo-lightbox').classList.contains('open')) {
+                openLightbox();
+            } else {
+                startPhotoAutoPlay();
+            }
         }
 
         function loadRoutePhoto(feature) {
@@ -1606,6 +1645,7 @@
         function openLightbox() {
             const src = document.getElementById('drawer-photo-img').src;
             if (!src) return;
+            stopPhotoAutoPlay();
             document.getElementById('lightbox-img').src = src;
 
             const multi = currentPhotoList.length > 1;
@@ -1654,7 +1694,7 @@
 
             document.getElementById('photo-lightbox').classList.add('open');
         }
-        function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); }
+        function closeLightbox() { document.getElementById('photo-lightbox').classList.remove('open'); startPhotoAutoPlay(); }
         document.addEventListener('keydown', e => {
             if (!document.getElementById('photo-lightbox').classList.contains('open')) return;
             if (e.key === 'Escape') closeLightbox();
@@ -2330,6 +2370,7 @@
 
             document.getElementById('drawer-back-operator-btn').style.display = 'none';
             document.getElementById('drawer-family-tabs').style.display = 'none';
+            stopPhotoAutoPlay();
             document.getElementById('drawer-photo-box').style.display = 'none';
             document.getElementById('drawer-ops-block').style.display = 'none';
             document.getElementById('drawer-stations-block').style.display = 'none';
@@ -2635,6 +2676,7 @@
             setSearchExpanded(false);
             clearBtn.style.display = 'none';
             opBanner.style.display = 'none';
+            stopPhotoAutoPlay();
             document.body.classList.remove('drawer-open');
             setSheetState('half');
             applyYearFilter();
@@ -3251,19 +3293,36 @@
                 }
                 dropdown.style.display = 'block';
                 input.setAttribute('aria-expanded', 'true');
-                addSearchItem('🎲 隨機探索一條路線', currentFilterYear === 'all' ? '' : `${currentFilterYear} 年`, () => {
-                    const chosen = pool[Math.floor(Math.random() * pool.length)];
-                    closeSearchResults(); highlightRouteGroup(chosen, true);
-                }).classList.add('random-item');
                 const photoPool = pool.filter(f => hasRoutePhoto(f));
+                const randomItem = addSearchItem('🎲 隨機探索一條路線', currentFilterYear === 'all' ? '' : `${currentFilterYear} 年`, () => {
+                    const targetPool = (randomPhotoOnly && photoPool.length) ? photoPool : pool;
+                    const chosen = targetPool[Math.floor(Math.random() * targetPool.length)];
+                    const sc = chosen._searchCache || {};
+                    closeSearchResults();
+                    highlightRouteGroup(chosen, true);
+                    if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
+                });
+                randomItem.classList.add('random-item');
                 if (photoPool.length) {
-                    addSearchItem('📷 隨機看一張老照片', `${photoPool.length} 條路線`, () => {
-                        const chosen = photoPool[Math.floor(Math.random() * photoPool.length)];
-                        const sc = chosen._searchCache || {};
-                        closeSearchResults();
-                        highlightRouteGroup(chosen, true);
-                        if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
-                    }).classList.add('random-item');
+                    const camBtn = document.createElement('button');
+                    camBtn.type = 'button';
+                    camBtn.className = 'random-photo-toggle' + (randomPhotoOnly ? ' active' : '');
+                    camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
+                    camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
+                    camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
+                    camBtn.addEventListener('click', e => {
+                        e.stopPropagation();
+                        randomPhotoOnly = !randomPhotoOnly;
+                        camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
+                        camBtn.classList.toggle('active', randomPhotoOnly);
+                        camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
+                        camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
+                        showToast(randomPhotoOnly ? `📸 隨機探索：僅限有照片路線（${photoPool.length} 條）` : '🎲 隨機探索：全部路線');
+                    });
+                    camBtn.addEventListener('keydown', e => {
+                        if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                    });
+                    randomItem.appendChild(camBtn);
                 }
 
                 const frag = document.createDocumentFragment();
