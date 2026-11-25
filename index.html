@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.7</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.8</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -3267,6 +3267,46 @@
             setTimeout(() => { input.blur(); syncDisplay(); }, 0);
         }
 
+        function appendRandomExploreItem(pool) {
+            if (!pool || !pool.length) return;
+            const photoPool = pool.filter(f => hasRoutePhoto(f));
+            const randomItem = addSearchItem('🎲 隨機探索一條路線', currentFilterYear === 'all' ? '' : `${currentFilterYear} 年`, () => {
+                const basePool = (randomPhotoOnly && photoPool.length) ? photoPool : pool;
+                const filteredPool = basePool.filter(f => {
+                    const sc = f._searchCache || {};
+                    return sc.rid !== activeSubRouteId && sc.gk !== selectedGroupKey;
+                });
+                const targetPool = filteredPool.length ? filteredPool : basePool;
+                const chosen = targetPool[Math.floor(Math.random() * targetPool.length)];
+                const sc = chosen._searchCache || {};
+                closeSearchResults();
+                highlightRouteGroup(chosen, true);
+                if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
+            });
+            randomItem.classList.add('random-item');
+            if (photoPool.length) {
+                const camBtn = document.createElement('button');
+                camBtn.type = 'button';
+                camBtn.className = 'random-photo-toggle' + (randomPhotoOnly ? ' active' : '');
+                camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
+                camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
+                camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
+                camBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    randomPhotoOnly = !randomPhotoOnly;
+                    camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
+                    camBtn.classList.toggle('active', randomPhotoOnly);
+                    camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
+                    camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
+                    showToast(randomPhotoOnly ? `📸 隨機探索：僅限有照片路線（${photoPool.length} 條）` : '🎲 隨機探索：全部路線');
+                });
+                camBtn.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+                });
+                randomItem.appendChild(camBtn);
+            }
+        }
+
         function renderList(val) {
             isRenderingList = true;
             syncDisplay();
@@ -3294,37 +3334,7 @@
                 }
                 dropdown.style.display = 'block';
                 input.setAttribute('aria-expanded', 'true');
-                const photoPool = pool.filter(f => hasRoutePhoto(f));
-                const randomItem = addSearchItem('🎲 隨機探索一條路線', currentFilterYear === 'all' ? '' : `${currentFilterYear} 年`, () => {
-                    const targetPool = (randomPhotoOnly && photoPool.length) ? photoPool : pool;
-                    const chosen = targetPool[Math.floor(Math.random() * targetPool.length)];
-                    const sc = chosen._searchCache || {};
-                    closeSearchResults();
-                    highlightRouteGroup(chosen, true);
-                    if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
-                });
-                randomItem.classList.add('random-item');
-                if (photoPool.length) {
-                    const camBtn = document.createElement('button');
-                    camBtn.type = 'button';
-                    camBtn.className = 'random-photo-toggle' + (randomPhotoOnly ? ' active' : '');
-                    camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
-                    camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
-                    camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
-                    camBtn.addEventListener('click', e => {
-                        e.stopPropagation();
-                        randomPhotoOnly = !randomPhotoOnly;
-                        camBtn.textContent = randomPhotoOnly ? '📸' : '📷';
-                        camBtn.classList.toggle('active', randomPhotoOnly);
-                        camBtn.setAttribute('aria-pressed', String(randomPhotoOnly));
-                        camBtn.title = randomPhotoOnly ? `已限定僅隨機抽取有照片路線（共 ${photoPool.length} 條，點擊取消）` : `點擊切換為僅隨機抽取有照片路線（共 ${photoPool.length} 條）`;
-                        showToast(randomPhotoOnly ? `📸 隨機探索：僅限有照片路線（${photoPool.length} 條）` : '🎲 隨機探索：全部路線');
-                    });
-                    camBtn.addEventListener('keydown', e => {
-                        if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
-                    });
-                    randomItem.appendChild(camBtn);
-                }
+                appendRandomExploreItem(pool);
 
                 const frag = document.createDocumentFragment();
                 const origDropdown = dropdown;
@@ -3413,6 +3423,9 @@
                 (st.feature._normName || '').includes(keyword)).slice(0, 30);
 
             if (!results.length && !ops.length && !stations.length) {
+                if (activeRouteName && rawTrim === activeRouteName) {
+                    appendRandomExploreItem(pool);
+                }
                 addSearchHeader('查無結果（包括路線舊稱、台羅、編號、業者名稱等）');
                 dropdown.style.display = 'block';
                 input.setAttribute('aria-expanded', 'true');
@@ -3422,6 +3435,10 @@
 
             dropdown.style.display = 'block';
             input.setAttribute('aria-expanded', 'true');
+
+            if (activeRouteName && rawTrim === activeRouteName) {
+                appendRandomExploreItem(pool);
+            }
 
             if (ops.length) {
                 addSearchHeader(`🏢 業者（${ops.length}）`);
