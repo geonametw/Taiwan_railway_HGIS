@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.3</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.4</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -103,6 +103,7 @@
         .legend-item { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; padding: 2px 6px; border-radius: 6px; transition: 0.15s; }
         .legend-item:hover { background: #f0f4ff; }
         .legend-item.muted { opacity: 0.35; text-decoration: line-through; }
+        .legend-item.photo-active { background: #fff3e0; color: #e65100; font-weight: bold; box-shadow: inset 0 0 0 1px #ffb74d; }
         .lg-line { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
         .lg-dash { width: 18px; height: 0; border-top: 3px dashed #222; display: inline-block; }
         .lg-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); display: inline-block; }
@@ -310,6 +311,9 @@
             <span class="legend-item" id="lg-st" onclick="setStationsVisibility(!showStations)" title="點擊切換顯示/隱藏車站">
                 <span class="lg-dot"></span>車站
             </span>
+            <span class="legend-item" id="lg-photo" onclick="togglePhotoOnlyMode()" title="點擊切換僅顯示有歷史照片的路線">
+                📷 有照
+            </span>
         </div>
         <div id="opacity-box">
             <span>🗺️ 古地圖透明度</span>
@@ -457,6 +461,8 @@
                 if (currentDrawerFeature && document.body.classList.contains('drawer-open')) {
                     loadRoutePhoto(currentDrawerFeature);
                 }
+                if (onlyPhotoRoutes) updateMapHighlightStyles();
+                if (dropdown.style.display === 'block') renderList(input.value);
             })
             .catch(() => {});
 
@@ -988,6 +994,7 @@
         let yearFilterMode = 'hide';
         let showStations = true;
         let hiddenLineTypes = new Set();
+        let onlyPhotoRoutes = false;
         let lastFeatureClickTime = 0;
 
         function escapeHtml(str) {
@@ -1160,6 +1167,28 @@
             document.getElementById('lg-sub').classList.toggle('muted', hiddenLineTypes.has('副線'));
             updateMapHighlightStyles();
             updateActiveStateBar();
+        }
+
+        function hasRoutePhoto(feature) {
+            if (!feature) return false;
+            const p = feature.properties || {};
+            const checkMeta = key => {
+                const m = key && ROUTE_PHOTO_META[key];
+                if (!m) return false;
+                return Array.isArray(m) ? m.some(x => x && x.file) : Boolean(m.file);
+            };
+            if (checkMeta(p.route_id) || checkMeta(p.parent_id)) return true;
+            if (Array.isArray(p.photos) && p.photos.length > 0) return true;
+            return Boolean(p.photo);
+        }
+
+        function togglePhotoOnlyMode() {
+            onlyPhotoRoutes = !onlyPhotoRoutes;
+            const lgPhoto = document.getElementById('lg-photo');
+            if (lgPhoto) lgPhoto.classList.toggle('photo-active', onlyPhotoRoutes);
+            updateMapHighlightStyles();
+            if (dropdown.style.display === 'block') renderList(input.value);
+            showToast(onlyPhotoRoutes ? '📷 僅顯示有歷史照片的路線' : '🗺️ 已恢復顯示全部路線');
         }
 
         const opacityBox = document.getElementById('opacity-box');
@@ -1410,7 +1439,7 @@
                     return;
                 }
                 const isActive = isRouteFeatureActiveInYear(f, currentFilterYear);
-                if (!isActive && yearFilterMode === 'hide' && !isSelectedFamily) {
+                if ((!isActive && yearFilterMode === 'hide' && !isSelectedFamily) || (onlyPhotoRoutes && !hasRoutePhoto(f) && !isSelectedFamily)) {
                     if (map.hasLayer(l)) map.removeLayer(l);
                 } else {
                     if (!map.hasLayer(l)) l.addTo(map);
@@ -1450,7 +1479,8 @@
                     return;
                 }
                 const isActiveSt = isStationFeatureActiveInYear(stFeat, currentFilterYear);
-                if (!isActiveSt && yearFilterMode === 'hide' && !isShownSt) {
+                const hasPhotoSt = !onlyPhotoRoutes || (stFeat.properties._boundRouteFeatures || []).some(rf => hasRoutePhoto(rf));
+                if ((!isActiveSt && yearFilterMode === 'hide' && !isShownSt) || (!hasPhotoSt && !isShownSt)) {
                     if (map.hasLayer(stLayer)) map.removeLayer(stLayer);
                 } else {
                     if (!map.hasLayer(stLayer)) stLayer.addTo(map);
@@ -2507,6 +2537,9 @@
             ['lg-main', 'lg-old', 'lg-sub'].forEach(id => document.getElementById(id).classList.remove('muted'));
             showStations = true;
             document.getElementById('lg-st').classList.remove('muted');
+            onlyPhotoRoutes = false;
+            const lgPhoto = document.getElementById('lg-photo');
+            if (lgPhoto) lgPhoto.classList.remove('photo-active');
             currentFilterYear = 'all'; yearSelect.value = 'all';
             yearFilterMode = 'hide'; yearModeSelect.value = 'hide';
             yfBar.classList.remove('open');
@@ -3204,9 +3237,10 @@
             clearBtn.style.display = 'block';
 
             const baseList = window._sortedSearchableRoutes || searchableRoutes;
-            const pool = currentFilterYear === 'all'
-                ? baseList
-                : baseList.filter(f => isRouteFeatureActiveInYear(f, currentFilterYear));
+            const pool = baseList.filter(f =>
+                (currentFilterYear === 'all' || isRouteFeatureActiveInYear(f, currentFilterYear)) &&
+                (!onlyPhotoRoutes || hasRoutePhoto(f))
+            );
 
             if (!keyword) {
                 if (!pool.length) {
@@ -3221,6 +3255,16 @@
                     const chosen = pool[Math.floor(Math.random() * pool.length)];
                     closeSearchResults(); highlightRouteGroup(chosen, true);
                 }).classList.add('random-item');
+                const photoPool = pool.filter(f => hasRoutePhoto(f));
+                if (photoPool.length) {
+                    addSearchItem('📷 隨機看一張老照片', `${photoPool.length} 條路線`, () => {
+                        const chosen = photoPool[Math.floor(Math.random() * photoPool.length)];
+                        const sc = chosen._searchCache || {};
+                        closeSearchResults();
+                        highlightRouteGroup(chosen, true);
+                        if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
+                    }).classList.add('random-item');
+                }
 
                 const frag = document.createDocumentFragment();
                 const origDropdown = dropdown;
@@ -3252,7 +3296,7 @@
                     if (sc.rid) {
                         const label = document.createElement('span');
                         label.className = 'match-tag code';
-                        label.textContent = sc.rid;
+                        label.textContent = (hasRoutePhoto(f) ? '📷 ' : '') + sc.rid;
                         item.appendChild(label);
                     }
                     const onSelect = () => {
@@ -3331,7 +3375,7 @@
                     const shortSub = sub.length > 22 ? sub.slice(0, 22) + '…' : sub;
                     addSearchItem(
                         displayName || p.name || '未命名',
-                        code,
+                        (hasRoutePhoto(f) ? '📷 ' : '') + code,
                         () => {
                             closeSearchResults();
                             highlightRouteGroup(f, true);
