@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.8</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.9</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -1001,6 +1001,7 @@
         let hiddenLineTypes = new Set();
         let onlyPhotoRoutes = false;
         let randomPhotoOnly = false;
+        let isRandomExploreActive = false;
         let lastFeatureClickTime = 0;
 
         function escapeHtml(str) {
@@ -2620,6 +2621,7 @@
         }
 
         function highlightRouteGroup(targetFeature, shouldFitBounds = false, triggerLayer = null) {
+            isRandomExploreActive = false;
             if (activeOperatorFilter) previousOperatorName = activeOperatorFilter;
             activeOperatorFilter = null;
             opBanner.style.display = 'none';
@@ -2661,6 +2663,7 @@
         }
 
         function clearRouteSelection() {
+            isRandomExploreActive = false;
             selectedGroupKey = null;
             activeSubRouteId = null;
             activeOperatorFilter = null;
@@ -3282,6 +3285,7 @@
                 closeSearchResults();
                 highlightRouteGroup(chosen, true);
                 if (sc.isSub) window.switchFamilyMember(sc.gk, sc.rid);
+                isRandomExploreActive = true;
             });
             randomItem.classList.add('random-item');
             if (photoPool.length) {
@@ -3423,7 +3427,7 @@
                 (st.feature._normName || '').includes(keyword)).slice(0, 30);
 
             if (!results.length && !ops.length && !stations.length) {
-                if (activeRouteName && rawTrim === activeRouteName) {
+                if (isRandomExploreActive && activeRouteName && rawTrim === activeRouteName) {
                     appendRandomExploreItem(pool);
                 }
                 addSearchHeader('查無結果（包括路線舊稱、台羅、編號、業者名稱等）');
@@ -3436,7 +3440,7 @@
             dropdown.style.display = 'block';
             input.setAttribute('aria-expanded', 'true');
 
-            if (activeRouteName && rawTrim === activeRouteName) {
+            if (isRandomExploreActive && activeRouteName && rawTrim === activeRouteName) {
                 appendRandomExploreItem(pool);
             }
 
