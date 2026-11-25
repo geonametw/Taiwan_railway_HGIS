@@ -1,20 +1,1015 @@
 {
-  "A1": {
-    "file": "A1.jpg",
-    "caption": "基隆輕鐵のインクライン（圓窓嶺）",
-    "source": "《臺灣日日新報》，1914年5月3日，7版。",
-    "link": ""
-  },
-  "B4": {
-    "file": "B4.gif",
-    "caption": "台車通過八結發著所（1930年）",
-    "source": "USC MIRC (Fox Movietone News, MVTN 5-701)",
-    "link": "https://digital.tcl.sc.edu/digital/collection/MVTN/id/517/rec/6"
-  },
-  "E10": {
-    "file": "E10.jpg",
-    "caption": "關仔嶺發著所",
-    "source": "文化部國家文化記憶庫",
-    "link": "https://cmsdb.culture.tw/object/FCB9DB55-7859-4525-8016-01401DC7FE2C"
-  }
+  "A1": [
+    {
+      "file": "A1.jpg",
+      "caption": "基隆輕鐵のインクライン（圓窓嶺）",
+      "source": "《臺灣日日新報》，1914年5月3日，7版。"
+    },
+    {
+      "file": "A1(1).jpg",
+      "caption": "インクライン",
+      "source": "三ッ橋安郎，《鄉土讀本我が基隆》（三ッ橋安郎，1934）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3803989"
+    },
+    {
+      "file": "A1(2).jpg",
+      "caption": "第二瑞芳隧道",
+      "source": "《前畑彥太郎的攝影記錄－「建主改從」時期的臺灣鐵道》。"
+    }
+  ],
+  "A1-2": [
+    {
+      "file": "A1-2.jpg",
+      "caption": "瑞芳驛前所見",
+      "source": "陳石煌，《臺灣風景紹介誌》（陳石煌，1935）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/102471"
+    }
+  ],
+  "A6": [
+    {
+      "file": "A6.jpg",
+      "caption": "景美輕便車",
+      "source": "臺北市文山社區大學，〈景美輕便車〉（年代不詳）。",
+      "link": "https://wenshan.org.tw/wss/index.php/%E7%94%A2%E6%A5%AD/item/2143-%E6%99%AF%E7%BE%8E%E8%BC%95%E4%BE%BF%E8%BB%8A"
+    }
+  ],
+  "A8": [
+    {
+      "file": "A8.jpg",
+      "caption": "臺北南門外新道路之景",
+      "source": "〈南門外の新道路〉，《臺灣日日新報（漢文版）》，1908年12月13日，3版。"
+    },
+    {
+      "file": "A8(1).jpeg",
+      "caption": "患家ノ交通遮斷（景尾）",
+      "source": "臺灣總督府臺北廳，《大正八年臺北廳下虎列拉流行概況》（臺灣總督府臺北廳，年代不詳）。",
+      "link": "https://ncpi.ntmofa.gov.tw/News_Content_OnlineExhibition.aspx?n=8008&s=208331&psn=208288"
+    },
+    {
+      "file": "A8(2).jpg",
+      "caption": "鐵道旁的瑠公圳",
+      "source": "農田水利署，〈鐵道旁的瑠公圳〉。",
+      "link": "https://www.ia.gov.tw/zh-TW/media/StoryContent?a=109&id=20230&p=2&listid=109"
+    }
+  ],
+  "A12": [
+    {
+      "file": "A12.jpg",
+      "source": "臺北縣土城市公所，《土城市志》（臺北縣土城市公所，1994）。"
+    },
+    {
+      "file": "A12(1).jpg",
+      "caption": "臺北製糖所新店溪上搬運甘蔗景觀",
+      "source": "建築物自動化，〈懷念含珍貴的老照片75〉。",
+      "link": "https://mypaper.pchome.com.tw/tw0916833677/post/1381729492"
+    }
+  ],
+  "A13": [
+    {
+      "file": "A13.jpg",
+      "caption": "鐵枝路",
+      "source": "國家文化記憶庫，〈鐵枝路〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&id=197629"
+    },
+    {
+      "file": "A13(1).png",
+      "caption": "臺北橋",
+      "source": "山崎鋆一郎，《臺灣の風光》（山崎鋆一郎，1935）。",
+      "link": "https://collections.nmth.gov.tw/CollectionContent.aspx?a=132&rno=2001.008.0063"
+    }
+  ],
+  "A14": [
+    {
+      "file": "A14.jpg",
+      "caption": "板橋無線電信所，臺北州",
+      "source": "仲摩照久，《日本地理風俗大系臺灣篇》（株式會社新光社，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3576509"
+    }
+  ],
+  "A16": [
+    {
+      "file": "A16.jpg",
+      "caption": "日治時期鳶山公園旁輕便車道(約位於現在中山路)-中埔里李坊良里長提供",
+      "source": "三峽老街商圈官方網站，〈三角湧傳奇〉。",
+      "link": "https://www.sanxias.com.tw/portal_a1.php?owner_num=a1_60564&button_num=a1"
+    },
+    {
+      "file": "A16(1).jpg",
+      "source": "Knapp, R. G. (1980). Push car railways and Taiwan's development. In R. G. Knapp (Ed.), China's island frontier: Studies in the historical geography of Taiwan (pp. 199–216). University of Hawaiʻi Press.",
+      "link": "https://www.researchgate.net/publication/324378214_China's_Island_Frontier_Studies_in_the_Historical_Geography_of_Taiwan"
+    }
+  ],
+  "A22": [
+    {
+      "file": "A22.jpg",
+      "source": "黃偉嘉私藏"
+    }
+  ],
+  "B3": [
+    {
+      "file": "B3.jpg",
+      "source": "〈視察寫真冊(十三)〉，《長谷川清文書》（臺北：中研院臺史所檔案館藏），識別號：T0886_01_01_013。",
+      "link": "https://www.facebook.com/share/p/1A1tojfJx5/"
+    },
+	    {
+      "file": "B3(2).png",
+      "caption": "栗子園御發",
+      "source": "臺灣總督府秘書課編，《秩父宮雍仁親王殿下臺灣御成寫真帳》（臺灣總督府，1925）。",
+      "link": "https://tsdl.ntl.edu.tw/index.php?act=Display/image/490416V7VIOKc#64J"
+    },
+    {
+      "file": "B3(1).jpg",
+      "caption": "景尾の水橋",
+      "source": "臺灣總督府，《臺灣統計要覽》（臺灣總督府，1914）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/684433"
+    }
+  ],
+  "B4": [
+    {
+      "file": "B4.gif",
+      "caption": "台車通過八結發著所（1930年）",
+      "source": "USC MIRC (Fox Movietone News, MVTN 5-701).",
+      "link": "https://digital.tcl.sc.edu/digital/collection/MVTN/id/517/rec/6"
+    },
+    {
+      "file": "B4.jpg",
+      "caption": "(台灣) 手押台車 (田舍の交通機關) PUSH CAR IN THE COUNTRY, FORMOSA; 93; [風景戳章] 角板山登山紀念",
+      "source": "日治時期繪葉書，〈(台灣) 手押台車 (田舍の交通機關) PUSH CAR IN THE COUNTRY, FORMOSA; 93; [風景戳章] 角板山登山紀念〉。",
+      "link": "https://dl.lib.ntu.edu.tw/s/postcard/item/39120"
+    }
+  ],
+  "B5": [
+    {
+      "file": "B5.jpg",
+      "caption": "大園市街の一部",
+      "source": "桃園郡大園庄，《大園庄誌》（桃園郡大園庄，1933）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/5310810"
+    }
+  ],
+  "B7": [
+    {
+      "file": "B7.jpg",
+      "caption": "八德之台車",
+      "source": "黃克仁，《八德市志》（桃園縣八德市公所，1998）。"
+    },
+    {
+      "file": "B7(1).jpg",
+      "caption": "輕便車路",
+      "source": "賴明珠，《鄉土知音：八德書畫家邱創乾紀念展》（桃園縣立文化中心，1999）。",
+      "link": "https://taifuten.com/story/%E3%80%90%E5%90%8D%E5%96%AE%E4%B9%8B%E5%BE%8C%E3%80%91%E5%BE%9E%E7%95%AB%E5%AE%B6%E5%88%B0%E5%9C%B0%E6%96%B9%E5%AE%B6%E9%95%B7%EF%BC%9A%E5%85%AB%E5%BE%B7%E9%84%89%E9%95%B7%E9%82%B1%E5%89%B5%E4%B9%BE/"
+    }
+  ],
+  "B8": [
+    {
+      "file": "B8.jpg",
+      "caption": "中壢驛前臺車の發著所",
+      "source": "仲摩照久，《日本地理風俗大系臺灣篇》（新光社，1931）。"
+    },
+    {
+      "file": "B8(1).jpg",
+      "caption": "龍潭市街",
+      "source": "桃園縣龍潭鄉立圖書館，《龍潭陂舊事－龍潭老照片專輯》（桃園縣龍潭鄉公所，2014）。"
+    }
+  ],
+  "B17": [
+    {
+      "file": "B17.jpg",
+      "caption": "關西樓",
+      "note": "台車發著所",
+      "source": "陳騰芳等撰稿，《竹塹思想起：老照片說故事．一》（新竹市文化中心，1995）。"
+    }
+  ],
+  "B18": [
+    {
+      "file": "B18.jpg",
+      "caption": "最早期之新竹客運關西營運所（今正義路、中正路轉角）",
+      "note": "台車發著所",
+      "source": "吳發仁，《關西鎮志〈中冊〉》（新竹縣關西鎮公所，2018）。"
+    }
+  ],
+  "B22": [
+    {
+      "file": "B22.jpg",
+      "caption": "牛欄河輕便車路(彩鳳橋)",
+      "source": "國家文化記憶庫，〈牛欄河輕便車路(彩鳳橋)〉。",
+      "link": "https://cmsdb.culture.tw/place/8E047915-A31E-4CE5-B6B9-6554EF687F7B"
+    }
+  ],
+  "B23": [
+    {
+      "file": "B23.jpg",
+      "caption": "新竹拓殖軌道株式會社",
+      "source": "小山權太郎，《新竹市大觀》（臺南新報臺北印刷所圖書部，1930）。",
+      "link": "https://hccg.culture.tw/home/zh-tw/shinchikushi/267370"
+    },
+    {
+      "file": "B23(1).jpg",
+      "caption": "日治時期民眾搭乘台車（輕便車）的情形",
+      "source": "新竹地方寶藏資料庫，〈日治時期民眾搭乘台車（輕便車）的情形〉。",
+      "link": "https://hccg.culture.tw/home/zh-tw/tellstory01/1312801"
+    },
+    {
+      "file": "B23(2).jpg",
+      "caption": "民國40年代內灣老照片",
+      "source": "客家文化資產數位網，〈橫山的驕傲-漫畫家劉興欽〉。",
+      "link": "https://hch.hakka.gov.tw/reportdetail.asp?MenuID=5&SubID=23&ArID=1195&pageNums=1"
+    }
+  ],
+  "B24": [
+    {
+      "file": "B24.jpg",
+      "caption": "北埔庄北埔",
+      "source": "新竹州，《昭和十年新竹州震災誌》（新竹州，1938）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/685575"
+    }
+  ],
+  "B25": [
+    {
+      "file": "B25.jpg",
+      "caption": "新竹在地人士搭乘輕便車",
+      "source": "潘國正，《竹塹思想起：老照片說故事．三》（新竹市政府，2003）。",
+      "link": "https://hccg.culture.tw/home/zh-tw/tellstory03/2185586"
+    },
+    {
+      "file": "B25(1).png",
+      "caption": "幸ニ震災害ヲ免レシ上坪",
+      "source": "「昭和十年四月震災被害報告書臺灣總督府專賣局新竹出張所」（1935年5月5日），〈昭和十年四月震災被害報告書新竹出張所〉，《臺灣總督府專賣局》，國史館臺灣文獻館，典藏號：00103507001。",
+      "link": "https://onlinearchives.th.gov.tw/index.php?act=Display/image/4163353g-Z-spF#fFN1"
+    }
+  ],
+  "B27-1": [
+    {
+      "file": "B27-1.jpg",
+      "source": "鍾娟，〈年代已不可考.....竹東到石碧潭用竹子搭成橋橋上的台車〉（Facebook，2020年11月5日）。",
+      "link": "https://www.facebook.com/groups/606222676226303/permalink/1676325132549380/?rdid=Y1nWLNRaefqUdAqp#"
+    }
+  ],
+  "B29": [
+    {
+      "file": "B29.jpg",
+      "caption": "新竹市街",
+      "source": "臺灣總督府鐵道部編，《臺灣鐵道案內》（臺灣總督府鐵道部，1912）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/114176"
+    }
+  ],
+  "C1": [
+    {
+      "file": "C1.png",
+      "caption": "竹南庄",
+      "source": "仲摩照久，《日本地理風俗大系臺灣篇》（新光社，1931）。",
+      "link": "https://tm.ncl.edu.tw/article?u=008_001_0000564222"
+    },
+    {
+      "file": "C1(1).jpg",
+      "caption": "昭和拾年震災後市區改正前攝影紀念",
+      "source": "國家文化記憶庫，〈頭份市街景象〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&id=328669"
+    },
+    {
+      "file": "C1(2).jpg",
+      "caption": "竹南郡南庄入口",
+      "source": "新竹州，《昭和十年新竹州震災誌》（新竹州，1938）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/685495"
+    }
+  ],
+  "C3": [
+    {
+      "file": "C3.jpg",
+      "caption": "臺車にて錦水行",
+      "source": "篠田治策，《臺灣を視る》（樂浪書院，1935）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/467718"
+    }
+  ],
+  "C4": [
+    {
+      "file": "C4.jpg",
+      "caption": "錦水にて台車上の梨本宮殿下",
+      "source": "柴山愛藏，《梨本宮殿下奉迎記》（昭和新報社，1934）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/36721"
+    }
+  ],
+  "C5": [
+    {
+      "file": "C5.jpg",
+      "caption": "北勢驛附近の被害 (新竹州竹南郡)",
+      "source": "大江二郎，《北勢驛附近の被害 (新竹州竹南郡)》（臺灣總督府殖產局，1936）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/90890"
+    }
+  ],
+  "C6": [
+    {
+      "file": "C6.jpg",
+      "caption": "後龍底土角家屋の倒壞（南西より）",
+      "source": "臺北觀測所，《新竹臺中烈震報告》（臺北觀測所，1936）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/112282"
+    }
+  ],
+  "C7": [
+    {
+      "file": "C7.jpg",
+      "caption": "臺灣軌道株式會社通車典禮",
+      "source": "潘國正，《竹塹思想起：老照片說故事．二》（新竹市文化中心，1995）。",
+      "link": "https://hccg.culture.tw/home/zh-tw/tellstory02/2138612"
+    },
+    {
+      "file": "C7(1).jpg",
+      "caption": "War Theatre #11 (Formosa) STRAFING & COMBAT (over)",
+      "note": "左方L形建物為發著所",
+      "source": "Joint Target Group. (1945, July 15). Air target intelligence Japanese war, index volume 1. Office of Assistant Chief of Staff, Intelligence, U.S. Army Air Forces.",
+      "link": "https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2F2k0g625ks5ae1.jpg"
+    },
+    {
+      "file": "C7(2).png",
+      "caption": "苗栗輕鐵株式會社軌道",
+      "source": "臺灣鐵道會，《臺灣鐵道》，第32號（1915）。",
+      "link": "https://tsdl.ntl.edu.tw/index.php?act=Display/image/491133KAcrR0U#6Gv5"
+    },
+    {
+      "file": "C7(3).jpg",
+      "caption": "苗栗輕鐵株式會社軌道鱸鰻潭片橋",
+      "source": "臺灣鐵道會，《臺灣鐵道》，第69號（1918）。",
+      "link": "https://tsdl.ntl.edu.tw/index.php?act=Display/image/491132gEWRV1r#0lIc"
+    },
+    {
+      "file": "C7(4).jpg",
+      "caption": "苗栗大湖道第七號橋通車典禮留念民國39年10月",
+      "source": "Half Moon，〈1950-10XX_苗栗大湖道第七號橋通車典禮留念〉（2025年6月27日）。",
+      "link": "https://www.facebook.com/photo/?fbid=23969255129428054&set=gm.10087260644643142&idorvanity=743429572359676"
+    },
+    {
+      "file": "C7(5).jpg",
+      "source": "迷內匠，〈那些年，汽車與臺車併行的年代（日治昭和7年，民國21年）〉（Facebook，2024年12月20日）。",
+      "link": "https://www.facebook.com/share/p/1A71pEZAQu/"
+    },
+    {
+      "file": "C7(6).jpg",
+      "caption": "162d 民國35年(1946) 4月7日汶水線橋斷纜卡車墜毀事故映像之二(彭清燭先生提供)",
+      "source": "迷內匠，〈民國35年，以及民國52年的汶水橋〉（Facebook，2026年10月20日）。",
+      "link": "https://www.facebook.com/share/p/1NEkYQvLwd/"
+    },
+    {
+      "file": "C7(7).jpg",
+      "source": "迷內匠，〈昭和七年（民國21年）時任新竹州大湖郡官派郡守山下離任送行留影〉（Facebook，2024年5月24日）。",
+      "link": "https://www.facebook.com/share/p/1Ez7SnDFib/"
+    }
+  ],
+  "C9": [
+    {
+      "file": "C9.jpg",
+      "caption": "故郭萬最先生葬式行列其四昭和十六年十一月九日",
+      "source": "國家文化記憶庫，〈郭萬最出殯照〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&id=298455#&gid=1&pid=1"
+    }
+  ],
+  "C11": [
+    {
+      "file": "C11.png",
+      "caption": "三叉ニテ移轉假店鋪",
+      "source": "「昭和十年四月震災被害報告書臺灣總督府專賣局新竹出張所」（1935年5月5日），〈昭和十年四月震災被害報告書新竹出張所〉，《臺灣總督府專賣局》，國史館臺灣文獻館，典藏號：00103507001。",
+      "link": "https://onlinearchives.th.gov.tw/index.php?act=Display/image/5335857iil=kX5#68x"
+    }
+  ],
+  "C12": [
+    {
+      "file": "C12.jpg",
+      "caption": "卓蘭大安道路臺車線路の異狀. (1) (新竹州大湖郡)",
+      "source": "大江二郎，《大安溪地震調查報告》（臺灣總督府殖產局，1936）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/91038"
+    },
+    {
+      "file": "C12(2).jpg",
+      "caption": "卓蘭大安道路臺車線路の異狀. (2) (新竹州大湖郡)",
+      "source": "大江二郎，《大安溪地震調查報告》（臺灣總督府殖產局，1936）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/91040"
+    }
+  ],
+  "D2": [
+    {
+      "file": "D2.jpg",
+      "caption": "梅林（後里庄驛構內）",
+      "source": "野村宗十郎，《臺灣鐵道案內》（臺灣總督府鐵道部，1922）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/114214"
+    }
+  ],
+  "D4": [
+    {
+      "file": "D4.png",
+      "caption": "沙鹿街役場廳舍 1937",
+      "source": "劉淑媚，《沙鹿老舊照片專輯（上）》（臺中縣沙鹿鎮公所，2004）。"
+    }
+  ],
+  "D7-1": [
+    {
+      "file": "D7-1.jpg",
+      "caption": "清水靈泉與埤仔口",
+      "source": "清水老街探索地圖，〈清水靈泉與埤仔口〉。",
+      "link": "https://qingshui-old-street9.webnode.tw/%E7%A9%BA%E7%99%BD%E9%A0%81/"
+    },
+    {
+      "file": "D7-1(1).png",
+      "caption": "大街路台車軌道",
+      "source": "國家文化資料庫，〈大街路台車軌道〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1661256?query=%7B%22search%22:%22%E5%8F%B0%E8%BB%8A%22%7D&offset=30&limit=10&sort=openStart&order=desc"
+    }
+  ],
+  "D8": [
+    {
+      "file": "D8.jpg",
+      "source": "黃金秋，〈(1908)清水名人蔡惠如創設牛罵頭輕便……〉（Facebook，2015年3月13日）。",
+      "link": "https://www.facebook.com/groups/goma2000/permalink/1562297104043265/?rdid=VT6xv4qHOzPzyUZq#"
+    }
+  ],
+  "D12": [
+    {
+      "file": "D12.jpg",
+      "caption": "大南庄圃場",
+      "source": "河野信次，《臺灣糖業觀》（日華新報社，1915）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/477669"
+    }
+  ],
+  "D16": [
+    {
+      "file": "D16.png",
+      "caption": "臺車",
+      "source": "國立臺灣歷史博物館，〈臺灣寫真帖〉。",
+      "link": "https://plaza.openmuseum.tw/muse/digi_object/260b6a3a95f2e93bb10234f364a0fa41"
+    }
+  ],
+  "D24": [
+    {
+      "file": "D24.jpg",
+      "caption": "臺中官民の歡迎",
+      "source": "臺灣日日新報社，《大正2年討蕃記念寫真帖》（臺灣日日新報社，1913）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/112574"
+    }
+  ],
+  "D31": [
+    {
+      "file": "D31.jpg",
+      "caption": "帆を掛けた臺車",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149074"
+    },
+    {
+      "file": "D31(1).jpg",
+      "source": "陳鳳麗，〈草屯最美老街原有3寶 1寶消失、1寶隱藏、只剩1寶被看見〉，《自由時報》，2026年9月9日。",
+      "link": "https://news.ltn.com.tw/news/life/breakingnews/5567727"
+    }
+  ],
+  "D32": [
+    {
+      "file": "D32.jpg",
+      "source": "鄧志忠、廖明睿，《繪葉書中的臺灣鐵道：官鐵篇》（蒼璧出版，2022）。"
+    }
+  ],
+  "D35": [
+    {
+      "file": "D35.jpg",
+      "caption": "鹿港文武廟",
+      "source": "台灣回憶探險團，〈日本時代鹿港文武廟明信片〉。",
+      "link": "https://www.twmemory.org/%E6%97%A5%E6%9C%AC%E6%99%82%E4%BB%A3%E9%B9%BF%E6%B8%AF%E6%96%87%E6%AD%A6%E5%BB%9F%E6%98%8E%E4%BF%A1%E7%89%87/"
+    }
+  ],
+  "D36": [
+    {
+      "file": "D36.jpg",
+      "caption": "竿で動かす臺車，竹椅，員林附近",
+      "source": "中村道太郎，《日本地理風俗大系－樺太、臺灣、北海道》（誠文堂新光社，1936）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3576493"
+    }
+  ],
+  "D36-3": [
+    {
+      "file": "D36-3.jpg",
+      "caption": "員林街長張清華三媽蔡氏出殯行列途經員林東門",
+      "source": "國家文化記憶庫，〈員林街長張清華三媽蔡氏出殯行列途經員林東門〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Event&id=476851"
+    }
+  ],
+  "D39": [
+    {
+      "file": "D39.png",
+      "caption": "草屯老照片",
+      "source": "國家文化資料庫，〈草屯老照片〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1690216?query=%7B%22search%22:%22%E5%8F%B0%E8%BB%8A%22%7D&offset=10&limit=10&sort=openStart&order=desc"
+    }
+  ],
+  "D41": [
+    {
+      "file": "D41.jpg",
+      "source": "王坤愉、辜志鵬，《塵光掠影：中寮鄉老照片說故事》（南投縣中寮鄉觀光產業促進會，2004）。"
+    }
+  ],
+  "D44": [
+    {
+      "file": "D44.jpg",
+      "caption": "龍神橋（其二）",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149260"
+    },
+    {
+      "file": "D44(1).jpg",
+      "caption": "雲懸橋",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149252"
+    },
+    {
+      "file": "D44(2).jpg",
+      "caption": "臺車にて新高登山隊",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149068"
+    },
+    {
+      "file": "D44(3).png",
+      "caption": "竹山公學校教師玉山登山之旅（三）",
+      "source": "國家文化資料庫，〈竹山公學校教師玉山登山之旅（三）〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1716197?query=%7B%22search%22:%22%E5%8F%B0%E8%BB%8A%22%7D&offset=0&limit=10&sort=openStart&order=desc"
+    }
+  ],
+  "D45": [
+    {
+      "file": "D45.jpg",
+      "caption": "小林總督抵達外車埕輕便軌道車站",
+      "source": "臺灣電力株式會社，《京政寫真帖》（臺灣電力株式會社，1936）。",
+      "link": "https://collections.nmth.gov.tw/CollectionContent.aspx?a=132&rno=2004.020.0101.0006"
+    },
+    {
+      "file": "D45(1).jpg",
+      "caption": "手押臺車 ON A SINGLE TROLLEY.",
+      "source": "Landsborough, Marjorie. (1931). In beautiful Formosa: Being a personally-conducted tour of boys and girls to view the people, the scenery, and the work of the missionaries in strange and lovely places. Religious Tract Society.",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3377110"
+    },
+    {
+      "file": "D45(2).jpg",
+      "caption": "傳教士坐手押臺車 MISSIONARIES ON COUPLED TROLLEYS.",
+      "source": "Landsborough, Marjorie. (1931). In beautiful Formosa: Being a personally-conducted tour of boys and girls to view the people, the scenery, and the work of the missionaries in strange and lovely places. Religious Tract Society.",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3377114"
+    },
+    {
+      "file": "D45(3).jpg",
+      "caption": "台車中ノ一行魚池駐車場ヨリ門牌潭こ出発ノ刹那",
+      "source": "國立臺灣歷史博物館典藏網，〈一行人於魚池駐車場出發照片〉。",
+      "link": "https://collections.nmth.gov.tw/CollectionContent.aspx?a=132&rno=2020.032.0033.0015"
+    },
+    {
+      "file": "D45(4).jpg",
+      "caption": "埔里耶馬溪",
+      "source": "全國圖書館協議會，《臺灣之旅》（全國圖書館協議會，1929）。",
+      "link": "https://news.ltn.com.tw/news/life/paper/1303250"
+    },
+    {
+      "file": "D45(5).jpg",
+      "caption": "埔里街或龜山庄的輕便鐵路",
+      "source": "埔里影像故事館，〈埔里街或龜山庄的輕便車〉（Facebook，2016年12月2日）。",
+      "link": "https://www.facebook.com/share/p/1AEL5MPhLA/"
+    }
+  ],
+  "D50": [
+    {
+      "file": "D50.jpg",
+      "caption": "集山路走過",
+      "source": "繁花盡落林圮埔，〈集山路走過〉。",
+      "link": "https://bachbeethoven.blogspot.com/"
+    }
+  ],
+  "D52": [
+    {
+      "file": "D52.jpg",
+      "caption": "第八回保健調查地ノ一部‧其ノ二（鹿谷ヨリ車輄寮ヲ望ム}",
+      "source": "臺中州警務部衛生課，《臺中州保健衛生調查書（第八回調查地：竹山郡鹿谷庄鹿谷字鹿谷、新寮、車輄寮字車輄寮）》（臺中州警務部衛生課，1928）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/680464"
+    },
+    {
+      "file": "D52(1).png",
+      "caption": "輕便軌道的牽引設備",
+      "source": "國家文化資料庫，〈輕便軌道的牽引設備〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1662354?query=%7B%22search%22:%22%E5%8F%B0%E8%BB%8A%22%7D&offset=20&limit=10&sort=openStart&order=desc"
+    }
+  ],
+  "D53": [
+    {
+      "file": "D53.jpg",
+      "source": "青潮文化，〈【濁水溪南北走透透】廣興村生死坡〉（Facebook，2022年11月23日）。",
+      "link": "https://www.facebook.com/share/p/1KbnKFpXL8/"
+    }
+  ],
+  "D59": [
+    {
+      "file": "D59.jpg",
+      "source": "牧野喜久男，《日本植民地史3：臺灣》（朝日新聞社，1978）。"
+    },
+    {
+      "file": "D59(1).jpg",
+      "caption": "事變の急報により埔里に急行せる警察官埔里より霧社へ行進の途中",
+      "source": "佐藤正藏，《第一第二霧社事件誌》（實業時代社中部支社出版部，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/103731"
+    },
+    {
+      "file": "D59(2).jpg",
+      "caption": "湄溪臺車終斷",
+      "source": "全國圖書館協議會，《臺灣之旅》（全國圖書館協議會，1929）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2147675"
+    }
+  ],
+  "E1": [
+    {
+      "file": "E1.jpg",
+      "source": "張耀元，〈打北輕鐵線(上)〉，《新港文教基金會會訊》，第368期（2023）。",
+      "link": "https://www.hkfce.org.tw/tw/magazine/2024%E9%BE%8DHappy/368%E6%9C%9F%E6%89%93%E5%8C%97%E8%BC%95%E9%90%B5%E7%B7%9A%E4%B8%8A"
+    }
+  ],
+  "E5": [
+    {
+      "file": "E5.jpg",
+      "source": "嘉義市政府文化局，《諸羅文化誌》（嘉義市政府文化局，2013）。",
+      "link": "https://www.facebook.com/share/p/1Cke3ikHYp/"
+    }
+  ],
+  "E6": [
+    {
+      "file": "E6.jpg",
+      "source": "臺灣國定古蹟編纂研究小組（National Historic Monuments of Taiwan），〈日治時期嘉義觸口黎明橋及輕便軌道舊照〉（Facebook，2021年10月21日）。",
+      "link": "https://www.facebook.com/share/p/1ECKeoDhRB/"
+    }
+  ],
+  "E10": [
+    {
+      "file": "E10.jpg",
+      "caption": "關仔嶺發著所",
+      "source": "文化部國家文化記憶庫，〈關仔嶺發著所〉。",
+      "link": "https://cmsdb.culture.tw/object/FCB9DB55-7859-4525-8016-01401DC7FE2C"
+    },
+    {
+      "file": "E10(1).jpg",
+      "caption": "臺車載客照-4",
+      "source": "高雄市立歷史博物館，〈臺車載客照-4〉（登錄號：KH2000.001.047）。"
+    },
+    {
+      "file": "E10(2).jpg",
+      "caption": "水牛使用の臺車",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149072"
+    }
+  ],
+  "E14": [
+    {
+      "file": "E14.png",
+      "caption": "早期小火車",
+      "source": "陳啓榮，《絕代風華：六甲老照片專輯》（臺南市六甲區公所，2021）。"
+    }
+  ],
+  "E17": [
+    {
+      "file": "E17.jpg",
+      "caption": "日治時期鹽水老街道",
+      "source": "國家文化記憶庫，〈日治時期鹽水老街道〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&id=266342"
+    },
+    {
+      "file": "E17(1).jpg",
+      "source": "〈鹽水四百年的兩岸情懷〉，《兩岸犇報》，2019年12月20日。",
+      "link": "https://chaiwanbenpost.net/article/%E9%B9%BD%E6%B0%B4%E5%9B%9B%E7%99%BE%E5%B9%B4%E7%9A%84%E5%85%A9%E5%B2%B8%E6%83%85%E6%87%B7/1150"
+    }
+  ],
+  "E18": [
+    {
+      "file": "E18.jpg",
+      "caption": "善化庄善化市街（東門外）（二）",
+      "source": "開放博物館，〈東門外善化庄善化市街〉。",
+      "link": "https://openmuseum.tw/muse/digi_object/01bc89ff677880c9f2784765ff42563e"
+    }
+  ],
+  "E20": [
+    {
+      "file": "E20.jpg",
+      "caption": "玉井庄ノ一部",
+      "source": "臺南州，《臺南州第八回保健調查書（昭和三年）》（臺南州，1928）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/466778"
+    }
+  ],
+  "E21": [
+    {
+      "file": "E21.jpg",
+      "caption": "大目降糖業試驗所",
+      "source": "臺灣總督府官房文書課，《臺灣寫真帖[銅版紙]》（臺灣總督府，1908）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/5347800"
+    }
+  ],
+  "E22": [
+    {
+      "file": "E22.png",
+      "caption": "竹筏",
+      "source": "黑田菊之助，《南部臺灣寫真帖》（臺灣繪畫會，1914）。",
+      "link": "https://tebook.ntl.edu.tw/adm/upload/ebook/4c9c3a72-c75f-49cc-b6ed-9b0c94ecbeb9/book.html"
+    },
+    {
+      "file": "E22(1).jpg",
+      "caption": "臺南西門町",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2150750"
+    },
+    {
+      "file": "E22(2).jpg",
+      "caption": "臺南停車場",
+      "source": "鄧志忠、廖明睿，《繪葉書中的臺灣鐵道：官鐵篇》（蒼璧出版，2022）。"
+    },
+    {
+      "file": "E22(3).jpg",
+      "caption": "臺灣輕便臺車 (111) Light railroad, Formosa",
+      "source": "劉婉君，〈捷運規劃 文史工作者建議參考日治時軌道〉，《自由時報》，2018年5月28日。"
+    }
+  ],
+  "E24": [
+    {
+      "file": "E24.png",
+      "caption": "十月二十二日臺南御入城の際御通過の東門",
+      "source": "臺灣教育會，《北白川宮能久親王御遺跡寫真帖》（臺灣日日新報社，1928）。",
+      "link": "https://tm.ncl.edu.tw/article?u=045_103_000001&n=116&d=%7B%22query_words%22:%22%22,%22_hidingFromList%22:0,%22_deleted%22:0,%22_hiding%22:0,%22lang%22:%22chn%22,%22collection%22:%22C_20200102092246%22,%22page%22:%221%22,%22page_limit%22:%2210%22,%22special_search%22:%22overview_index%22%7D&query_words="
+    }
+  ],
+  "E25": [
+    {
+      "file": "E25.jpg",
+      "caption": "曾文溪の木橋",
+      "source": "勝山吉作，《臺灣紹介最新寫真集》（勝山寫真館，1931）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/2149242"
+    },
+    {
+      "file": "E25(1).jpg",
+      "caption": "佳里庄ノ一部",
+      "source": "臺南州，《臺南州第十、十一回保健調查書（昭和六年）》（臺南州，1932）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/466798"
+    }
+  ],
+  "E26": [
+    {
+      "file": "E26.jpg",
+      "caption": "嘉義停車場",
+      "source": "自行翻攝。"
+    },
+    {
+      "file": "E26(1).jpg",
+      "caption": "日治時期嘉義停車場前街景舊照",
+      "source": "臺灣國定古蹟編纂研究小組（National Historic Monuments of Taiwan），〈日治時期嘉義停車場前街景舊照〉（Facebook，2018年9月29日）。",
+      "link": "https://www.facebook.com/share/1Q1mUNPYFW/"
+    }
+  ],
+  "E27": [
+    {
+      "file": "E27.jpg",
+      "caption": "工事中ノ水源地 (臺南水道)",
+      "note": "本圖為工事用部分，遠處可見連結主線之路基",
+      "source": "臺灣總督府民政部土木局，《臺灣水道誌》（臺灣日日新報社，1918）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/90728"
+    }
+  ],
+  "F2": [
+    {
+      "file": "F2.png",
+      "source": "高雄市立歷史博物館，《展高雄系列專刊：永安彌陀特展》（高雄市立歷史博物館，2019）。",
+      "link": "https://www.khm.org.tw/storage/files/4236/original/10%E6%B0%B8%E5%AE%89%E5%BD%8C%E9%99%80%E5%B0%88%E5%88%8A_%E9%AB%98%E9%9B%84%E5%B8%82%E7%AB%8B%E6%AD%B7%E5%8F%B2%E5%8D%9A%E7%89%A9%E9%A4%A8.pdf"
+    }
+  ],
+  "F6": [
+    {
+      "file": "F6.jpg",
+      "caption": "臺灣鳳梨罐詰株式會社社線ニヨル荷物ヲ高雄港ニ搬出スル處",
+      "source": "日治時期繪葉書，〈臺灣鳳梨罐詰株式會社社線ニヨル荷物ヲ高雄港ニ搬出スル處〉。",
+      "link": "https://dl.lib.ntu.edu.tw/s/postcard/item/39207"
+    }
+  ],
+  "F17": [
+    {
+      "file": "F17.jpg",
+      "caption": "恒春街",
+      "source": "開放博物館，〈恒春街〉。",
+      "link": "https://openmuseum.tw/muse/digi_object/52da4ebd3a9ad0bbfc9fd2d23db671fe"
+    }
+  ],
+  "F18": [
+    {
+      "file": "F18.jpg",
+      "caption": "土壟灣發電所．竹子門發電所間送電線路",
+      "source": "臺灣總督府土木局，《臺灣電氣事業概況》（臺灣總督府土木局，1924）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/99912"
+    }
+  ],
+  "F19": [
+    {
+      "file": "F19.jpg",
+      "caption": "打狗停車場",
+      "source": "鄧志忠、廖明睿，《繪葉書中的臺灣鐵道：官鐵篇》（蒼璧出版，2022）。"
+    }
+  ],
+  "G2": [
+    {
+      "file": "G2.jpg",
+      "caption": "宜蘭街",
+      "source": "廣松良臣，《臺灣寫眞カード = The photographic cards of Taiwan》（臺灣圖書刊行會，1919）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/3804424"
+    },
+    {
+      "file": "G2(1).jpg",
+      "source": "秋惠文庫 Formosa Vintage Museum，〈約1910年代後期宜蘭凱旋川上凱旋橋的輕便鐵道現蘭陽溪〉（Facebook，2018年10月17日）。",
+      "link": "https://www.facebook.com/photo/?fbid=1895040850533470&set=a.453300680166304"
+    }
+  ],
+  "G3": [
+    {
+      "file": "G3.jpg",
+      "caption": "臺車發著所 (蘇澳)",
+      "source": "臺北州內務部勸業課，《蘇澳の漁港》（臺北州內務部勸業課，1926）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/100310"
+    }
+  ],
+  "G4": [
+    {
+      "file": "G4.jpg",
+      "caption": "臺車發著所 (蘇澳)",
+      "source": "臺北州內務部勸業課，《蘇澳の漁港》（臺北州內務部勸業課，1926）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/100308"
+    }
+  ],
+  "G5": [
+    {
+      "file": "G5.jpg",
+      "caption": "前往宜蘭旅行的臺北第三高等女學校學生",
+      "source": "Unknown author, \"Field trip of Taihoku Prefectural Taihoku Third Girls' High School at Giran\" (Wikimedia Commons).",
+      "link": "https://commons.wikimedia.org/w/index.php?search=%E5%89%8D%E5%BE%80%E5%AE%9C%E8%98%AD%E6%97%85%E8%A1%8C%E7%9A%84&title=Special%3AMediaSearch&type=image"
+    }
+  ],
+  "G5-1": [
+    {
+      "file": "G5-1.jpg",
+      "caption": "員山溫泉ノ全景",
+      "source": "小山權太郎，《蘭陽大觀》（南國寫真大觀社，1933）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/101823"
+    }
+  ],
+  "G6": [
+    {
+      "file": "G6.jpg",
+      "caption": "羅東水道水源地",
+      "source": "宜蘭縣立蘭陽博物館，〈150期-04-宜蘭線鐵道興建歷程調查－宜蘭鐵道建設的肇始－輕便鐵道〉，《蘭博電子報》。",
+      "link": "https://www.lym.gov.tw/ch/collection/epaper/epaper-detail/e7810cd9-a750-11ed-96a7-2760f1289ae7/"
+    },
+    {
+      "file": "G6(1).jpg",
+      "caption": "羅東街",
+      "source": "山本三生，《日本地理大系臺灣篇》（改造社，1930）。",
+      "link": "https://zh.wikipedia.org/zh-cn/File:%E7%BE%85%E6%9D%B1%E8%A1%97.jpg"
+    }
+  ],
+  "G7": [
+    {
+      "file": "G7.png",
+      "caption": "砂田商行羅東製材所",
+      "source": "小山權太郎，《蘭陽大觀》（南國寫真大觀社，1933）。",
+      "link": "https://digital.yihistory.e-land.gov.tw/digiarchive/index.php?act=Display/image/43832w3XVtQ7#05J"
+    }
+  ],
+  "H1": [
+    {
+      "file": "H1.jpg",
+      "caption": "璞石閣市街",
+      "source": "臺灣總督府鐵道部花蓮港出張所，《臺灣鐵道臺東線》（臺灣總督府鐵道部花蓮港出張所，1917）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/5121546"
+    },
+    {
+      "file": "H1(1).jpg",
+      "caption": "臺車軌道(臺東線押手は蕃人なり)",
+      "source": "武內貞義，《臺灣》（臺灣日日新報社，1914）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/475429"
+    },
+    {
+      "file": "H1(2).png",
+      "caption": "吳全城賀田組農場 Mr. Kada's Farm at Gozengo,on the East Coast",
+      "source": "臺灣總督府，《臺灣寫真帖》（臺灣總督府官房文書課，1908）。",
+      "link": "https://picryl.com/media/pd-japan-oldphoto-bd746f"
+    },
+    {
+      "file": "H1(3).jpg",
+      "caption": "加納納峠螺線路（花蓮港廳管内）",
+      "source": "Otani, B. (Ed.). (1916). The Spiral Trolley on Karara-Mountain Pass. Taiwan Shashinkai.",
+      "link": "https://ldr.lafayette.edu/concern/images/dv13zt82x?locale=en"
+    }
+  ],
+  "H2-1": [
+    {
+      "file": "H2-1.jpg",
+      "caption": "台東廳台東港",
+      "source": "臺灣記憶，〈臺東廳臺東港〉。",
+      "link": "https://tm.ncl.edu.tw/article?u=001_004_0000363592"
+    }
+  ],
+  "H3": [
+    {
+      "file": "H3.jpg",
+      "caption": "花蓮港廳官營移民村吉野村",
+      "source": "Unknown author, \"View of Yoshino Official Colonial Village of the Karenko Government circa 1921\" (Wikimedia Commons).",
+      "link": "https://commons.wikimedia.org/wiki/File:View_of_Yoshino_Official_Colonial_Village_of_the_Karenko_Government_circa_1921.jpg"
+    }
+  ],
+  "H4": [
+    {
+      "file": "H4.jpg",
+      "caption": "能高越橫斷道路基點",
+      "source": "山本三生，《日本地理大系臺灣篇》（改造社，1930）。",
+      "link": "https://hiking.biji.co/index.php?q=review&act=info&review_id=26937"
+    }
+  ],
+  "H5": [
+    {
+      "file": "H5.jpg",
+      "caption": "花蓮港廳前ノ通リ",
+      "source": "國家文化記憶庫，〈花蓮港廳〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Object&id=515873"
+    },
+    {
+      "file": "H5(1).jpg",
+      "source": "陳聰民、陳文添、林文龍、陳美惠、林欣毅，《原住民重大歷史事件：七腳川事件寫真帖》（國史館臺灣文獻館；行政院原住民族委員會，2005）。"
+    }
+  ],
+  "I1": [
+    {
+      "file": "I1.jpg",
+      "caption": "早期蘭大衛醫師與梅鑑霧牧師前往大社醫療傳道時所搭乘的台車",
+      "source": "Unknown author, \"Early physicians of the Changhua Christian Hospital and medical missionary priest travel aboard a narrow gauge trolley to Taisha (大社)\" (Wikimedia Commons).",
+      "link": "https://commons.wikimedia.org/wiki/File:%E6%97%A9%E6%9C%9F%E8%98%AD%E5%A4%A7%E8%A1%9B%E9%86%AB%E5%B8%AB%E8%88%87%E6%A2%85%E9%91%91%E9%9C%A7%E7%89%A7%E5%B8%AB%E5%89%8D%E5%BE%80%E5%A4%A7%E7%A4%BE%E9%86%AB%E7%99%82%E5%82%B3%E9%81%93%E6%99%82%E6%89%80%E6%90%AD%E4%B9%98%E7%9A%84%E5%8F%B0%E8%BB%8A.jpg"
+    }
+  ],
+  "I2": [
+    {
+      "file": "I2.webp",
+      "source": "Kirjassoff, A. B. (1920, March). Formosa the beautiful. The National Geographic Magazine, 37(3), 246–292."
+    },
+    {
+      "file": "I2(1).png",
+      "caption": "輕便鐵道彰化站",
+      "source": "臺灣學數位圖書館，〈輕便鐵道彰化站〉。",
+      "link": "https://tsdl.ntl.edu.tw/index.php?act=Display/image/491930TY=aluw#18F"
+    },
+    {
+      "file": "I2(2).jpg",
+      "caption": "軍政中郵便物運搬",
+      "source": "臺灣學數位圖書館，〈軍政中郵便物運搬〉。"
+    }
+  ],
+  "I3": [
+    {
+      "file": "I3.jpg",
+      "caption": "ENTRE KAGHI ET TAÏNAN. Le petit chemin de fer",
+      "source": "Ogawa, K. (1896). Souvenirs de Formose et des Îles Pescadores. K. Ogawa.",
+      "link": "https://hahn.zenfolio.com/p554924562/h3680655d?fbclid=IwY2xjawVx375leHRuA2FlbQIxMQBwZG9mBWJyaWQRMWEyTFpEVHY2WVJKRlhZZWhzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEfKNw86V0boDR7n5Z1hPkSamAo9SSAe7IcYam58ZgJoICqiWShrt2FljZvGVA_aem_r47mG4RbgRPi7Ltf-IJe8w#h22dc12e7"
+    }
+  ],
+  "I4": [
+    {
+      "file": "I4.jpg",
+      "source": "Paul Fawcett Huang, \"Taiwan push cart line from around 1900\" (Facebook, 2022年10月11日).",
+      "link": "https://www.facebook.com/groups/narrowgauge/posts/8405534436125177/"
+    }
+  ],
+  "I6": [
+    {
+      "file": "I6.jpg",
+      "caption": "斗六廳下林圯埔派出所員引揚途上ノ景況",
+      "source": "臨時臺灣土地調查局，《臨時臺灣土地調查局紀念帖》（臨時臺灣土地調查局，1904）。",
+      "link": "https://dl.lib.ntu.edu.tw/s/photo/item/112040"
+    }
+  ],
+  "I8": [
+    {
+      "file": "I8.png",
+      "caption": "鳳山東門",
+      "source": "國家文化資料庫，〈鳳山東門〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1682270?query=%7B%22search%22:%22%E9%B3%B3%E5%B1%B1%20%E6%9D%B1%E9%96%80%22%7D&offset=0&limit=10&sort=openStart&order=desc"
+    },
+    {
+      "file": "I8(1).png",
+      "caption": "鳳山縣新城大東門外",
+      "source": "國家文化資料庫，〈鳳山東門〉。",
+      "link": "https://nrch.culture.tw/nrch/zh-tw/nrchdata/1689960?query=%7B%22search%22:%22%E9%B3%B3%E5%B1%B1%20%E6%9D%B1%E9%96%80%22%7D&offset=0&limit=10&sort=openStart&order=desc"
+    }
+  ],
+  "I9": [
+    {
+      "file": "I9.jpg",
+      "caption": "大安溪左岸 すぱいらる",
+      "source": "國家文化記憶庫，〈軍用速成線〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Event&id=236240"
+    },
+    {
+      "file": "I9(1).jpg",
+      "caption": "苗栗廳大安溪輕便鐵道",
+      "source": "國家文化記憶庫，〈軍用輕便鐵道〉。",
+      "link": "https://tcmb.culture.tw/zh-tw/detail?indexCode=Culture_Event&id=236238"
+    },
+    {
+      "file": "I9(2).png",
+      "caption": "大安溪輕便鐵道線路",
+      "source": "臺灣學數位圖書館，〈大安溪輕便鐵道線路〉。",
+      "link": "https://tsdl.ntl.edu.tw/index.php?act=Display/image/491897pm9uwr4#9eF"
+    }
+  ]
 }
