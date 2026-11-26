@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.9</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.10</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -3064,6 +3064,8 @@
                         name: normalizeSearchText(resolvedDisplayName),
                         tai: cleanTailo,
                         taiCompact: compactSearchText(resolvedTailo || resolvedDisplayName || ''),
+                        taiToned: normalizeTailoToned(resolvedTailo),
+                        taiTonedCompact: compactTailoToned(resolvedTailo),
                         alt: normalizeSearchText(p.alt_names),
                         ops: normalizeSearchText(opsStr),
                         gaugeStr: p.gauge ? String(p.gauge) : '',
@@ -3236,6 +3238,22 @@
         function compactSearchText(s) {
             return normalizeSearchText(s).replace(/[-\s]+/g, '');
         }
+        function normalizeTailoToned(s) {
+            return String(s || '').toLowerCase().normalize('NFC');
+        }
+        function compactTailoToned(s) {
+            return normalizeTailoToned(s).replace(/[-\s]+/g, '');
+        }
+        function includesToned(haystack, needle) {
+            if (!haystack || !needle) return false;
+            let idx = haystack.indexOf(needle);
+            while (idx !== -1) {
+                const nextCh = haystack[idx + needle.length] || '';
+                if (!/[\u0300-\u036f]/.test(nextCh)) return true;
+                idx = haystack.indexOf(needle, idx + 1);
+            }
+            return false;
+        }
         function addSearchHeader(text, cls = 'search-category') {
             const head = document.createElement('div'); head.className = cls; head.textContent = text;
             dropdown.appendChild(head);
@@ -3318,8 +3336,9 @@
             const keyword = normalizeSearchText(rawTrim);
             const compactKey = compactSearchText(rawTrim);
             const tailoConverted = /[1-8]/.test(rawTrim) ? convertTailoToneNumbers(rawTrim) : rawTrim;
-            const tailoKeyword = normalizeSearchText(tailoConverted);
-            const tailoCompactKey = compactSearchText(tailoConverted);
+            const hasToneSpec = (tailoConverted !== rawTrim) || /[\u0300-\u036f]/.test(rawTrim.normalize('NFD'));
+            const tailoTonedKey = normalizeTailoToned(tailoConverted);
+            const tailoTonedCompact = compactTailoToned(tailoConverted);
             dropdown.replaceChildren();
             clearBtn.style.display = 'block';
 
@@ -3400,7 +3419,7 @@
                 else if (sc.code.startsWith(keyword)) rank = 2;
                 else if (sc.name.startsWith(keyword)) rank = 3;
                 else if (sc.code.includes(keyword) || sc.name.includes(keyword)) rank = 4;
-                else if (sc.tai.includes(keyword) || (compactKey && sc.taiCompact.includes(compactKey)) || sc.tai.includes(tailoKeyword) || (tailoCompactKey && sc.taiCompact.includes(tailoCompactKey))) {
+                else if (hasToneSpec ? (includesToned(sc.taiToned, tailoTonedKey) || (tailoTonedCompact && includesToned(sc.taiTonedCompact, tailoTonedCompact))) : (sc.tai.includes(keyword) || (compactKey && sc.taiCompact.includes(compactKey)))) {
                     rank = 5; matchHint = p.tailo || '';
                 } else if (sc.alt.includes(keyword)) {
                     rank = 5; matchHint = `舊稱: ${p.alt_names}`;
