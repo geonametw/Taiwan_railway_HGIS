@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>古今鐵道營業線 HGIS 查詢系統 v11.10</title>
+    <title>古今鐵道營業線 HGIS 查詢系統 v11.11</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         @font-face {
@@ -446,6 +446,7 @@
         let currentPhotoList = [];
         let currentPhotoIdx = 0;
         let photoAutoTimer = null;
+        let photoInitTimer = null;
         let globalNarrativesMap = {};
         let customNamesDict = {};
 
@@ -1520,36 +1521,53 @@
             counter.style.display = multi ? 'block' : 'none';
             if (multi) counter.textContent = `${currentPhotoIdx + 1} / ${currentPhotoList.length}`;
             photoBox.style.display = 'block';
-            if (multi && !photoAutoTimer) startPhotoAutoPlay();
-            else if (!multi) stopPhotoAutoPlay();
+            if (!multi) stopPhotoAutoPlay();
         }
 
         function stopPhotoAutoPlay() {
+            if (photoInitTimer) {
+                clearTimeout(photoInitTimer);
+                photoInitTimer = null;
+            }
             if (photoAutoTimer) {
                 clearInterval(photoAutoTimer);
                 photoAutoTimer = null;
             }
         }
 
-        function startPhotoAutoPlay() {
+        function startPhotoAutoPlay(initialIntro = false) {
             stopPhotoAutoPlay();
             if (currentPhotoList.length <= 1) return;
             if (document.getElementById('photo-lightbox').classList.contains('open')) return;
-            photoAutoTimer = setInterval(() => {
-                if (currentPhotoList.length <= 1 || !document.body.classList.contains('drawer-open')) {
-                    stopPhotoAutoPlay();
-                    return;
-                }
-                if (document.getElementById('photo-lightbox').classList.contains('open')) return;
-                currentPhotoIdx = (currentPhotoIdx + 1) % currentPhotoList.length;
-                renderCurrentDrawerPhoto();
-            }, 4500);
+            const startLoop = () => {
+                photoAutoTimer = setInterval(() => {
+                    if (currentPhotoList.length <= 1 || !document.body.classList.contains('drawer-open')) {
+                        stopPhotoAutoPlay();
+                        return;
+                    }
+                    if (document.getElementById('photo-lightbox').classList.contains('open')) return;
+                    currentPhotoIdx = (currentPhotoIdx + 1) % currentPhotoList.length;
+                    renderCurrentDrawerPhoto();
+                }, 3000);
+            };
+            if (initialIntro) {
+                photoInitTimer = setTimeout(() => {
+                    photoInitTimer = null;
+                    if (currentPhotoList.length <= 1 || !document.body.classList.contains('drawer-open')) return;
+                    if (document.getElementById('photo-lightbox').classList.contains('open')) return;
+                    currentPhotoIdx = 0;
+                    renderCurrentDrawerPhoto();
+                    startLoop();
+                }, 1000);
+            } else {
+                startLoop();
+            }
         }
 
         const drawerPhotoBoxEl = document.getElementById('drawer-photo-box');
         if (drawerPhotoBoxEl) {
             drawerPhotoBoxEl.addEventListener('mouseenter', stopPhotoAutoPlay);
-            drawerPhotoBoxEl.addEventListener('mouseleave', startPhotoAutoPlay);
+            drawerPhotoBoxEl.addEventListener('mouseleave', () => startPhotoAutoPlay(false));
         }
 
         function stepPhoto(delta) {
@@ -1559,12 +1577,13 @@
             if (document.getElementById('photo-lightbox').classList.contains('open')) {
                 openLightbox();
             } else {
-                startPhotoAutoPlay();
+                startPhotoAutoPlay(false);
             }
         }
 
         function loadRoutePhoto(feature) {
             const p = feature.properties || {};
+            stopPhotoAutoPlay();
             currentPhotoList = [];
             currentPhotoIdx = 0;
             renderCurrentDrawerPhoto();
@@ -1583,7 +1602,9 @@
                     source: m.source || '',
                     link: m.link || m.url || ''
                 }));
+                currentPhotoIdx = currentPhotoList.length > 1 ? currentPhotoList.length - 1 : 0;
                 renderCurrentDrawerPhoto();
+                if (currentPhotoList.length > 1) startPhotoAutoPlay(true);
                 return;
             }
 
@@ -1595,7 +1616,9 @@
                     source: item.source || (presetMeta && presetMeta.source) || item.year || '',
                     link: item.link || item.url_source || (presetMeta && (presetMeta.link || presetMeta.url)) || ''
                 }));
+                currentPhotoIdx = currentPhotoList.length > 1 ? currentPhotoList.length - 1 : 0;
                 renderCurrentDrawerPhoto();
+                if (currentPhotoList.length > 1) startPhotoAutoPlay(true);
                 return;
             }
             if (p.photo) {
