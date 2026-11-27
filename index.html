@@ -1378,7 +1378,7 @@
             const rid = p.route_id || p.name;
             if (!selectedGroupKey || lKey !== selectedGroupKey) return 'none';
             const effectiveActiveId = (currentDrawerFeature && currentDrawerFeature._isVirtual)
-                ? selectedGroupKey
+                ? (currentDrawerFeature._highlightTarget || selectedGroupKey)
                 : (activeSubRouteId || selectedGroupKey);
             return (rid === effectiveActiveId) ? 'primary' : 'sibling';
         }
@@ -1418,7 +1418,7 @@
             const boundKeys = p._boundGroupKeys || [];
             if (!boundKeys.includes(selectedGroupKey)) return false;
             const effectiveActiveId = (currentDrawerFeature && currentDrawerFeature._isVirtual)
-                ? selectedGroupKey
+                ? (currentDrawerFeature._highlightTarget || selectedGroupKey)
                 : (activeSubRouteId || selectedGroupKey);
             return (p._boundRouteIds || []).includes(effectiveActiveId);
         }
@@ -2242,7 +2242,7 @@
             stBlock.style.display = 'none';
 
             const allGroupStLayers = groupStationsMap[groupKey] || [];
-            const effectiveId = feature._isVirtual ? groupKey : currentId;
+            const effectiveId = feature._isVirtual ? (feature._highlightTarget || groupKey) : currentId;
             const subRouteStLayers = allGroupStLayers.filter(stLayer => (stLayer.feature.properties._boundRouteIds || []).includes(effectiveId));
             const displayStLayers = subRouteStLayers.length > 0 ? subRouteStLayers : allGroupStLayers;
 
@@ -2879,36 +2879,41 @@
                     }
                 });
 
-                for (let i = 1; i < mainParts.length; i += 2) {
-                    const subTitle = mainParts[i].trim();
-                    const subTable = (mainParts[i + 1] || '').trim();
-                    const spaceIdx = subTitle.indexOf(' ');
-                    const subCode = spaceIdx > 0 ? subTitle.substring(0, spaceIdx).trim() : subTitle;
-                    const subLabel = spaceIdx > 0 ? subTitle.substring(spaceIdx + 1).trim() : '副線';
-                    const meta = extractMetaFromTableHtml(subTable);
-                    if (meta.operators) meta.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
+                flist.forEach(hostFeat => {
+                    const hostProps = hostFeat.properties || {};
+                    const hostRid = hostProps.route_id || hostProps.name || gk;
+                    const hostParts = splitDesc((hostProps.description && hostProps.description.zh) || '');
+                    for (let i = 1; i < hostParts.length; i += 2) {
+                        const subTitle = hostParts[i].trim();
+                        const subTable = (hostParts[i + 1] || '').trim();
+                        const spaceIdx = subTitle.indexOf(' ');
+                        const subCode = spaceIdx > 0 ? subTitle.substring(0, spaceIdx).trim() : subTitle;
+                        const subLabel = spaceIdx > 0 ? subTitle.substring(spaceIdx + 1).trim() : '副線';
+                        const meta = extractMetaFromTableHtml(subTable);
+                        if (meta.operators) meta.operators.split('、').map(s => s.trim()).filter(Boolean).forEach(op => opsSet.add(op));
 
-                    if (!membersDict[subCode]) {
-                        const virtualFeature = {
-                            type: "Feature", _isVirtual: true,
-                            properties: {
-                                route_id: subCode, parent_id: gk, line_type: subLabel, name: mainProps.name,
-                                tailo: mainProps.tailo || '', section: meta.section || subLabel,
-                                gauge: mainProps.gauge ?? null,
-                                operators: meta.operators || mainProps.operators || '', description: { zh: subTable }
-                            },
-                            geometry: mainFeat.geometry
-                        };
-                        membersDict[subCode] = {
-                            id: subCode, lineType: subLabel, badgeText: `${subCode} ${subLabel}`.trim(),
-                            section: meta.section || subLabel,
-                            gauge: mainProps.gauge ?? null,
-                            operators: meta.operators,
-                            tableHtml: subTable, hasTable: subTable.includes('<table'), feature: virtualFeature, isMain: false
-                        };
-                        routeByIdMap[subCode] = virtualFeature;
+                        if (!membersDict[subCode]) {
+                            const virtualFeature = {
+                                type: "Feature", _isVirtual: true, _highlightTarget: hostRid,
+                                properties: {
+                                    route_id: subCode, parent_id: gk, line_type: subLabel, name: hostProps.name || mainProps.name,
+                                    tailo: hostProps.tailo || mainProps.tailo || '', section: meta.section || subLabel,
+                                    gauge: (hostProps.gauge !== undefined && hostProps.gauge !== null && hostProps.gauge !== '') ? hostProps.gauge : (mainProps.gauge ?? null),
+                                    operators: meta.operators || hostProps.operators || mainProps.operators || '', description: { zh: subTable }
+                                },
+                                geometry: hostFeat.geometry || mainFeat.geometry
+                            };
+                            membersDict[subCode] = {
+                                id: subCode, lineType: subLabel, badgeText: `${subCode} ${subLabel}`.trim(),
+                                section: meta.section || subLabel,
+                                gauge: virtualFeature.properties.gauge,
+                                operators: meta.operators,
+                                tableHtml: subTable, hasTable: subTable.includes('<table'), feature: virtualFeature, isMain: false
+                            };
+                            routeByIdMap[subCode] = virtualFeature;
+                        }
                     }
-                }
+                });
 
                 familyMembersMap[gk] = Object.values(membersDict).sort((a, b) => {
                     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
