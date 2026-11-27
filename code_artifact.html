@@ -19,7 +19,10 @@
   ></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
   <style>
     body {
       font-family: "Noto Sans TC", "Inter", system-ui, -apple-system, sans-serif;
@@ -94,7 +97,7 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
     }
 
-    /* 隱藏右下角過長版權字樣以免遮擋軌跡，保留乾淨版面 */
+    /* 精簡右下角版權字樣以免遮擋軌跡 */
     .leaflet-control-attribution {
       font-size: 9px !important;
       background: rgba(255, 255, 255, 0.78) !important;
@@ -157,7 +160,10 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
   <!-- 狀態通知列（取代 alert） -->
-  <div id="toast" class="no-print fixed bottom-5 right-5 z-50 hidden max-w-md rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-lg transition-all duration-200">
+  <div
+    id="toast"
+    class="no-print fixed bottom-5 right-5 z-50 hidden max-w-md rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-lg transition-all duration-200"
+  >
     <span id="toastMessage"></span>
   </div>
 
@@ -244,6 +250,7 @@
             <option value="G">G 區（宜蘭）</option>
             <option value="H">H 區（花東）</option>
             <option value="I">I 區（軍用速成軌道）</option>
+            <option value="OTHER">其他（非 A～I 編號）</option>
           </select>
         </div>
 
@@ -287,7 +294,7 @@
         </div>
       </div>
 
-      <!-- 圖例與批次渲染進度列 -->
+      <!-- 圖例與統計資訊 -->
       <div class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-2.5 text-xs text-slate-600 border border-slate-200/80">
         <div class="flex flex-wrap items-center gap-4">
           <span class="font-semibold text-slate-700">圖例：</span>
@@ -323,7 +330,7 @@
       </div>
     </header>
 
-    <!-- 報告列印用標題（僅在列印時或有需要時顯示） -->
+    <!-- 報告列印用標題 -->
     <div class="hidden print:block mb-3">
       <h2 class="text-lg font-bold text-black">古今鐵道營業線 — 路線數化結果一覽</h2>
       <p id="printMeta" class="text-xs text-slate-600"></p>
@@ -335,13 +342,13 @@
     <!-- 空狀態提示 -->
     <div id="emptyState" class="hidden rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
       <p class="text-base font-semibold text-slate-700">查無符合條件的路線資料</p>
-      <p class="mt-1 text-sm text-slate-500">請調整搜尋關鍵字，或重新載入包含路線座標的 JSON 檔案。</p>
+      <p class="mt-1 text-sm text-slate-500">請調整搜尋關鍵字或分區條件，或重新載入包含路線座標的 JSON 檔案。</p>
     </div>
 
-    <!-- data.json 結構診斷面板（當讀到檔案但無法解析出路線或座標時自動顯示） -->
+    <!-- data.json 結構診斷面板（當無法解析出有效路線座標時自動顯示） -->
     <div id="diagnosticBox" class="no-print mt-4 hidden rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-slate-800">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="font-bold text-amber-900">⚠️ 已讀取 JSON，但部分或全部路線尚未對應到座標欄位（結構診斷）</p>
+        <p class="font-bold text-amber-900">⚠️ 已讀取 JSON，但尚未解析出有效座標（結構診斷）</p>
         <button
           id="btnCopyDiagnostic"
           type="button"
@@ -355,7 +362,36 @@
   </div>
 
   <script>
-// ... existing code ... -->
+    // ================================
+    // 1. 全域狀態與 DOM 參照
+    // ================================
+    const state = {
+      rawJsonData: null,
+      sourceLabel: "./data.json",
+      allRoutes: [],
+      filteredRoutes: [],
+      mapInstances: new Map(), // routeIndex -> L.Map
+      observer: null,
+      isBatchRendering: false,
+      toastTimer: null
+    };
+
+    const els = {
+      jsonPathInput: document.getElementById("jsonPathInput"),
+      regionFilterSelect: document.getElementById("regionFilterSelect"),
+      searchInput: document.getElementById("searchInput"),
+      basemapSelect: document.getElementById("basemapSelect"),
+      coordOrderSelect: document.getElementById("coordOrderSelect"),
+      btnReloadJson: document.getElementById("btnReloadJson"),
+      fileInput: document.getElementById("fileInput"),
+      btnRenderAllMaps: document.getElementById("btnRenderAllMaps"),
+      btnPrint: document.getElementById("btnPrint"),
+      summaryStats: document.getElementById("summaryStats"),
+      statusText: document.getElementById("statusText"),
+      renderProgressText: document.getElementById("renderProgressText"),
+      progressBarWrap: document.getElementById("progressBarWrap"),
+      progressBarFill: document.getElementById("progressBarFill"),
+      printMeta: document.getElementById("printMeta"),
       tablesContainer: document.getElementById("tablesContainer"),
       emptyState: document.getElementById("emptyState"),
       diagnosticBox: document.getElementById("diagnosticBox"),
@@ -364,298 +400,22 @@
       toast: document.getElementById("toast"),
       toastMessage: document.getElementById("toastMessage")
     };
-// ... existing code ... -->
-    /**
-     * 從任意巢狀結構中遞迴抽取線段陣列（每條線段為 { role, points: [[lng, lat], ...] }）
-     */
-    function extractPolylines(input, orderMode, depth = 0, roleHint = "main") {
-      if (!input || depth > 10) return [];
 
-      // 若本身就是座標點陣列（支援 [[lng, lat], ...] 或 [{lat, lng}, ...]）
-      if (Array.isArray(input) && input.length > 0) {
-        const firstNorm = normalizePair(input[0], orderMode);
-        if (firstNorm) {
-          const pts = [];
-          for (const pt of input) {
-            const norm = normalizePair(pt, orderMode);
-            if (norm) pts.push(norm);
-          }
-          return pts.length >= 1 ? [{ role: roleHint, points: pts }] : [];
-        }
-
-        // 若是物件或巢狀陣列，逐項萃取
-        const result = [];
-        for (const item of input) {
-          result.push(...extractPolylines(item, orderMode, depth + 1, roleHint));
-        }
-        return result;
-      }
-
-      // 若是物件，依常見欄位萃取
-      if (typeof input === "object") {
-        const props = input.properties || {};
-        const objRole = detectRouteRole({ ...props, ...input }, "", roleHint);
-
-        // GeoJSON Feature / Geometry
-        if (input.type === "Feature" && input.geometry) {
-          return extractPolylines(input.geometry, orderMode, depth + 1, objRole);
-        }
-        if (input.type === "FeatureCollection" && Array.isArray(input.features)) {
-          return extractPolylines(input.features, orderMode, depth + 1, objRole);
-        }
-        if (input.type === "LineString" && Array.isArray(input.coordinates)) {
-          return extractPolylines(input.coordinates, orderMode, depth + 1, objRole);
-        }
-        if (input.type === "MultiLineString" && Array.isArray(input.coordinates)) {
-          return extractPolylines(input.coordinates, orderMode, depth + 1, objRole);
-        }
-
-        const candidateKeys = [
-          "segments",
-          "lines",
-          "polylines",
-          "branches",
-          "sublines",
-          "sub_routes",
-          "subRoutes",
-          "children",
-          "old_lines",
-          "oldLines",
-          "features",
-          "geometry",
-          "geom",
-          "geojson",
-          "geo",
-          "coordinates",
-          "coords",
-          "path",
-          "paths",
-          "points",
-          "track",
-          "tracks",
-          "main",
-          "sub",
-          "old"
-        ];
-
-        const collected = [];
-        for (const key of candidateKeys) {
-          if (input[key] !== undefined && input[key] !== null) {
-            let nextRole = objRole;
-            if (key === "branches" || key === "sublines" || key === "sub_routes" || key === "subRoutes" || key === "sub") nextRole = "branch";
-            if (key === "old_lines" || key === "oldLines" || key === "old") nextRole = "old";
-            collected.push(...extractPolylines(input[key], orderMode, depth + 1, nextRole));
-          }
-        }
-        if (collected.length > 0) return collected;
-
-        // 通用備援：掃描未列舉但可能含座標陣列的子屬性（略過車站與純文字欄位）
-        const skipKeys = new Set(["stations", "stops", "stats", "history", "records", "photos", "notes", "footnotes", "refs"]);
-        for (const [k, v] of Object.entries(input)) {
-          if (skipKeys.has(k) || !v || typeof v !== "object") continue;
-          const found = extractPolylines(v, orderMode, depth + 1, objRole);
-          if (found.length > 0) collected.push(...found);
-        }
-        if (collected.length > 0) return collected;
-      }
-
-      return [];
-    }
-// ... existing code ... -->
-    /**
-     * 將 FeatureCollection 依路線編號分組為標準路線物件陣列
-     */
-    function groupFeatureCollection(features, metaLookup = null, namesLookup = null) {
-      const grouped = new Map();
-      for (const feat of features) {
-        if (!feat || typeof feat !== "object") continue;
-        const geomType = feat.geometry && feat.geometry.type;
-        if (geomType === "Point" || geomType === "MultiPoint") continue;
-
-        const props = feat.properties || {};
-        if (props.line_type === "車站") continue;
-
-        const code = String(
-          props.route_id ?? props.routeId ?? props.id ?? props.code ?? props.no ?? props.line_id ?? "未編號"
-        ).trim();
-        const extraMeta = (metaLookup && metaLookup[code]) || {};
-        const dictName = namesLookup && namesLookup[code];
-        const name = String(
-          props.name ?? dictName ?? props.line_name ?? props.route_name ?? props.title ?? extraMeta.name ?? extraMeta.line_name ?? "未命名路線"
-        ).trim();
-
-        if (!grouped.has(code)) {
-          grouped.set(code, {
-            id: code,
-            name,
-            properties: { ...extraMeta, ...props },
-            segments: []
-          });
-        }
-        grouped.get(code).segments.push(feat);
-      }
-      return Array.from(grouped.values());
-    }
+    // ================================
+    // 2. 輔助工具函式
+    // ================================
 
     /**
-     * 將原始 JSON 正規化為標準路線清單（支援陣列、物件字典、頂層或巢狀 GeoJSON）
+     * 顯示底部提示訊息（取代 alert）
      */
-    function normalizeRoutesData(rawData, orderMode) {
-      let rawList = [];
-
-      if (Array.isArray(rawData)) {
-        rawList = rawData;
-      } else if (rawData && typeof rawData === "object") {
-        // 建立可能獨立存放於頂層的屬性對照表（例如 { geojson: ..., meta: { A1: ... } }）
-        const metaLookup =
-          (rawData.meta && typeof rawData.meta === "object" && !Array.isArray(rawData.meta) && rawData.meta) ||
-          (rawData.info && typeof rawData.info === "object" && !Array.isArray(rawData.info) && rawData.info) ||
-          (rawData.route_info && typeof rawData.route_info === "object" && rawData.route_info) ||
-          null;
-
-        // 1. 頂層直接是 GeoJSON FeatureCollection 或含 features 陣列
-        if (Array.isArray(rawData.features)) {
-          rawList = groupFeatureCollection(rawData.features, metaLookup, rawData.names || null);
-        }
-        // 2. 巢狀於常見鍵值內的 FeatureCollection（如 data.data / data.geojson / data.lines / data.routes / data.tracks）
-        else if (rawData.data && Array.isArray(rawData.data.features)) {
-          rawList = groupFeatureCollection(rawData.data.features, metaLookup, rawData.data.names || null);
-        } else if (rawData.geojson && Array.isArray(rawData.geojson.features)) {
-          rawList = groupFeatureCollection(rawData.geojson.features, metaLookup, rawData.geojson.names || null);
-        } else if (rawData.lines && Array.isArray(rawData.lines.features)) {
-          rawList = groupFeatureCollection(rawData.lines.features, metaLookup, rawData.lines.names || null);
-        } else if (rawData.routes && Array.isArray(rawData.routes.features)) {
-          rawList = groupFeatureCollection(rawData.routes.features, metaLookup, rawData.routes.names || null);
-        } else if (rawData.tracks && Array.isArray(rawData.tracks.features)) {
-          rawList = groupFeatureCollection(rawData.tracks.features, metaLookup, rawData.tracks.names || null);
-        }
-        grouped.get(code).segments.push(feat);
-      }
-      return Array.from(grouped.values());
-    }
-
-    /**
-     * 將原始 JSON 正規化為標準路線清單（支援陣列、物件字典、頂層或巢狀 GeoJSON）
-     */
-    function normalizeRoutesData(rawData, orderMode) {
-      let rawList = [];
-
-      if (Array.isArray(rawData)) {
-        rawList = rawData;
-      } else if (rawData && typeof rawData === "object") {
-        // 建立可能獨立存放於頂層的屬性對照表（例如 { geojson: ..., meta: { A1: ... } }）
-        const metaLookup =
-          (rawData.meta && typeof rawData.meta === "object" && !Array.isArray(rawData.meta) && rawData.meta) ||
-          (rawData.info && typeof rawData.info === "object" && !Array.isArray(rawData.info) && rawData.info) ||
-          (rawData.route_info && typeof rawData.route_info === "object" && rawData.route_info) ||
-          null;
-
-        // 1. 頂層直接是 GeoJSON FeatureCollection 或含 features 陣列
-        if (Array.isArray(rawData.features)) {
-          rawList = groupFeatureCollection(rawData.features, metaLookup);
-        }
-        // 2. 巢狀於常見鍵值內的 FeatureCollection（如 data.geojson / data.lines / data.routes / data.tracks）
-        else if (rawData.geojson && Array.isArray(rawData.geojson.features)) {
-          rawList = groupFeatureCollection(rawData.geojson.features, metaLookup);
-        } else if (rawData.lines && Array.isArray(rawData.lines.features)) {
-          rawList = groupFeatureCollection(rawData.lines.features, metaLookup);
-        } else if (rawData.routes && Array.isArray(rawData.routes.features)) {
-          rawList = groupFeatureCollection(rawData.routes.features, metaLookup);
-        } else if (rawData.tracks && Array.isArray(rawData.tracks.features)) {
-          rawList = groupFeatureCollection(rawData.tracks.features, metaLookup);
-        }
-        // 3. 常見鍵值為陣列
-        else if (Array.isArray(rawData.routes)) {
-          rawList = rawData.routes;
-        } else if (Array.isArray(rawData.lines)) {
-          rawList = rawData.lines;
-        } else if (Array.isArray(rawData.items)) {
-          rawList = rawData.items;
-        } else if (Array.isArray(rawData.data)) {
-          rawList = rawData.data;
-        }
-        // 4. 常見鍵值為物件字典（例如 { routes: { "A1": { ... }, "A2": { ... } } }）
-        else if (rawData.routes && typeof rawData.routes === "object") {
-          rawList = Object.entries(rawData.routes)
-            .filter(([, val]) => val && typeof val === "object")
-            .map(([key, val]) => ({ id: val.route_id || val.id || val.code || key, ...val }));
-        } else if (rawData.lines && typeof rawData.lines === "object") {
-          rawList = Object.entries(rawData.lines)
-            .filter(([, val]) => val && typeof val === "object")
-            .map(([key, val]) => ({ id: val.route_id || val.id || val.code || key, ...val }));
-        } else if (rawData.data && typeof rawData.data === "object") {
-          rawList = Object.entries(rawData.data)
-            .filter(([, val]) => val && typeof val === "object")
-            .map(([key, val]) => ({ id: val.route_id || val.id || val.code || key, ...val }));
-        }
-        // 5. 頂層本身即以路線編號為 key 的物件 { "A1": { ... } }
-        else {
-          const skipTopKeys = new Set(["stations", "stops", "meta", "metadata", "version", "updated", "config"]);
-          rawList = Object.entries(rawData)
-            .filter(([k, val]) => !skipTopKeys.has(k) && val && typeof val === "object" && !Array.isArray(val))
-            .map(([key, val]) => ({
-              id: val.route_id || val.id || val.code || val.no || key,
-              ...val
-            }));
-        }
-      }
-
-      const normalized = rawList.map((item, idx) => {
-        const props = item.properties || {};
-        const merged = { ...props, ...item };
-        const code = String(
-          merged.route_id ?? merged.routeId ?? merged.id ?? merged.code ?? merged.no ?? merged.line_id ?? `R${idx + 1}`
-        ).trim();
-        const name = String(
-          merged.name ?? merged.line_name ?? merged.route_name ?? merged.title ?? merged.label ?? "未命名路線"
-        ).trim();
-// ... existing code ... -->
-      els.tablesContainer.innerHTML = htmlParts.join("\n");
-      els.progressBarWrap.classList.add("hidden");
-      els.progressBarFill.style.width = "0%";
-      updateRenderProgress();
-      updateDiagnosticBox();
-      setupLazyObserver();
-    }
-
-    /**
-     * 產生 data.json 結構診斷資訊（若解析出 0 條路線或 0 條有效座標時自動展開）
-     */
-    function updateDiagnosticBox() {
-      if (!els.diagnosticBox || !els.diagnosticContent) return;
-      const withCoordsCount = state.allRoutes.filter((r) => r.bounds && r.totalPoints > 0).length;
-
-      if (state.allRoutes.length > 0 && withCoordsCount > 0) {
-        els.diagnosticBox.classList.add("hidden");
-        return;
-      }
-
-      const raw = state.rawJsonData;
-      const topType = Array.isArray(raw) ? `Array (length: ${raw.length})` : typeof raw;
-      const topKeys = raw && typeof raw === "object" && !Array.isArray(raw) ? Object.keys(raw) : [];
-      let sampleObj = raw;
-      if (Array.isArray(raw)) {
-        sampleObj = raw[0];
-      } else if (raw && typeof raw === "object") {
-        const firstKey = topKeys[0];
-        sampleObj = firstKey ? { [firstKey]: Array.isArray(raw[firstKey]) ? raw[firstKey].slice(0, 1) : raw[firstKey] } : raw;
-      }
-
-      let sampleStr = "";
-      try {
-        sampleStr = JSON.stringify(sampleObj, null, 2).slice(0, 900);
-      } catch (e) {
-        sampleStr = String(sampleObj);
-      }
-
-      els.diagnosticContent.textContent =
-        `資料來源：${state.sourceLabel}\n` +
-        `頂層型別：${topType}\n` +
-        `頂層鍵值：${topKeys.length ? topKeys.join(", ") : "(無)"}\n` +
-        `解析路線數：${state.allRoutes.length}（含有效座標：${withCoordsCount}）\n\n` +
-        `--- 第一筆資料結構預覽 ---\n${sampleStr}`;
-
-      els.diagnosticBox.classList.remove("hidden");
+    function showToast(msg, duration = 2800) {
+      if (!els.toast || !els.toastMessage) return;
+      els.toastMessage.textContent = msg;
+      els.toast.classList.remove("hidden");
+      if (state.toastTimer) clearTimeout(state.toastTimer);
+      state.toastTimer = setTimeout(() => {
+        els.toast.classList.add("hidden");
+      }, duration);
     }
 
     /**
@@ -671,7 +431,44 @@
     }
 
     /**
-     * 判斷單一數值對是否為有效座標對，並依模式正規化為 [lng, lat]
+     * 使用 Haversine 公式計算兩組 [lng, lat] 間之地球表面距離（單位：公尺）
+     */
+    function haversineMeters(pt1, pt2) {
+      const R = 6371000;
+      const toRad = (deg) => (deg * Math.PI) / 180;
+      const dLat = toRad(pt2[1] - pt1[1]);
+      const dLng = toRad(pt2[0] - pt1[0]);
+      const lat1 = toRad(pt1[1]);
+      const lat2 = toRad(pt2[1]);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    /**
+     * 計算單條折線總長度（公尺）
+     */
+    function computePolylineMeters(points) {
+      let total = 0;
+      for (let i = 1; i < points.length; i++) {
+        total += haversineMeters(points[i - 1], points[i]);
+      }
+      return total;
+    }
+
+    /**
+     * 格式化長度文字（公里）
+     */
+    function formatLengthKm(meters) {
+      if (!Number.isFinite(meters) || meters <= 0) return "0.00 km";
+      const km = meters / 1000;
+      return `${km.toFixed(2)} km`;
+    }
+
+    /**
+     * 判斷單一數值對是否為有效座標對，並正規化為 [lng, lat]
      * 支援 [lng, lat]、[lat, lng]、{lat, lng}、{lat, lon}、{y, x}
      */
     function normalizePair(pair, orderMode) {
@@ -696,41 +493,716 @@
       }
 
       if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      if (orderMode === "lnglat") return [a, b];
+      if (orderMode === "latlng") return [b, a];
 
-      if (orderMode === "lnglat") {
-        return [a, b];
-      }
-      if (orderMode === "latlng") {
-        return [b, a];
-      }
-
-      // 自動偵測：臺灣地區經度約 118～123，緯度約 21～26
-      // 若第一個值落在 21～26 且第二個值落在 118～123，則視為 [lat, lng]
+      // 自動偵測：臺灣地區經度約 118～123，緯度約 21～26.5
       if (a >= 21 && a <= 26.5 && b >= 117.5 && b <= 123.5) {
         return [b, a];
       }
       return [a, b];
     }
-// ... existing code ... -->
-    els.btnPrint.addEventListener("click", () => {
-      window.print();
-    });
 
-    if (els.btnCopyDiagnostic) {
-      els.btnCopyDiagnostic.addEventListener("click", () => {
-        const ta = document.createElement("textarea");
-        ta.value = els.diagnosticContent.textContent;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        showToast("已複製結構診斷摘要！");
+    /**
+     * 判別線段層級角色（main / branch / old）
+     */
+    function detectRouteRole(props, codeHint = "", fallback = "main") {
+      const text = String(
+        (props && (props.line_type ?? props.type ?? props.category ?? props.level ?? props.role)) || ""
+      ).toLowerCase();
+
+      if (text.includes("舊") || text.includes("old") || text.includes("廢")) return "old";
+      if (text.includes("副") || text.includes("支") || text.includes("branch") || text.includes("sub")) {
+        return "branch";
+      }
+      if (text.includes("主") || text.includes("main")) return "main";
+
+      // 若無明確欄位，再由編號是否含連字號輔助判斷
+      if (codeHint && codeHint.includes("-")) return "branch";
+      return fallback;
+    }
+
+    /**
+     * 路線編號自然排序（A1, A1-2, A2, ..., A10, B1, ..., I1，其餘中文編號排後）
+     */
+    function compareRouteCode(aCode, bCode) {
+      const parseCode = (c) => {
+        const m = String(c).trim().match(/^([A-Ia-i])(\d+)(?:-(.+))?$/);
+        if (!m) return { isStandard: 1, letter: "Z", mainNum: 999999, sub: String(c) };
+        return {
+          isStandard: 0,
+          letter: m[1].toUpperCase(),
+          mainNum: parseInt(m[2], 10),
+          sub: m[3] || ""
+        };
+      };
+
+      const pa = parseCode(aCode);
+      const pb = parseCode(bCode);
+
+      if (pa.isStandard !== pb.isStandard) return pa.isStandard - pb.isStandard;
+      if (pa.letter !== pb.letter) return pa.letter.localeCompare(pb.letter);
+      if (pa.mainNum !== pb.mainNum) return pa.mainNum - pb.mainNum;
+      if (!pa.sub && pb.sub) return -1;
+      if (pa.sub && !pb.sub) return 1;
+
+      const subNumA = parseInt(pa.sub, 10);
+      const subNumB = parseInt(pb.sub, 10);
+      if (Number.isFinite(subNumA) && Number.isFinite(subNumB) && subNumA !== subNumB) {
+        return subNumA - subNumB;
+      }
+      return pa.sub.localeCompare(pb.sub, "zh-Hant");
+    }
+
+    /**
+     * 取得路線所屬分區代碼（A～I 或 OTHER）
+     */
+    function getRegionKey(code) {
+      const m = String(code || "").trim().match(/^([A-Ia-i])/);
+      return m ? m[1].toUpperCase() : "OTHER";
+    }
+
+    // ================================
+    // 3. JSON 解析與正規化（精準支援 data.features）
+    // ================================
+
+    /**
+     * 從任意 GeoJSON Feature / Geometry / 座標陣列中遞迴萃取折線陣列
+     */
+    function extractPolylines(input, orderMode, depth = 0, roleHint = "main") {
+      if (!input || depth > 10) return [];
+
+      if (Array.isArray(input) && input.length > 0) {
+        const firstNorm = normalizePair(input[0], orderMode);
+        if (firstNorm) {
+          const pts = [];
+          for (const pt of input) {
+            const norm = normalizePair(pt, orderMode);
+            if (norm) pts.push(norm);
+          }
+          return pts.length >= 2 ? [{ role: roleHint, points: pts }] : [];
+        }
+        const collected = [];
+        for (const item of input) {
+          collected.push(...extractPolylines(item, orderMode, depth + 1, roleHint));
+        }
+        return collected;
+      }
+
+      if (typeof input === "object") {
+        // GeoJSON Geometry
+        if (input.type === "LineString" && Array.isArray(input.coordinates)) {
+          return extractPolylines(input.coordinates, orderMode, depth + 1, roleHint);
+        }
+        if (input.type === "MultiLineString" && Array.isArray(input.coordinates)) {
+          const collected = [];
+          for (const line of input.coordinates) {
+            collected.push(...extractPolylines(line, orderMode, depth + 1, roleHint));
+          }
+          return collected;
+        }
+        if (input.type === "GeometryCollection" && Array.isArray(input.geometries)) {
+          const collected = [];
+          for (const g of input.geometries) {
+            collected.push(...extractPolylines(g, orderMode, depth + 1, roleHint));
+          }
+          return collected;
+        }
+        if (input.type === "Feature" && input.geometry) {
+          return extractPolylines(input.geometry, orderMode, depth + 1, roleHint);
+        }
+        if (input.geometry) {
+          return extractPolylines(input.geometry, orderMode, depth + 1, roleHint);
+        }
+        if (Array.isArray(input.coordinates)) {
+          return extractPolylines(input.coordinates, orderMode, depth + 1, roleHint);
+        }
+        if (Array.isArray(input.coords)) {
+          return extractPolylines(input.coords, orderMode, depth + 1, roleHint);
+        }
+        if (Array.isArray(input.path)) {
+          return extractPolylines(input.path, orderMode, depth + 1, roleHint);
+        }
+      }
+
+      return [];
+    }
+
+    /**
+     * 解析 data.json，優先支援 { data: { type: "FeatureCollection", names, features } }
+     * 同時相容頂層 FeatureCollection 與常見路線陣列格式
+     */
+    function parseRoutesFromJson(raw, orderMode) {
+      if (!raw || typeof raw !== "object") return [];
+
+      // 定位 FeatureCollection（支援 raw.data.features 或 raw.features）
+      const fc =
+        raw.data && Array.isArray(raw.data.features)
+          ? raw.data
+          : Array.isArray(raw.features)
+          ? raw
+          : null;
+
+      const namesMap = (fc && fc.names) || raw.names || {};
+      const grouped = new Map();
+
+      if (fc && Array.isArray(fc.features)) {
+        for (const feat of fc.features) {
+          if (!feat || typeof feat !== "object") continue;
+          const props = feat.properties || {};
+          const geom = feat.geometry || null;
+
+          // 略過車站點位或非線段圖徵
+          if (!geom || geom.type === "Point" || geom.type === "MultiPoint") continue;
+          if (String(props.line_type || "").trim() === "車站") continue;
+
+          const code = String(props.route_id ?? props.code ?? props.id ?? "").trim();
+          if (!code) continue;
+
+          const role = detectRouteRole(props, code, "main");
+          const polylines = extractPolylines(geom, orderMode, 0, role);
+          if (polylines.length === 0) continue;
+
+          const name = String(props.name || namesMap[code] || code).trim();
+          const section = String(props.section || "").trim();
+          const period = String(props.period || "").trim();
+          const tailo = String(props.tailo || "").trim();
+
+          if (!grouped.has(code)) {
+            grouped.set(code, {
+              code,
+              name,
+              section,
+              period,
+              tailo,
+              region: getRegionKey(code),
+              polylines: [],
+              roles: new Set()
+            });
+          }
+
+          const entry = grouped.get(code);
+          // 若主線名稱較完整，優先採用非空線名與區間
+          if (!entry.name && name) entry.name = name;
+          if (role === "main" && section) entry.section = section;
+          else if (!entry.section && section) entry.section = section;
+          if (role === "main" && period && period !== "未知") entry.period = period;
+          else if ((!entry.period || entry.period === "未知") && period) entry.period = period;
+
+          for (const pl of polylines) {
+            entry.polylines.push(pl);
+            entry.roles.add(pl.role);
+          }
+        }
+      } else {
+        // 備援：處理陣列或字典格式的路線資料
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw.routes)
+          ? raw.routes
+          : Array.isArray(raw.lines)
+          ? raw.lines
+          : [];
+
+        list.forEach((item, idx) => {
+          if (!item || typeof item !== "object") return;
+          const code = String(item.route_id ?? item.code ?? item.id ?? `R${idx + 1}`).trim();
+          const role = detectRouteRole(item, code, "main");
+          const polylines = extractPolylines(item, orderMode, 0, role);
+          if (polylines.length === 0) return;
+
+          if (!grouped.has(code)) {
+            grouped.set(code, {
+              code,
+              name: String(item.name || namesMap[code] || code).trim(),
+              section: String(item.section || "").trim(),
+              period: String(item.period || "").trim(),
+              tailo: String(item.tailo || "").trim(),
+              region: getRegionKey(code),
+              polylines: [],
+              roles: new Set()
+            });
+          }
+          const entry = grouped.get(code);
+          for (const pl of polylines) {
+            entry.polylines.push(pl);
+            entry.roles.add(pl.role);
+          }
+        });
+      }
+
+      // 計算每條路線的總長度、分層長度、折線數與節點數
+      const routes = [];
+      for (const entry of grouped.values()) {
+        let totalMeters = 0;
+        let mainBranchMeters = 0;
+        let oldMeters = 0;
+        let vertexCount = 0;
+
+        for (const pl of entry.polylines) {
+          const m = computePolylineMeters(pl.points);
+          totalMeters += m;
+          if (pl.role === "old") oldMeters += m;
+          else mainBranchMeters += m;
+          vertexCount += pl.points.length;
+        }
+
+        routes.push({
+          ...entry,
+          roles: Array.from(entry.roles),
+          totalMeters,
+          mainBranchMeters,
+          oldMeters,
+          segmentCount: entry.polylines.length,
+          vertexCount
+        });
+      }
+
+      routes.sort((a, b) => compareRouteCode(a.code, b.code));
+      return routes;
+    }
+
+    // ================================
+    // 4. Leaflet + Google Maps 迷你地圖渲染
+    // ================================
+
+    /**
+     * 清除所有現存 Leaflet 地圖實例與 Observer
+     */
+    function cleanupMaps() {
+      if (state.observer) {
+        state.observer.disconnect();
+        state.observer = null;
+      }
+      for (const map of state.mapInstances.values()) {
+        try {
+          map.remove();
+        } catch (err) {
+          // 忽略已移除地圖之錯誤
+        }
+      }
+      state.mapInstances.clear();
+    }
+
+    /**
+     * 取得目前選擇的 Google Maps 底圖圖層
+     */
+    function createGoogleTileLayer(styleKey) {
+      if (styleKey === "hybrid") {
+        return L.tileLayer("https://mt{s}.google.com/vt/lyrs=y&hl=zh-TW&x={x}&y={y}&z={z}", {
+          subdomains: ["0", "1", "2", "3"],
+          maxZoom: 20,
+          attribution: "Map © Google"
+        });
+      }
+      return L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&hl=zh-TW&x={x}&y={y}&z={z}", {
+        subdomains: ["0", "1", "2", "3"],
+        maxZoom: 20,
+        className: "google-muted-tiles",
+        attribution: "Map © Google"
       });
     }
 
-    // 頁面載入後自動讀取 data.json
+    /**
+     * 將單一路線繪製到指定的迷你地圖容器中
+     */
+    function initRouteMap(routeIdx) {
+      if (state.mapInstances.has(routeIdx)) return;
+      const route = state.filteredRoutes[routeIdx];
+      const mapEl = document.getElementById(`route-map-${routeIdx}`);
+      if (!route || !mapEl) return;
+
+      // 移除「載入中」提示
+      mapEl.innerHTML = "";
+
+      const map = L.map(mapEl, {
+        zoomControl: true,
+        scrollWheelZoom: false,
+        attributionControl: true,
+        preferCanvas: true
+      });
+
+      const tileLayer = createGoogleTileLayer(els.basemapSelect.value);
+      tileLayer.addTo(map);
+
+      // 加入公制比例尺
+      L.control.scale({ metric: true, imperial: false, maxWidth: 120 }).addTo(map);
+
+      const featureGroup = L.featureGroup();
+
+      // 先畫舊線（底層），再畫副線，最後畫主線（最上層）
+      const roleOrder = { old: 1, branch: 2, main: 3 };
+      const sortedPolylines = [...route.polylines].sort(
+        (a, b) => (roleOrder[a.role] || 2) - (roleOrder[b.role] || 2)
+      );
+
+      let firstPt = null;
+      let lastPt = null;
+
+      for (const pl of sortedPolylines) {
+        const latlngs = pl.points.map(([lng, lat]) => [lat, lng]);
+        if (latlngs.length < 2) continue;
+
+        if (!firstPt) firstPt = latlngs[0];
+        lastPt = latlngs[latlngs.length - 1];
+
+        let style;
+        if (pl.role === "old") {
+          style = { color: "#334155", weight: 3, opacity: 0.9, dashArray: "6, 5" };
+        } else if (pl.role === "branch") {
+          style = { color: "#1d4ed8", weight: 3.5, opacity: 0.95 };
+        } else {
+          style = { color: "#d9381e", weight: 4, opacity: 0.95 };
+        }
+
+        // 先繪製白色外框提升在衛星圖／街道圖上的對比度
+        L.polyline(latlngs, {
+          color: "#ffffff",
+          weight: style.weight + 2.5,
+          opacity: 0.85,
+          interactive: false
+        }).addTo(featureGroup);
+
+        L.polyline(latlngs, style).addTo(featureGroup);
+      }
+
+      // 標示起點（綠）與迄點（紅）
+      if (firstPt) {
+        L.circleMarker(firstPt, {
+          radius: 5,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#059669",
+          fillOpacity: 1
+        })
+          .bindTooltip("起點", { direction: "top" })
+          .addTo(featureGroup);
+      }
+      if (lastPt) {
+        L.circleMarker(lastPt, {
+          radius: 5,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#e11d48",
+          fillOpacity: 1
+        })
+          .bindTooltip("迄點", { direction: "top" })
+          .addTo(featureGroup);
+      }
+
+      featureGroup.addTo(map);
+
+      const bounds = featureGroup.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [22, 22], maxZoom: 16 });
+      } else {
+        map.setView([23.6978, 120.9605], 8);
+      }
+
+      state.mapInstances.set(routeIdx, map);
+      updateRenderProgressText();
+    }
+
+    /**
+     * 更新地圖已渲染數量顯示
+     */
+    function updateRenderProgressText() {
+      const total = state.filteredRoutes.length;
+      const done = state.mapInstances.size;
+      els.renderProgressText.textContent = total > 0 ? `地圖已渲染：${done} / ${total}` : "";
+    }
+
+    /**
+     * 批次渲染目前篩選清單中的所有地圖（利於列印／另存 PDF）
+     */
+    async function renderAllFilteredMaps() {
+      if (state.isBatchRendering) return;
+      const total = state.filteredRoutes.length;
+      if (total === 0) {
+        showToast("目前沒有可渲染的路線。");
+        return;
+      }
+
+      state.isBatchRendering = true;
+      els.btnRenderAllMaps.disabled = true;
+      els.progressBarWrap.classList.remove("hidden");
+      showToast(`開始批次渲染 ${total} 張地圖，請稍候...`);
+
+      const batchSize = 6;
+      for (let i = 0; i < total; i += batchSize) {
+        const end = Math.min(i + batchSize, total);
+        for (let j = i; j < end; j++) {
+          initRouteMap(j);
+        }
+        const pct = Math.round((end / total) * 100);
+        els.progressBarFill.style.width = `${pct}%`;
+        els.statusText.textContent = `正在批次渲染地圖（${end} / ${total}，${pct}%）...`;
+        await new Promise((resolve) => setTimeout(resolve, 35));
+      }
+
+      state.isBatchRendering = false;
+      els.btnRenderAllMaps.disabled = false;
+      els.statusText.textContent = `已完成目前篩選 ${total} 條路線地圖渲染，可直接列印或另存 PDF。`;
+      showToast(`全部 ${total} 張地圖已完成渲染！`);
+    }
+
+    // ================================
+    // 5. 渲染獨立路線表格
+    // ================================
+
+    /**
+     * 依分區與關鍵字篩選路線，並繪製獨立白底黑框表格
+     */
+    function applyFiltersAndRender() {
+      cleanupMaps();
+      els.progressBarWrap.classList.add("hidden");
+      els.progressBarFill.style.width = "0%";
+
+      const region = els.regionFilterSelect.value;
+      const kw = els.searchInput.value.trim().toLowerCase();
+
+      state.filteredRoutes = state.allRoutes.filter((r) => {
+        if (region !== "ALL" && r.region !== region) return false;
+        if (!kw) return true;
+        return (
+          r.code.toLowerCase().includes(kw) ||
+          r.name.toLowerCase().includes(kw) ||
+          r.section.toLowerCase().includes(kw) ||
+          r.tailo.toLowerCase().includes(kw)
+        );
+      });
+
+      const totalFiltered = state.filteredRoutes.length;
+      const sumMeters = state.filteredRoutes.reduce((acc, r) => acc + r.totalMeters, 0);
+
+      els.summaryStats.innerHTML = `
+        <span>總路線：<strong>${state.allRoutes.length}</strong> 條</span>
+        <span>目前顯示：<strong>${totalFiltered}</strong> 條</span>
+        <span>顯示總長度：<strong>${formatLengthKm(sumMeters)}</strong></span>
+      `;
+      els.printMeta.textContent = `來源：${state.sourceLabel}｜分區：${region}｜共 ${totalFiltered} 條路線｜數化總長度：${formatLengthKm(sumMeters)}`;
+
+      els.tablesContainer.innerHTML = "";
+
+      if (totalFiltered === 0) {
+        els.emptyState.classList.remove("hidden");
+        updateRenderProgressText();
+        return;
+      }
+      els.emptyState.classList.add("hidden");
+
+      const frag = document.createDocumentFragment();
+
+      state.filteredRoutes.forEach((route, idx) => {
+        const card = document.createElement("section");
+        card.className = "route-card rounded-xl bg-white shadow-sm";
+
+        // 若同時含主／副線與舊線，補充長度明細
+        let lengthDetailHtml = `<span>數化總長度：<strong>${formatLengthKm(route.totalMeters)}</strong></span>`;
+        if (route.oldMeters > 0 && route.mainBranchMeters > 0) {
+          lengthDetailHtml += `<span class="text-slate-500">（主／副線 ${formatLengthKm(route.mainBranchMeters)}＋舊線 ${formatLengthKm(route.oldMeters)}）</span>`;
+        }
+
+        const roleBadges = route.roles
+          .map((role) => {
+            if (role === "main") return `<span class="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200">主線</span>`;
+            if (role === "branch") return `<span class="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-200">副／支線</span>`;
+            return `<span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 border border-slate-300">舊線</span>`;
+          })
+          .join(" ");
+
+        card.innerHTML = `
+          <table class="route-table">
+            <thead>
+              <tr>
+                <th class="col-code">編號</th>
+                <th class="col-name">線名</th>
+                <th class="col-result">數化結果（Google Maps 底圖、比例尺、數值長度）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-code font-bold text-slate-900 align-top">
+                  <div class="text-base">${escapeHtml(route.code)}</div>
+                  <div class="mt-1.5 flex flex-wrap gap-1">${roleBadges}</div>
+                </td>
+                <td class="col-name align-top">
+                  <div class="font-bold text-slate-900 text-base">${escapeHtml(route.name)}</div>
+                  ${route.section ? `<div class="mt-1 text-xs text-slate-600">區間：${escapeHtml(route.section)}</div>` : ""}
+                  ${route.period && route.period !== "未知" ? `<div class="mt-0.5 text-xs text-slate-500">年代：${escapeHtml(route.period)}</div>` : ""}
+                </td>
+                <td class="col-result align-top">
+                  <div id="route-map-${idx}" data-route-idx="${idx}" class="mini-map-box flex items-center justify-center text-xs text-slate-400">
+                    <span>捲動至此處自動載入地圖...</span>
+                  </div>
+                  <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
+                    <div class="flex flex-wrap items-center gap-1.5">${lengthDetailHtml}</div>
+                    <div class="text-slate-500">線段：${route.segmentCount} 段｜節點：${route.vertexCount} 點</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+        frag.appendChild(card);
+      });
+
+      els.tablesContainer.appendChild(frag);
+      updateRenderProgressText();
+
+      // 使用 IntersectionObserver 針對可視範圍懶載入 Google Maps，避免一次開啟 300 張地圖卡頓
+      state.observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const idx = Number(entry.target.getAttribute("data-route-idx"));
+              if (Number.isFinite(idx)) {
+                initRouteMap(idx);
+                state.observer.unobserve(entry.target);
+              }
+            }
+          }
+        },
+        { rootMargin: "250px 0px" }
+      );
+
+      document.querySelectorAll(".mini-map-box").forEach((el) => {
+        state.observer.observe(el);
+      });
+    }
+
+    // ================================
+    // 6. 載入 JSON 與結構診斷
+    // ================================
+
+    /**
+     * 顯示結構診斷摘要（僅在無法解析出任何路線時啟用）
+     */
+    function showDiagnostic(raw) {
+      els.diagnosticBox.classList.remove("hidden");
+      const summary = {
+        topKeys: raw && typeof raw === "object" ? Object.keys(raw).slice(0, 20) : typeof raw,
+        hasDataFeatures: Boolean(raw && raw.data && Array.isArray(raw.data.features)),
+        dataFeatureCount: raw && raw.data && Array.isArray(raw.data.features) ? raw.data.features.length : 0,
+        sampleFeature:
+          raw && raw.data && Array.isArray(raw.data.features)
+            ? raw.data.features[0]
+            : raw && Array.isArray(raw.features)
+            ? raw.features[0]
+            : null
+      };
+      els.diagnosticContent.textContent = JSON.stringify(summary, null, 2);
+    }
+
+    /**
+     * 載入並處理已解析的 JSON 物件
+     */
+    function loadJsonObject(raw, label) {
+      state.rawJsonData = raw;
+      state.sourceLabel = label;
+
+      const orderMode = els.coordOrderSelect.value;
+      state.allRoutes = parseRoutesFromJson(raw, orderMode);
+
+      if (state.allRoutes.length === 0) {
+        showDiagnostic(raw);
+        els.statusText.textContent = `已讀取 ${label}，但未解析出有效路線折線，請查看下方結構診斷。`;
+      } else {
+        els.diagnosticBox.classList.add("hidden");
+        els.statusText.textContent = `成功載入 ${label}：共解析 ${state.allRoutes.length} 條獨立路線。捲動畫面即會自動渲染地圖，或點擊「渲染目前篩選之所有地圖」以利列印。`;
+      }
+
+      applyFiltersAndRender();
+    }
+
+    /**
+     * 由 URL 自動 fetch data.json
+     */
+    async function fetchJsonFromPath(path) {
+      const cleanPath = (path || "./data.json").trim();
+      els.statusText.textContent = `正在讀取 ${cleanPath} ...`;
+      try {
+        const res = await fetch(cleanPath, { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+        const json = await res.json();
+        loadJsonObject(json, cleanPath);
+        showToast(`已成功讀取 ${cleanPath}（${state.allRoutes.length} 條路線）`);
+      } catch (err) {
+        console.error("讀取 JSON 失敗:", err);
+        els.statusText.textContent = `無法自動讀取 ${cleanPath}（${err.message}）。若是直接雙擊本機檔案開啟，請點擊右上角「選擇本機 JSON」載入 data.json，或部署至 GitHub Pages 使用。`;
+        els.emptyState.classList.remove("hidden");
+        showToast("自動讀取失敗，請改用「選擇本機 JSON」或確認路徑", 4000);
+      }
+    }
+
+    // ================================
+    // 7. 事件綁定與初始化
+    // ================================
+
+    els.btnReloadJson.addEventListener("click", () => {
+      fetchJsonFromPath(els.jsonPathInput.value);
+    });
+
+    els.fileInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result));
+          loadJsonObject(parsed, file.name);
+          showToast(`已載入本機檔案 ${file.name}（${state.allRoutes.length} 條路線）`);
+        } catch (err) {
+          els.statusText.textContent = `JSON 解析失敗：${err.message}`;
+          showToast("檔案不是有效的 JSON 格式", 3500);
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      e.target.value = "";
+    });
+
+    els.regionFilterSelect.addEventListener("change", applyFiltersAndRender);
+    els.searchInput.addEventListener("input", applyFiltersAndRender);
+
+    els.basemapSelect.addEventListener("change", () => {
+      applyFiltersAndRender();
+      showToast("已切換 Google Maps 底圖樣式");
+    });
+
+    els.coordOrderSelect.addEventListener("change", () => {
+      if (state.rawJsonData) {
+        loadJsonObject(state.rawJsonData, state.sourceLabel);
+      }
+    });
+
+    els.btnRenderAllMaps.addEventListener("click", renderAllFilteredMaps);
+
+    els.btnPrint.addEventListener("click", () => {
+      if (state.mapInstances.size < state.filteredRoutes.length) {
+        showToast("提醒：尚有地圖未渲染，建議先按「渲染目前篩選之所有地圖」再列印", 3500);
+      }
+      window.print();
+    });
+
+    els.btnCopyDiagnostic.addEventListener("click", () => {
+      const textarea = document.createElement("textarea");
+      textarea.value = els.diagnosticContent.textContent || "";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        showToast("已複製結構摘要");
+      } catch (err) {
+        showToast("複製失敗，請手動選取文字");
+      }
+      document.body.removeChild(textarea);
+    });
+
+    // 頁面載入完成後自動讀取 ./data.json
     window.addEventListener("DOMContentLoaded", () => {
-      loadJsonFromPath(els.jsonPathInput.value);
+      fetchJsonFromPath(els.jsonPathInput.value);
     });
   </script>
 </body>
