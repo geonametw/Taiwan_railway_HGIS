@@ -465,7 +465,7 @@
     /**
      * 將 FeatureCollection 依路線編號分組為標準路線物件陣列
      */
-    function groupFeatureCollection(features, metaLookup = null) {
+    function groupFeatureCollection(features, metaLookup = null, namesLookup = null) {
       const grouped = new Map();
       for (const feat of features) {
         if (!feat || typeof feat !== "object") continue;
@@ -473,12 +473,15 @@
         if (geomType === "Point" || geomType === "MultiPoint") continue;
 
         const props = feat.properties || {};
+        if (props.line_type === "車站") continue;
+
         const code = String(
           props.route_id ?? props.routeId ?? props.id ?? props.code ?? props.no ?? props.line_id ?? "未編號"
         ).trim();
         const extraMeta = (metaLookup && metaLookup[code]) || {};
+        const dictName = namesLookup && namesLookup[code];
         const name = String(
-          props.name ?? props.line_name ?? props.route_name ?? props.title ?? extraMeta.name ?? extraMeta.line_name ?? "未命名路線"
+          props.name ?? dictName ?? props.line_name ?? props.route_name ?? props.title ?? extraMeta.name ?? extraMeta.line_name ?? "未命名路線"
         ).trim();
 
         if (!grouped.has(code)) {
@@ -488,6 +491,43 @@
             properties: { ...extraMeta, ...props },
             segments: []
           });
+        }
+        grouped.get(code).segments.push(feat);
+      }
+      return Array.from(grouped.values());
+    }
+
+    /**
+     * 將原始 JSON 正規化為標準路線清單（支援陣列、物件字典、頂層或巢狀 GeoJSON）
+     */
+    function normalizeRoutesData(rawData, orderMode) {
+      let rawList = [];
+
+      if (Array.isArray(rawData)) {
+        rawList = rawData;
+      } else if (rawData && typeof rawData === "object") {
+        // 建立可能獨立存放於頂層的屬性對照表（例如 { geojson: ..., meta: { A1: ... } }）
+        const metaLookup =
+          (rawData.meta && typeof rawData.meta === "object" && !Array.isArray(rawData.meta) && rawData.meta) ||
+          (rawData.info && typeof rawData.info === "object" && !Array.isArray(rawData.info) && rawData.info) ||
+          (rawData.route_info && typeof rawData.route_info === "object" && rawData.route_info) ||
+          null;
+
+        // 1. 頂層直接是 GeoJSON FeatureCollection 或含 features 陣列
+        if (Array.isArray(rawData.features)) {
+          rawList = groupFeatureCollection(rawData.features, metaLookup, rawData.names || null);
+        }
+        // 2. 巢狀於常見鍵值內的 FeatureCollection（如 data.data / data.geojson / data.lines / data.routes / data.tracks）
+        else if (rawData.data && Array.isArray(rawData.data.features)) {
+          rawList = groupFeatureCollection(rawData.data.features, metaLookup, rawData.data.names || null);
+        } else if (rawData.geojson && Array.isArray(rawData.geojson.features)) {
+          rawList = groupFeatureCollection(rawData.geojson.features, metaLookup, rawData.geojson.names || null);
+        } else if (rawData.lines && Array.isArray(rawData.lines.features)) {
+          rawList = groupFeatureCollection(rawData.lines.features, metaLookup, rawData.lines.names || null);
+        } else if (rawData.routes && Array.isArray(rawData.routes.features)) {
+          rawList = groupFeatureCollection(rawData.routes.features, metaLookup, rawData.routes.names || null);
+        } else if (rawData.tracks && Array.isArray(rawData.tracks.features)) {
+          rawList = groupFeatureCollection(rawData.tracks.features, metaLookup, rawData.tracks.names || null);
         }
         grouped.get(code).segments.push(feat);
       }
